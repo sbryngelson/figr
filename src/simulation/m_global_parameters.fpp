@@ -203,12 +203,12 @@ module m_global_parameters
     !> @name Annotations of the structure of the state and flux vectors in terms of the size and the configuration of the system of
     !! equations to which they belong
     !> @{
-    integer               :: sys_size              !< Number of unknowns in system of eqns.
-    type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
-    type(int_bounds_info) :: mom_idx               !< Indexes of first & last momentum eqns.
-    integer               :: E_idx    !< Index of energy equation
-    type(int_bounds_info) :: adv_idx  !< Indexes of first & last advection eqns.
-    integer               :: alf_idx  !< Index of void fraction
+    integer               :: sys_size  !< Number of unknowns in system of eqns.
+    type(int_bounds_info) :: cont_idx  !< Indexes of first & last continuity eqns.
+    type(int_bounds_info) :: mom_idx   !< Indexes of first & last momentum eqns.
+    integer               :: E_idx     !< Index of energy equation
+    type(int_bounds_info) :: adv_idx   !< Indexes of first & last advection eqns.
+    integer               :: alf_idx   !< Index of void fraction
     !> @}
     $:GPU_DECLARE(create='[sys_size, E_idx, alf_idx]')
 
@@ -262,7 +262,6 @@ module m_global_parameters
     real(wp) :: rhoref, pref
     !> @}
     $:GPU_DECLARE(create='[rhoref, pref]')
-
 
     integer :: momxb, momxe
     integer :: advxb, advxe
@@ -509,8 +508,7 @@ contains
 
         $:GPU_UPDATE(device='[cfl_target, m, n, p]')
 
-        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns, &
-                     & mixture_err, mp_weno, weno_eps, teno_CT]')
+        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns, mixture_err, mp_weno, weno_eps, teno_CT]')
 
         #:if not MFC_CASE_OPTIMIZATION
             $:GPU_UPDATE(device='[wenojs, mapped_weno, wenoz, teno]')

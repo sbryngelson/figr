@@ -63,24 +63,24 @@ module m_global_parameters
     integer :: muscl_order  !< Order of accuracy for the MUSCL reconstruction
     integer :: igr_order    !< IGR reconstruction order
     ! Annotations of the structure, i.e. the organization, of the state vectors
-    type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
-    type(int_bounds_info) :: mom_idx               !< Indexes of first & last momentum eqns.
-    integer               :: E_idx    !< Index of total energy equation
-    integer               :: alf_idx  !< Index of void fraction
-    type(int_bounds_info) :: adv_idx  !< Indexes of first & last advection eqns.
+    type(int_bounds_info) :: cont_idx  !< Indexes of first & last continuity eqns.
+    type(int_bounds_info) :: mom_idx   !< Indexes of first & last momentum eqns.
+    integer               :: E_idx     !< Index of total energy equation
+    integer               :: alf_idx   !< Index of void fraction
+    type(int_bounds_info) :: adv_idx   !< Indexes of first & last advection eqns.
     ! Cell Indices for the (local) interior points (O-m, O-n, 0-p). Stands for "InDices With BUFFer".
     type(int_bounds_info) :: idwint(1:3)
 
     ! Cell indices (InDices With BUFFer): includes buffer except in pre_process
-    type(int_bounds_info)      :: idwbuff(1:3)
-    type(int_bounds_info)      :: bc_x, bc_y, bc_z      !< Boundary conditions in the x-, y- and z-coordinate directions
-    logical                    :: parallel_io           !< Format of the data files
-    logical                    :: file_per_process      !< type of data output
-    integer                    :: precision             !< Precision of output files
-    logical                    :: down_sample  !< Down-sample the output data
-    logical                    :: viscous
-    integer, allocatable, dimension(:)  :: proc_coords         !< Processor coordinates in MPI_CART_COMM
-    integer, allocatable, dimension(:)  :: start_idx           !< Starting cell-center index of local processor in global grid
+    type(int_bounds_info)              :: idwbuff(1:3)
+    type(int_bounds_info)              :: bc_x, bc_y, bc_z  !< Boundary conditions in the x-, y- and z-coordinate directions
+    logical                            :: parallel_io       !< Format of the data files
+    logical                            :: file_per_process  !< type of data output
+    integer                            :: precision         !< Precision of output files
+    logical                            :: down_sample       !< Down-sample the output data
+    logical                            :: viscous
+    integer, allocatable, dimension(:) :: proc_coords       !< Processor coordinates in MPI_CART_COMM
+    integer, allocatable, dimension(:) :: start_idx         !< Starting cell-center index of local processor in global grid
 #ifdef MFC_MPI
     type(mpi_io_var), public :: MPI_IO_DATA
     character(LEN=name_len)  :: mpiiofs

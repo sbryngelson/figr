@@ -120,7 +120,6 @@ module m_derived_types
         integer :: hcid  !< Hardcoded initial condition ID
         real(wp) :: cf_val  !< Color function value
         real(wp) :: Y(1:1)  !< Species mass fractions
-
     end type ic_patch_parameters
 
     !> Derived type annexing the physical parameters (PP) of the fluids. These include the specific heat ratio function and liquid
@@ -134,7 +133,6 @@ module m_derived_types
         real(wp)               :: qvp     !< reference entropy per unit mass for SGEOS, q' (see Le Metayer (2004))
     end type physical_parameters
 
-
     !> Species parameters
     type species_parameters
         character(LEN=name_len) :: name  !< Name of species
@@ -145,5 +143,4 @@ module m_derived_types
         integer :: mn_max, np_max, mp_max, mnp_max
         integer :: mn_min, np_min, mp_min, mnp_min
     end type cell_num_bounds
-
 end module m_derived_types

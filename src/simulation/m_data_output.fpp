@@ -22,14 +22,14 @@ module m_data_output
     implicit none
 
     private
-    public :: s_initialize_data_output_module, s_open_run_time_information_file, &
-        & s_write_run_time_information, s_write_data_files, s_write_serial_data_files, s_write_parallel_data_files, &
-        & s_close_run_time_information_file, s_finalize_data_output_module
+    public :: s_initialize_data_output_module, s_open_run_time_information_file, s_write_run_time_information, &
+        & s_write_data_files, s_write_serial_data_files, s_write_parallel_data_files, s_close_run_time_information_file, &
+        & s_finalize_data_output_module
 
-    real(wp), allocatable, dimension(:,:,:)       :: icfl_sf  !< ICFL stability criterion
-    real(wp), allocatable, dimension(:,:,:)       :: vcfl_sf  !< VCFL stability criterion
-    real(wp), allocatable, dimension(:,:,:)       :: ccfl_sf  !< CCFL stability criterion
-    real(wp), allocatable, dimension(:,:,:)       :: Rc_sf    !< Rc stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: icfl_sf  !< ICFL stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: vcfl_sf  !< VCFL stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: ccfl_sf  !< CCFL stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: Rc_sf    !< Rc stability criterion
     $:GPU_DECLARE(create='[icfl_sf, vcfl_sf, ccfl_sf, Rc_sf]')
 
     real(wp) :: icfl_max_loc, icfl_max_glb  !< ICFL stability extrema on local and global grids

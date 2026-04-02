@@ -15,9 +15,8 @@ module m_helper
     implicit none
 
     private
-    public :: s_int_to_str, s_swap, f_cross, &
-        & s_print_2D_array, f_xor, f_logical_to_int, associated_legendre, real_ylm, double_factorial, factorial, &
-        & f_cut_on, f_cut_off, s_downsample_data, s_upsample_data
+    public :: s_int_to_str, s_swap, f_cross, s_print_2D_array, f_xor, f_logical_to_int, associated_legendre, real_ylm, &
+        & double_factorial, factorial, f_cut_on, f_cut_off, s_downsample_data, s_upsample_data
 
 contains
 

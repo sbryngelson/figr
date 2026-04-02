@@ -30,7 +30,7 @@ module m_start_up
 
     implicit none
 
-    integer                                 :: ierr
+    integer :: ierr
 
 contains
 
@@ -46,9 +46,9 @@ contains
         namelist /user_inputs/ case_dir, m, n, p, t_step_start, t_step_stop, t_step_save, model_eqns, num_fluids, bc_x, bc_y, &
             & bc_z, fluid_pp, format, precision, output_partial_domain, x_output, y_output, z_output, alpha_rho_wrt, rho_wrt, &
             & mom_wrt, vel_wrt, E_wrt, pres_wrt, alpha_wrt, gamma_wrt, heat_ratio_wrt, pi_inf_wrt, pres_inf_wrt, cons_vars_wrt, &
-            & prim_vars_wrt, c_wrt, omega_wrt, qm_wrt, schlieren_wrt, schlieren_alpha, fd_order, flux_lim, flux_wrt, &
-            & parallel_io, rhoref, pref, file_per_process, cfl_adap_dt, cfl_const_dt, t_save, t_stop, n_start, cfl_target, &
-            & sim_data, num_bc_patches, igr_order, down_sample, alpha_rho_e_wrt
+            & prim_vars_wrt, c_wrt, omega_wrt, qm_wrt, schlieren_wrt, schlieren_alpha, fd_order, flux_lim, flux_wrt, parallel_io, &
+            & rhoref, pref, file_per_process, cfl_adap_dt, cfl_const_dt, t_save, t_stop, n_start, cfl_target, sim_data, &
+            & num_bc_patches, igr_order, down_sample, alpha_rho_e_wrt
 
         file_loc = 'post_process.inp'
         inquire (FILE=trim(file_loc), EXIST=file_check)
@@ -148,9 +148,8 @@ contains
         character(LEN=name_len), intent(inout) :: varname
         real(wp), intent(inout)                :: pres, c, H
         real(wp)                               :: theta1, theta2
-
-        integer       :: i, j, k, l
-        integer       :: x_beg, x_end, y_beg, y_end, z_beg, z_end
+        integer                                :: i, j, k, l
+        integer                                :: x_beg, x_end, y_beg, y_end, z_beg, z_end
 
         if (output_partial_domain) then
             call s_define_output_region

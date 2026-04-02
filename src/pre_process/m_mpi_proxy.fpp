@@ -86,7 +86,6 @@ contains
             #:endfor
 
             call MPI_BCAST(patch_icpp(i)%sph_har_coeff, size(patch_icpp(i)%sph_har_coeff), mpi_p, 0, MPI_COMM_WORLD, ierr)
-
         end do
 
         ! Fluid physical parameters

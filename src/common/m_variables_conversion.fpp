@@ -78,7 +78,6 @@ contains
 
     end subroutine s_compute_pressure
 
-
     !> Convert species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv. Given conservative or
     !! primitive variables, computes the density, the specific heat ratio function and the liquid stiffness function from q_vf and
     !! stores the results into rho, gamma and pi_inf.
@@ -322,15 +321,15 @@ contains
 
         ! Density, specific heat ratio function, liquid stiffness function and dynamic pressure, as defined in the incompressible
         ! flow sense, respectively
-        real(wp)                         :: rho
-        real(wp)                         :: gamma
-        real(wp)                         :: pi_inf
-        real(wp)                         :: qv
-        real(wp)                         :: dyn_pres
-        real(wp), dimension(2)           :: Re_K
-        integer                          :: i, j, k, l  !< Generic loop iterators
+        real(wp)               :: rho
+        real(wp)               :: gamma
+        real(wp)               :: pi_inf
+        real(wp)               :: qv
+        real(wp)               :: dyn_pres
+        real(wp), dimension(2) :: Re_K
+        integer                :: i, j, k, l  !< Generic loop iterators
         real(wp), dimension(1) :: Ys
-        real(wp)                         :: e_mix, mix_mol_weight, T
+        real(wp)               :: e_mix, mix_mol_weight, T
 
 #ifndef MFC_SIMULATION
         ! Converting the primitive variables to the conservative variables
@@ -392,10 +391,10 @@ contains
             real(wp), dimension(3)  :: vel_K
             real(wp), dimension(10) :: Y_K
         #:else
-            real(wp), dimension(num_fluids)  :: alpha_rho_K
-            real(wp), dimension(num_fluids)  :: alpha_K
-            real(wp), dimension(num_vels)    :: vel_K
-            real(wp), dimension(1) :: Y_K
+            real(wp), dimension(num_fluids) :: alpha_rho_K
+            real(wp), dimension(num_fluids) :: alpha_K
+            real(wp), dimension(num_vels)   :: vel_K
+            real(wp), dimension(1)          :: Y_K
         #:endif
         real(wp)               :: rho_K
         real(wp)               :: vel_K_sum

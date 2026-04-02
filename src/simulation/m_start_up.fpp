@@ -33,8 +33,8 @@ module m_start_up
     implicit none
 
     private; public :: s_read_input_file, s_check_input_file, s_read_data_files, s_read_serial_data_files, &
-        & s_read_parallel_data_files, s_initialize_modules, s_initialize_gpu_vars, &
-        & s_initialize_mpi_domain, s_finalize_modules, s_perform_time_step, s_save_data, s_save_performance_metrics
+        & s_read_parallel_data_files, s_initialize_modules, s_initialize_gpu_vars, s_initialize_mpi_domain, s_finalize_modules, &
+        & s_perform_time_step, s_save_data, s_save_performance_metrics
 
     type(scalar_field), allocatable, dimension(:) :: q_cons_temp
     real(wp)                                      :: dt_init
@@ -79,9 +79,8 @@ contains
             num_fluids, igr_order, viscous, &
             igr_iter_solver, igr_pres_lim, &
         #:endif
-        file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, &
-            & num_bc_patches, alf_factor, num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, &
-            & nv_uvm_pref_gpu, down_sample
+        file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, num_bc_patches, alf_factor, &
+            & num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, nv_uvm_pref_gpu, down_sample
 
         inquire (FILE=trim(file_path), EXIST=file_exist)
 
@@ -664,7 +663,6 @@ contains
         ! Computation of parameters, allocation of memory, association of pointers, and/or execution of any other tasks that are
         ! needed to properly configure the modules. The preparations below DO DEPEND on the grid being complete.
         call s_initialize_igr_module()
-
 
     end subroutine s_initialize_modules
 
