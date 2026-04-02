@@ -19,9 +19,7 @@ project(figr LANGUAGES C CXX Fortran)
 
 option(MFC_OpenACC       "Build with OpenACC"                                OFF)
 option(MFC_OpenMP        "Build with OpenMP"                                 OFF)
-option(MFC_GCov          "Build with GCov"                                   OFF)
 option(MFC_Unified       "Build with unified CPU & GPU memory (GH-200 only)" OFF)
-option(MFC_Fastmath      "Build with -gpu=fastmath on NV GPUs"               OFF)
 option(MFC_PRE_PROCESS   "Build pre_process"                                 OFF)
 option(MFC_SIMULATION    "Build simulation"                                  OFF)
 option(MFC_POST_PROCESS  "Build post_process"                                OFF)
@@ -125,41 +123,10 @@ endif()
 # debug builds. These include optimization and debug flags, as well as some that
 # are required for a successful build of figr.
 
-set(FYPP_GCOV_OPTS "")
-
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     add_compile_options(
         $<$<COMPILE_LANGUAGE:Fortran>:-ffree-line-length-none>
     )
-
-    if (MFC_GCov)
-
-        # Warning present in gcc versions >= 12 that is treated as an error
-        # This flag doesn't exist in gcc versions < 12
-        if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER 12)
-            add_compile_options(
-                -Wno-error=coverage-invalid-line-number
-            )
-        endif()
-
-        add_compile_options(
-            $<$<COMPILE_LANGUAGE:Fortran>:-fprofile-arcs>
-            $<$<COMPILE_LANGUAGE:Fortran>:-ftest-coverage>
-        )
-
-        add_link_options(
-            $<$<COMPILE_LANGUAGE:Fortran>:-lgcov>
-            $<$<COMPILE_LANGUAGE:Fortran>:--coverage>
-        )
-
-        # Override Release -O3 with -O1 for gcov: coverage instrumentation is
-        # inaccurate at -O3, and aggressive codegen (e.g. AVX-512 FP16 on
-        # Granite Rapids) can emit instructions that older assemblers reject.
-        set(CMAKE_Fortran_FLAGS_RELEASE "-O1 -DNDEBUG" CACHE STRING "" FORCE)
-
-        # Use gfortran5 line markers so gcov can map coverage to .fpp sources.
-        set(FYPP_GCOV_OPTS "--line-marker-format=gfortran5")
-    endif()
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(
@@ -281,33 +248,23 @@ elseif ((CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC") OR (CMAKE_Fortran_COMPILER_
 endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    # Processor tuning: Check if we can target the host's native CPU's ISA.
-    # Skip for gcov builds — -march=native on newer CPUs (e.g. Granite Rapids)
-    # can emit instructions the system assembler doesn't support.
-    if (NOT MFC_GCov)
-        CHECK_FORTRAN_COMPILER_FLAG("-march=native" SUPPORTS_MARCH_NATIVE)
-        if (SUPPORTS_MARCH_NATIVE)
-            add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-march=native>)
-            # Disable AVX-512 FP16: gfortran >=12 emits vmovw instructions on
-            # Granite Rapids CPUs, but binutils <2.38 cannot assemble them.
-            # FP16 is unused in figr's double-precision computations.
-            CHECK_FORTRAN_COMPILER_FLAG("-mno-avx512fp16" SUPPORTS_MNO_AVX512FP16)
-            if (SUPPORTS_MNO_AVX512FP16)
-                add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-mno-avx512fp16>)
-            endif()
-        else()
-            CHECK_FORTRAN_COMPILER_FLAG("-mcpu=native" SUPPORTS_MCPU_NATIVE)
-            if (SUPPORTS_MCPU_NATIVE)
-                add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-mcpu=native>)
-            endif()
+    # Processor tuning: target the host's native CPU ISA
+    CHECK_FORTRAN_COMPILER_FLAG("-march=native" SUPPORTS_MARCH_NATIVE)
+    if (SUPPORTS_MARCH_NATIVE)
+        add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-march=native>)
+        CHECK_FORTRAN_COMPILER_FLAG("-mno-avx512fp16" SUPPORTS_MNO_AVX512FP16)
+        if (SUPPORTS_MNO_AVX512FP16)
+            add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-mno-avx512fp16>)
+        endif()
+    else()
+        CHECK_FORTRAN_COMPILER_FLAG("-mcpu=native" SUPPORTS_MCPU_NATIVE)
+        if (SUPPORTS_MCPU_NATIVE)
+            add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-mcpu=native>)
         endif()
     endif()
 
-    # Enable LTO/IPO if supported (skip for gcov — LTO interferes with coverage
-    # instrumentation and can trigger assembler errors on newer architectures).
-    if (MFC_GCov)
-        message(STATUS "LTO/IPO disabled for gcov build")
-    elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
+    # Enable LTO/IPO if supported
+    if (CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
         if (MFC_Unified)
             message(STATUS "LTO/IPO is not available with NVHPC using Unified Memory")
         else()
@@ -442,7 +399,6 @@ macro(HANDLE_SOURCES target useCommon)
                                  --no-folding
 								 --line-length=999
 		 						 --line-numbering-mode=nocontlines
-                                 ${FYPP_GCOV_OPTS}
                                  "${fpp}" "${f90}"
             DEPENDS  "${fpp};${${target}_incs}"
             COMMENT  "Preprocessing (Fypp) ${fpp_filename}"
@@ -605,9 +561,6 @@ function(MFC_SETUP_TARGET)
                     "-foffload=amdgcn-amdhsa='-march=gfx90a'"
                     "-foffload-options=-lgfortran\ -lm"
                     "-fno-exceptions")
-                if (MFC_Fastmath)
-                    message(WARNING "--fastmath has no effect with the GNU compiler")
-                endif()
             elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" OR CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
                 foreach (cc ${MFC_CUDA_CC})
                     target_compile_options(${a_target}
@@ -619,11 +572,6 @@ function(MFC_SETUP_TARGET)
                     PRIVATE -gpu=keep,ptxinfo,lineinfo
                 )
 
-                if (MFC_Fastmath)
-                    target_compile_options(${a_target}
-                        PRIVATE -gpu=fastmath
-                    )
-                endif()
 
                 # GH-200 Unified Memory Support
                 if (MFC_Unified)
@@ -648,9 +596,6 @@ function(MFC_SETUP_TARGET)
                         PRIVATE -DFRONTIER_UNIFIED)
                 endif()
 
-                if (MFC_Fastmath)
-                    message(WARNING "--fastmath has no effect with the CCE")
-                endif()
 
                 find_package(hipfort COMPONENTS hip CONFIG REQUIRED)
                 target_link_libraries(${a_target} PRIVATE hipfort::hip hipfort::hipfort-amdgcn)
@@ -666,9 +611,6 @@ function(MFC_SETUP_TARGET)
             endif()
         elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
             target_compile_options(${a_target} PRIVATE "SHELL:-h noacc" "SHELL:-x acc")
-            if (MFC_Fastmath)
-                message(WARNING "--fastmath has no effect with the CCE")
-            endif()
         endif()
 
         if (CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" OR CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")

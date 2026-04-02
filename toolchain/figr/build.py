@@ -410,13 +410,9 @@ class MFCTarget:
 
         if not self.isDependency:
             flags.append("-DMFC_MPI=ON")
-            # flags.append(f"-DMFC_OpenACC={'ON' if ARG('acc') else 'OFF'}")
-            # flags.append(f"-DMFC_OpenMP={'ON' if ARG('mp') else 'OFF'}")
             flags.append(f"-DMFC_OpenACC={'ON' if (ARG('gpu') == gpuConfigOptions.ACC.value) else 'OFF'}")
             flags.append(f"-DMFC_OpenMP={'ON' if (ARG('gpu') == gpuConfigOptions.MP.value) else 'OFF'}")
-            flags.append(f"-DMFC_GCov={'ON' if ARG('gcov') else 'OFF'}")
             flags.append(f"-DMFC_Unified={'ON' if ARG('unified') else 'OFF'}")
-            flags.append(f"-DMFC_Fastmath={'ON' if ARG('fastmath') else 'OFF'}")
 
         command = ["cmake"] + flags + ["-S", cmake_dirpath, "-B", build_dirpath]
 

@@ -14,13 +14,12 @@ concurrency:
 
 jobs:
   github:
-    name: ${{ matrix.nvhpc && format('NVHPC {0} ({1})', matrix.nvhpc, matrix.target) || format('Github ({0}, {1}, {2}, intel={3})', matrix.os, matrix.mpi, matrix.debug, matrix.intel) }}
+    name: ${{ matrix.nvhpc && format('NVHPC {0} ({1})', matrix.nvhpc, matrix.target) || format('Github ({0}, {1}, intel={2})', matrix.os, matrix.debug, matrix.intel) }}
     if: >-
       !cancelled()
     strategy:
       matrix:
         os:    ['ubuntu', 'macos']
-        mpi:   ['mpi']
         precision: ['']
         debug: ['reldebug', 'no-debug']
         intel: [true, false]
@@ -137,17 +136,14 @@ jobs:
       - name: Build
         if:   '!matrix.nvhpc'
         run:  |
-          /bin/bash figr.sh test -v --dry-run -j $(nproc) --${{ matrix.debug }} --${{ matrix.mpi }} $PRECISION $TEST_ALL
-        env:
-          TEST_ALL: ${{ matrix.mpi == 'mpi' && '--test-all' || '' }}
+          /bin/bash figr.sh test -v --dry-run -j $(nproc) --${{ matrix.debug }} $PRECISION --test-all
           PRECISION: ${{ matrix.precision != '' && format('--{0}', matrix.precision) || '' }}
 
       - name: Test
         if:   '!matrix.nvhpc'
         run:  |
-          /bin/bash figr.sh test -v --max-attempts 3 -j $(nproc) $ONLY_CHANGES $TEST_ALL $TEST_PCT
+          /bin/bash figr.sh test -v --max-attempts 3 -j $(nproc) $ONLY_CHANGES --test-all $TEST_PCT
         env:
-          TEST_ALL: ${{ matrix.mpi == 'mpi' && '--test-all' || '' }}
           TEST_PCT: ${{ matrix.debug == 'reldebug' && '-% 20' || '' }}
           ONLY_CHANGES: ${{ github.event_name == 'pull_request' && '--only-changes' || '' }}
 
