@@ -93,8 +93,6 @@ module m_global_parameters
     ! 1 => jac on GPU, jac_rhs and jac_old on CPU 2 => jac and jac_rhs on GPU, jac_old on CPU 3 => jac, jac_rhs, and jac_old on GPU
     ! (default)
     logical :: nv_uvm_pref_gpu  !< Enable explicit gpu memory hints (default FALSE)
-    logical  :: shear_stress              !< Shear stresses (computed from Re)
-    logical  :: bulk_stress               !< Bulk stresses (computed from Re)
     integer  :: num_igr_iters             !< number of iterations for elliptic solve
     integer  :: num_igr_warm_start_iters  !< number of warm start iterations for elliptic solve
     real(wp) :: alf_factor                !< alpha factor for IGR
@@ -107,7 +105,6 @@ module m_global_parameters
         $:GPU_DECLARE(create='[recon_type]')
     #:endif
 
-    $:GPU_DECLARE(create='[shear_stress, bulk_stress]')
 
     integer :: num_bc_patches
     logical :: bc_io
@@ -242,8 +239,6 @@ contains
         precision = 2
         down_sample = .false.
         rdma_mpi = .false.
-        shear_stress = .false.
-        bulk_stress = .false.
         num_igr_iters = dflt_num_igr_iters
         num_igr_warm_start_iters = dflt_num_igr_warm_start_iters
         alf_factor = dflt_alf_factor
@@ -341,12 +336,10 @@ contains
             if (fluid_pp(i)%Re(2) > 0) Re_size(2) = Re_size(2) + 1
         end do
 
-        if (Re_size(1) > 0._wp) shear_stress = .true.
-        if (Re_size(2) > 0._wp) bulk_stress = .true.
 
         Re_size_max = maxval(Re_size)
 
-        $:GPU_UPDATE(device='[Re_size, Re_size_max, shear_stress, bulk_stress]')
+        $:GPU_UPDATE(device='[Re_size, Re_size_max]')
 
         if (viscous) then
             @:ALLOCATE(Re_idx(1:2, 1:Re_size_max))
