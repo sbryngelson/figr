@@ -1,10 +1,8 @@
-!>
 !!@file
 !!@brief Contains module m_checker
 
 #:include 'macros.fpp'
 
-!> @brief Checks pre-process input file parameters for compatibility and correctness
 module m_checker
 
     use m_global_parameters

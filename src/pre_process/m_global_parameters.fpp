@@ -1,10 +1,6 @@
-!>
-!! @file
-!! @brief Contains module m_global_parameters
 
 #:include 'case.fpp'
 
-!> @brief Defines global parameters for the computational domain, simulation algorithm, and initial conditions
 module m_global_parameters
 
     use mpi  ! Message passing interface (MPI) module
@@ -30,7 +26,6 @@ module m_global_parameters
     integer :: n
     integer :: p
 
-    !> @name Max and min number of cells in a direction of each combination of x-,y-, and z-
     type(cell_num_bounds) :: cells_bounds
     integer(kind=8)       :: nGlobal              !< Global number of cells in the domain
     integer               :: m_glb, n_glb, p_glb  !< Global number of cells in each direction
@@ -93,12 +88,9 @@ module m_global_parameters
     ! Fluids Physical Parameters
     type(physical_parameters), dimension(num_fluids_max) :: fluid_pp  !< Stiffened gas EOS parameters and Reynolds numbers per fluid
     real(wp)                                             :: rhoref, pref  !< Reference parameters for Tait EOS
-    !> @name Index variables used for m_variables_conversion
-    !> @{
     integer :: momxb, momxe
     integer :: advxb, advxe
     integer :: contxb, contxe
-    !> @}
 
     integer, allocatable, dimension(:,:,:) :: logic_grid
     integer                                :: buff_size  !< Number of ghost cells for boundary condition storage

@@ -1,10 +1,6 @@
-!>
-!! @file
-!! @brief Contains module m_derived_types
 
 #:include "macros.fpp"
 
-!> @brief Shared derived types for field data, patch geometry, and MPI I/O structures
 module m_derived_types
 
     use m_constants
@@ -105,7 +101,6 @@ module m_derived_types
         real(wp) :: qv
         real(wp) :: qvp  !< Reference entropy per unit mass (SGEOS)
         integer :: hcid  !< Hardcoded initial condition ID
-        real(wp) :: cf_val  !< Color function value
     end type ic_patch_parameters
 
     !> Derived type annexing the physical parameters (PP) of the fluids. These include the specific heat ratio function and liquid

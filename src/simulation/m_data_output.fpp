@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_data_output
 
 #:include 'macros.fpp'
 #:include 'case.fpp'
 
-!> @brief Writes solution data, run-time stability diagnostics (ICFL, VCFL, CCFL, Rc), and probe/center-of-mass files
 module m_data_output
 
     use m_derived_types
@@ -39,13 +35,10 @@ module m_data_output
     $:GPU_DECLARE(create='[icfl_max_loc, icfl_max_glb, vcfl_max_loc, vcfl_max_glb]')
     $:GPU_DECLARE(create='[ccfl_max_loc, ccfl_max_glb, Rc_min_loc, Rc_min_glb]')
 
-    !> @name ICFL, VCFL, CCFL and Rc stability criteria extrema over all the time-steps
-    !> @{
     real(wp) :: icfl_max  !< ICFL criterion maximum
     real(wp) :: vcfl_max  !< VCFL criterion maximum
     real(wp) :: ccfl_max  !< CCFL criterion maximum
     real(wp) :: Rc_min    !< Rc criterion maximum
-    !> @}
 
     type(scalar_field), allocatable, dimension(:) :: q_cons_temp_ds
 

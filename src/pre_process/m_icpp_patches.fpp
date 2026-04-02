@@ -1,6 +1,3 @@
-!>
-!! @file
-!! @brief Contains module m_icpp_patches
 
 #:include 'case.fpp'
 #:include 'ExtrusionHardcodedIC.fpp'
@@ -9,7 +6,6 @@
 #:include '3dHardcodedIC.fpp'
 #:include 'macros.fpp'
 
-!> @brief Constructs initial condition patch geometries (lines, circles, rectangles, spheres, etc.) on the grid
 module m_icpp_patches
 
     use m_derived_types  ! Definitions of the derived types
@@ -59,7 +55,6 @@ contains
                 end if
 
                 !> ICPP Patches
-                !> @{
                 ! Spherical patch
                 if (patch_icpp(i)%geometry == 8) then
                     call s_icpp_sphere(i, patch_id_fp, q_prim_vf)
@@ -83,7 +78,6 @@ contains
                     call s_icpp_3dvarcircle(i, patch_id_fp, q_prim_vf)
                 end if
             end do
-            !> @}
 
             ! 2D Patch Geometries
         else if (n > 0) then
@@ -93,7 +87,6 @@ contains
                 end if
 
                 !> ICPP Patches
-                !> @{
                 ! Circular patch
                 if (patch_icpp(i)%geometry == 2) then
                     call s_icpp_circle(i, patch_id_fp, q_prim_vf)
@@ -120,7 +113,6 @@ contains
                 else if (patch_icpp(i)%geometry == 20) then
                     call s_icpp_2D_TaylorGreen_vortex(i, patch_id_fp, q_prim_vf)
                 end if
-                !> @}
             end do
 
             ! 1D Patch Geometries

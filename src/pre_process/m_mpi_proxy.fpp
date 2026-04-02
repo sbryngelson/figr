@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_mpi_proxy
 
-!> @brief Broadcasts user inputs and decomposes the domain across MPI ranks for pre-processing
 module m_mpi_proxy
 
     use mpi

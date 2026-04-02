@@ -1,10 +1,6 @@
-!>
-!! @file
-!! @brief Contains module m_global_parameters
 
 #:include 'case.fpp'
 
-!> @brief Global parameters for the post-process: domain geometry, equation of state, and output database settings
 module m_global_parameters
 
     use mpi  !< Message passing interface (MPI) module
@@ -14,49 +10,31 @@ module m_global_parameters
 
     implicit none
 
-    !> @name Logistics
-    !> @{
     integer                 :: num_procs  !< Number of processors
     character(LEN=path_len) :: case_dir   !< Case folder location
-    !> @}
 
     ! Computational Domain Parameters
 
     integer :: proc_rank  !< Rank of the local processor
-    !> @name Number of cells in the x-, y- and z-coordinate directions
-    !> @{
     integer :: m, m_root
     integer :: n
     integer :: p
-    !> @}
 
-    !> @name Max and min number of cells in a direction of each combination of x-,y-, and z-
     type(cell_num_bounds) :: cells_bounds
     integer(kind=8)       :: nGlobal  !< Total number of cells in global domain
     integer               :: grid_geometry
 
-    !> @name Global number of cells in each direction
-    !> @{
     integer :: m_glb, n_glb, p_glb
-    !> @}
 
     integer :: num_dims  !< Number of spatial dimensions
     integer :: num_vels  !< Number of velocity components
-    !> @name Cell-boundary locations in the x-, y- and z-coordinate directions
-    !> @{
     real(wp), allocatable, dimension(:) :: x_cb, x_root_cb, y_cb, z_cb
-    !> @}
 
-    !> @name Cell-center locations in the x-, y- and z-coordinate directions
-    !> @{
     real(wp), allocatable, dimension(:) :: x_cc, x_root_cc, y_cc, z_cc
     real(sp), allocatable, dimension(:) :: x_root_cc_s, x_cc_s
-    !> @}
 
     !> Cell-width distributions in the x-, y- and z-coordinate directions
-    !> @{
     real(wp), allocatable, dimension(:) :: dx, dy, dz
-    !> @}
 
     integer                              :: buff_size     !< Number of ghost cells for boundary condition storage
     integer, dimension(2)                :: Re_size
@@ -65,33 +43,24 @@ module m_global_parameters
     integer                              :: t_step_start  !< First time-step directory
     integer                              :: t_step_stop   !< Last time-step directory
     integer                              :: t_step_save   !< Interval between consecutive time-step directory
-    !> @name IO options for adaptive time-stepping
-    !> @{
     logical  :: cfl_adap_dt, cfl_const_dt, cfl_dt
     real(wp) :: t_save
     real(wp) :: t_stop
     real(wp) :: cfl_target
     integer  :: n_save
     integer  :: n_start
-    !> @}
 
     ! NOTE: m_root, x_root_cb, x_root_cc = defragmented grid (1D only; equals m, x_cb, x_cc in serial)
 
-    !> @name Simulation Algorithm Parameters
-    !> @{
     integer :: model_eqns  !< Multicomponent flow model
     integer :: num_fluids  !< Number of different fluids present in the flow
     integer :: sys_size    !< Number of unknowns in the system of equations
     integer :: igr_order   !< IGR reconstruction order
-    !> @}
-    !> @name Annotations of the structure, i.e. the organization, of the state vectors
-    !> @{
     type(int_bounds_info) :: cont_idx  !< Indexes of first & last continuity eqns.
     type(int_bounds_info) :: mom_idx   !< Indexes of first & last momentum eqns.
     integer               :: E_idx     !< Index of energy equation
     type(int_bounds_info) :: adv_idx   !< Indexes of first & last advection eqns.
     integer               :: alf_idx   !< Index of void fraction
-    !> @}
 
     ! Cell Indices for the (local) interior points (O-m, O-n, 0-p). Stands for "InDices With BUFFer".
     type(int_bounds_info) :: idwint(1:3)
@@ -100,10 +69,7 @@ module m_global_parameters
     type(int_bounds_info) :: idwbuff(1:3)
     integer               :: num_bc_patches
     logical               :: bc_io
-    !> @name Boundary conditions in the x-, y- and z-coordinate directions
-    !> @{
     type(int_bounds_info) :: bc_x, bc_y, bc_z
-    !> @}
 
     logical                            :: parallel_io       !< Format of the data files
     logical                            :: sim_data
@@ -112,11 +78,8 @@ module m_global_parameters
     integer, allocatable, dimension(:) :: start_idx         !< Starting cell-center index of local processor in global grid
     type(mpi_io_var), public :: MPI_IO_DATA
 
-    !> @name MPI info for parallel IO with Lustre file systems
-    !> @{
     character(LEN=name_len) :: mpiiofs
     integer                 :: mpi_info_int
-    !> @}
 
     type(physical_parameters), dimension(num_fluids_max) :: fluid_pp  !< Stiffened gas EOS parameters and Reynolds numbers per fluid
     real(wp), allocatable, dimension(:)                  :: adv       !< Advection variables
@@ -129,18 +92,13 @@ module m_global_parameters
     logical               :: output_partial_domain                     !< Specify portion of domain to output for post-processing
     type(bounds_info)     :: x_output, y_output, z_output              !< Portion of domain to output for post-processing
     type(int_bounds_info) :: x_output_idx, y_output_idx, z_output_idx  !< Indices of domain to output for post-processing
-    !> @name Size of the ghost zone layer in the x-, y- and z-coordinate directions. The definition of the ghost zone layers is only
     !! necessary when using the Silo database file format in multidimensions. These zones provide VisIt with the subdomain
     !! connectivity information that it requires in order to produce smooth plots.
-    !> @{
     type(int_bounds_info) :: offset_x, offset_y, offset_z
-    !> @}
 
-    !> @name The list of all possible flow variables that may be written to a database file. It includes partial densities, density,
     !! momentum, velocity, energy, pressure, volume fraction(s), specific heat ratio function, specific heat ratio, liquid stiffness
     !! function, liquid stiffness, primitive variables, conservative variables, speed of sound, the vorticity, and the numerical
     !! Schlieren function.
-    !> @{
     logical, dimension(num_fluids_max) :: alpha_rho_wrt
     logical                            :: rho_wrt
     logical, dimension(3)              :: mom_wrt
@@ -162,22 +120,15 @@ module m_global_parameters
     logical, dimension(3)              :: omega_wrt
     logical                            :: qm_wrt
     logical                            :: schlieren_wrt
-    !> @}
 
     real(wp), dimension(num_fluids_max) :: schlieren_alpha  !< Per-fluid Schlieren intensity amplitude coefficients
     integer                             :: fd_order         !< Finite-difference order for vorticity and Schlieren derivatives
     integer                             :: fd_number        !< Finite-difference half-stencil size: MAX(1, fd_order/2)
-    !> @name Reference parameters for Tait EOS
-    !> @{
     real(wp) :: rhoref, pref
-    !> @}
 
-    !> @name Index variables used for m_variables_conversion
-    !> @{
     integer :: momxb, momxe
     integer :: advxb, advxe
     integer :: contxb, contxe
-    !> @}
 
     real(wp) :: wall_time, wall_time_avg  !< Wall time measurements
 

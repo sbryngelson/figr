@@ -1,10 +1,6 @@
 #:include 'macros.fpp'
 
-!>
-!! @file
-!! @brief  Contains module m_start_up
 
-!> @brief Reads and validates user inputs, allocates variables, and configures MPI decomposition and I/O for post-processing
 
 module m_start_up
 

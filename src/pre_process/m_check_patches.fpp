@@ -1,10 +1,6 @@
-!>
-!! @file
-!! @brief Contains module m_check_patches
 
 #:include 'macros.fpp'
 
-!> @brief Validates geometry parameters and constraints for initial condition patches
 
 #:include 'macros.fpp'
 

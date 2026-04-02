@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_assign_variables
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Assigns initial primitive variables to computational cells based on patch geometry
 module m_assign_variables
 
     use m_derived_types

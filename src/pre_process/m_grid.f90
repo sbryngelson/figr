@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_grid
 
-!> @brief Generates uniform or stretched rectilinear grids with hyperbolic-tangent spacing
 module m_grid
 
     use m_derived_types  ! Definitions of the derived types

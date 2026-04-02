@@ -1,6 +1,3 @@
-!>
-!! @file
-!! @brief Contains program p_main
 
 !> Post-process raw simulation data into formatted database files (Silo-HDF5 or Binary)
 program p_main

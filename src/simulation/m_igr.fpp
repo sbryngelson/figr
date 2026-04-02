@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_igr
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Iterative ghost rasterization (IGR) for sharp immersed boundary treatment
 module m_igr
 
     use m_derived_types
@@ -20,7 +16,6 @@ module m_igr
     private; public :: s_initialize_igr_module, s_igr_iterative_solve, s_igr_riemann_solver, s_igr_sigma_x, s_igr_flux_add, &
         & s_finalize_igr_module
 
-    !> @cond
 #ifdef __NVCOMPILER_GPU_UNIFIED_MEM
     integer, dimension(3)                                   :: nv_uvm_temp_on_gpu
     real(wp), pointer, contiguous, dimension(:,:,:)         :: jac, jac_rhs, jac_old
@@ -28,13 +23,10 @@ module m_igr
     real(wp), allocatable, dimension(:,:,:), pinned, target :: jac_rhs_host
     real(wp), allocatable, dimension(:,:,:), pinned, target :: jac_old_host
 #else
-    !> @endcond
     real(wp), allocatable, target, dimension(:,:,:) :: jac
     real(wp), allocatable, dimension(:,:,:)         :: jac_rhs, jac_old
     $:GPU_DECLARE(create='[jac, jac_rhs, jac_old]')
-    !> @cond
 #endif
-    !> @endcond
     type(scalar_field), dimension(1) :: jac_sf
     $:GPU_DECLARE(create='[jac_sf]')
 

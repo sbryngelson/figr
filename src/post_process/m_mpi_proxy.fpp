@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_mpi_proxy
 
-!> @brief MPI gather and scatter operations for distributing post-process grid and flow-variable data
 module m_mpi_proxy
 
     use mpi  !< Message passing interface (MPI) module
@@ -14,12 +10,9 @@ module m_mpi_proxy
 
     implicit none
 
-    !> @name Receive counts and displacement vector variables, respectively, used in enabling MPI to gather varying amounts of data
     !! from all processes to the root process
-    !> @{
     integer, allocatable, dimension(:) :: recvcounts
     integer, allocatable, dimension(:) :: displs
-    !> @}
 
 contains
 
@@ -186,7 +179,6 @@ contains
     end subroutine s_mpi_defragment_1d_grid_variable
 
     !> Gather the Silo database metadata for the flow variable's extents to boost performance of the multidimensional visualization.
-    !! @param q_sf Flow variable on a single computational sub-domain
     impure subroutine s_mpi_gather_data_extents(q_sf, data_extents)
 
         real(wp), dimension(:,:,:), intent(in)                  :: q_sf
@@ -218,8 +210,6 @@ contains
 
     !> Gather the sub-domain flow variable data from all processors and reassemble it for the entire computational domain on the
     !! rank 0 processor. This is only done for 1D simulations.
-    !! @param q_sf Flow variable on a single computational sub-domain
-    !! @param q_root_sf Flow variable on the entire computational domain
     impure subroutine s_mpi_defragment_1d_flow_variable(q_sf, q_root_sf)
 
         real(wp), dimension(0:m), intent(in)    :: q_sf

@@ -1,7 +1,4 @@
-!> @file m_precision_select.f90
-!! @brief Contains module m_precision_select
 
-!> @brief Working-precision kind selection (half/single/double) and corresponding MPI datatype parameters
 module m_precision_select
 
     ! use, intrinsic :: iso_c_binding

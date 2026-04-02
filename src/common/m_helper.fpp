@@ -1,11 +1,7 @@
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!>
-!! @file
-!! @brief Contains module m_helper
 
-!> @brief Utility routines for coordinate transforms, array sampling, and special functions
 module m_helper
 
     use m_derived_types
@@ -84,9 +80,6 @@ contains
     !> Associated Legendre polynomial P_l^m(x) (Ferrers function, Condon-Shortley phase). Valid for integer l >= 0, 0 <= m <= l, and
     !! x in [-1,1]. Returns 0 for |m| > l or l < 0. Formulas: DLMF 14.10.3 (recurrence in degree), Wikipedia "Associated Legendre
     !! polynomials" (P_l^l and P_l^{l-1} identities). Recurrence: (l-m)P_l^m = (2l-1)x P_{l-1}^m - (l+m-1)P_{l-2}^m.
-    !! @param x argument (typically cos(theta)), should be in [-1,1]
-    !! @param l degree (>= 0)
-    !! @param m_order order (0 <= m_order <= l)
     recursive function associated_legendre(x, l, m_order) result(result_P)
 
         integer, intent(in)  :: l, m_order

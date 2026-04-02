@@ -1,11 +1,9 @@
-!>
 !!@file
 !!@brief Contains module m_checker
 
 #:include 'macros.fpp'
 #:include 'case.fpp'
 
-!> @brief Validates simulation input parameters for consistency and supported configurations
 module m_checker
 
     use m_global_parameters

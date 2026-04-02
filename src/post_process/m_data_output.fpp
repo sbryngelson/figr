@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_data_output
 
-!> @brief Writes post-processed grid and flow-variable data to Silo-HDF5 or binary database files
 module m_data_output
 
     use m_derived_types

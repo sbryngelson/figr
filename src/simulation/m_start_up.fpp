@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_start_up
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Reads input files, loads initial conditions and grid data, and orchestrates solver initialization and finalization
 module m_start_up
 
     use m_derived_types

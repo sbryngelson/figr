@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_data_output
 
-!> @brief Writes grid and initial condition data to serial or parallel output files
 module m_data_output
 
     use m_derived_types

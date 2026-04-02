@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_rhs
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Assembles the right-hand side of the governing equations using IGR Riemann solvers and physical source terms
 module m_rhs
 
     use m_derived_types

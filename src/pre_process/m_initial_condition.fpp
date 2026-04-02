@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_initial_condition
 
-!> @brief Assembles initial conditions by layering prioritized patches via constructive solid geometry
 module m_initial_condition
 
     use m_derived_types
@@ -21,15 +17,11 @@ module m_initial_condition
     type(scalar_field), allocatable, dimension(:)    :: q_prim_vf  !< primitive variables
     type(scalar_field), allocatable, dimension(:)    :: q_cons_vf  !< conservative variables
     type(integer_field), dimension(:,:), allocatable :: bc_type    !< bc_type fields
-    !> @cond
 #ifdef MFC_MIXED_PRECISION
     integer(kind=1), allocatable, dimension(:,:,:) :: patch_id_fp
 #else
-    !> @endcond
     integer, allocatable, dimension(:,:,:) :: patch_id_fp
-    !> @cond
 #endif
-    !> @endcond
 
 contains
 

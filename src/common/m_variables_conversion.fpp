@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_variables_conversion
 
 #:include 'macros.fpp'
 #:include 'case.fpp'
 
-!> @brief Conservative-to-primitive variable conversion, mixture property evaluation, and pressure computation
 module m_variables_conversion
 
     use m_derived_types

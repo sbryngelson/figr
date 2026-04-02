@@ -1,8 +1,4 @@
-!>
-!! @file
-!> @brief Contains module m_data_input
 
-!> @brief Reads raw simulation grid and conservative-variable data for a given time-step and fills buffer regions
 module m_data_input
 
     use mpi

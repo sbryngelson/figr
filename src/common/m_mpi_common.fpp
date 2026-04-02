@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_mpi_common
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief MPI communication layer: domain decomposition, halo exchange, reductions, and parallel I/O setup
 module m_mpi_common
 
     use mpi  !< Message passing interface (MPI) module

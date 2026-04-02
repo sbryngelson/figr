@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_boundary_common
 
-!> @brief Noncharacteristic and processor boundary condition application for ghost cells and buffer regions
 #:include 'case.fpp'
 #:include 'macros.fpp'
 

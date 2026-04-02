@@ -1,11 +1,9 @@
-!>
 !!@file
 !!@brief Contains module m_checker_common
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Shared input validation checks for grid dimensions and AMD GPU compiler limits
 module m_checker_common
 
     use m_global_parameters
