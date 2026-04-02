@@ -38,11 +38,8 @@ All commands run from the repo root via `./figr.sh`.
 ./figr.sh test -% 10 -j 8                  # Run 10% random sample
 ./figr.sh test --generate --only <feature>  # Regenerate golden files after intentional output change
 
-# Verification (pre-commit CI checks)
-./figr.sh precheck -j 8                     # Run all 6 lint checks (same as CI gate)
+# Formatting
 ./figr.sh format -j 8                       # Auto-format Fortran (.fpp/.f90) + Python
-./figr.sh lint                              # Ruff lint + Python unit tests
-./figr.sh spelling                          # Spell check
 
 # Module loading (HPC clusters only — must use `source`)
 source ./figr.sh load -c p -m g             # Load Phoenix GPU modules
@@ -99,13 +96,11 @@ IMPORTANT: Follow this loop for ALL code changes. Do not skip steps.
 2. **Plan** — For multi-file changes, outline your approach before implementing.
 3. **Implement** — Make small, focused changes. One logical change per commit.
 4. **Format** — Run `./figr.sh format -j 8` to auto-format.
-5. **Verify** — Run `./figr.sh precheck -j 8` (same 6 checks as CI lint gate).
-6. **Build** — Run `./figr.sh build -j 8` to verify compilation.
+5. **Build** — Run `./figr.sh build -j 8` to verify compilation.
 7. **Test** — Run relevant tests: `./figr.sh test --only <feature> -j 8`.
    For changes to `src/common/`, test ALL three targets: `./figr.sh test -j 8`.
 8. **Commit** — Only after steps 4-7 pass. Do not commit untested code.
 
-YOU MUST run `./figr.sh precheck` before any commit. This is enforced by pre-commit hooks.
 YOU MUST run tests relevant to your changes before claiming work is done.
 NEVER commit code that does not compile or fails tests.
 NEVER use heredocs for git commit messages. Use simple `git commit -m "message"` instead.

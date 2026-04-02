@@ -54,7 +54,6 @@
 ## PR Checklist
 Before submitting a PR:
 - [ ] `./figr.sh format -j 8` (auto-format)
-- [ ] `./figr.sh precheck -j 8` (5 CI lint checks)
 - [ ] `./figr.sh build -j 8` (compiles)
 - [ ] `./figr.sh test --only <relevant> -j 8` (tests pass)
 - [ ] If adding parameters: all 4 locations updated
