@@ -42,21 +42,21 @@
 - Fypp macros must expand correctly for both GPU and CPU builds
 
 ## Test System
-- Tests are generated **programmatically** in `toolchain/mfc/test/cases.py`, not standalone files
+- Tests are generated **programmatically** in `toolchain/figr/test/cases.py`, not standalone files
 - Each test is a parameter modification on top of `BASE_CFG` defaults
-- Test UUID = CRC32 hash of the test's trace string; `./mfc.sh test -l` lists all
+- Test UUID = CRC32 hash of the test's trace string; `./figr.sh test -l` lists all
 - To add a test: modify `cases.py` using `CaseGeneratorStack` push/pop pattern
 - Golden files: `tests/<UUID>/golden.txt` — tolerance-based comparison, not exact match
 - If your change intentionally modifies output, regenerate golden files:
-  `./mfc.sh test --generate --only <affected_tests> -j 8`
+  `./figr.sh test --generate --only <affected_tests> -j 8`
 - Do not regenerate ALL golden files unless you understand every output change
 
 ## PR Checklist
 Before submitting a PR:
-- [ ] `./mfc.sh format -j 8` (auto-format)
-- [ ] `./mfc.sh precheck -j 8` (5 CI lint checks)
-- [ ] `./mfc.sh build -j 8` (compiles)
-- [ ] `./mfc.sh test --only <relevant> -j 8` (tests pass)
+- [ ] `./figr.sh format -j 8` (auto-format)
+- [ ] `./figr.sh precheck -j 8` (5 CI lint checks)
+- [ ] `./figr.sh build -j 8` (compiles)
+- [ ] `./figr.sh test --only <relevant> -j 8` (tests pass)
 - [ ] If adding parameters: all 4 locations updated
 - [ ] If modifying `src/common/`: all three targets tested
 - [ ] If changing output: golden files regenerated for affected tests

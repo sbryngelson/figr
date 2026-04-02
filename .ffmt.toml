@@ -1,4 +1,4 @@
-# MFC Fortran formatting configuration
+# figr Fortran formatting configuration
 # These are the defaults — this file makes them explicit.
 
 indent-width = 4

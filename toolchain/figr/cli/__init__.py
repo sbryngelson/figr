@@ -5,8 +5,8 @@ This package provides the single source of truth for MFC's CLI definition,
 with generators for argparse, shell completions, and documentation.
 
 Usage:
-    from mfc.cli.commands import MFC_CLI_SCHEMA
-    from mfc.cli.argparse_gen import generate_parser
+    from figr.cli.commands import FIGR_CLI_SCHEMA
+    from figr.cli.argparse_gen import generate_parser
     # completion_gen removed for mini-app
 """
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Test-only script for all clusters.
 # Runs inside a SLURM job via submit-slurm-job.sh.
-# Assumes MFC is already built (by a prior build.sh SLURM job).
+# Assumes figr is already built (by a prior build.sh SLURM job).
 # Expects env vars: $job_device, $job_interface, $job_shard, $job_cluster
 
 set -euo pipefail
@@ -63,4 +63,4 @@ if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
     prune_flag="--only-changes"
 fi
 
-./mfc.sh test -v --max-attempts 3 --no-build $prune_flag -a -j $n_test_threads $rdma_opts $device_opts $build_opts $shard_opts -- -c $job_cluster
+./figr.sh test -v --max-attempts 3 --no-build $prune_flag -a -j $n_test_threads $rdma_opts $device_opts $build_opts $shard_opts -- -c $job_cluster

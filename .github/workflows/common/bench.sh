@@ -32,7 +32,7 @@ if [ "$job_cluster" = "phoenix" ]; then
 fi
 
 source .github/scripts/retry-build.sh
-retry_build ./mfc.sh build -j $n_jobs $build_opts || exit 1
+retry_build ./figr.sh build -j $n_jobs $build_opts || exit 1
 
 # --- Bench cluster flag ---
 if [ "$job_cluster" = "phoenix" ]; then
@@ -43,9 +43,9 @@ fi
 
 # --- Run benchmark ---
 if [ "$job_device" = "gpu" ]; then
-    ./mfc.sh bench --mem 4 -o "$job_slug.yaml" -- -c $bench_cluster $device_opts -n $n_ranks
+    ./figr.sh bench --mem 4 -o "$job_slug.yaml" -- -c $bench_cluster $device_opts -n $n_ranks
 else
-    ./mfc.sh bench --mem 1 -o "$job_slug.yaml" -- -c $bench_cluster $device_opts -n $n_ranks
+    ./figr.sh bench --mem 1 -o "$job_slug.yaml" -- -c $bench_cluster $device_opts -n $n_ranks
 fi
 
 # --- Phoenix cleanup (trap EXIT handles rm -rf "$currentdir") ---

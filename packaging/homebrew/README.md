@@ -1,4 +1,4 @@
-# MFC Homebrew Tap
+# figr Homebrew Tap
 
 Official Homebrew tap for [MFC (Multiphase Flow Code)](https://github.com/MFlowCode/MFC) – an exascale multiphase/multiphysics compressible flow solver.
 
@@ -14,15 +14,15 @@ Run the 1D Sod shock tube example:
 
 ```bash
 mkdir -p ~/mfc_example && cd ~/mfc_example
-cp $(brew --prefix mfc)/examples/1D_sodshocktube/case.py .
-mfc case.py -n 2
+cp $(brew --prefix figr)/examples/1D_sodshocktube/case.py .
+figr case.py -n 2
 ```
 
 ## What's Included
 
 - **Prebuilt binaries**: `pre_process`, `simulation`, `post_process`
 - **Python toolchain**: Pre-configured virtual environment with all dependencies
-- **Examples**: Located at `$(brew --prefix mfc)/examples/`
+- **Examples**: Located at `$(brew --prefix figr)/examples/`
 - **`mfc` wrapper**: Simplified command-line interface for running cases
 
 ## Usage
@@ -33,11 +33,11 @@ mfc <case.py> -n <processes>
 
 Use `-n X` to set the number of MPI processes.
 
-**Note**: The Homebrew wrapper supports only running cases. For developer commands (`build`, `test`, `clean`, etc.), [clone the repository](https://github.com/MFlowCode/MFC) and use `./mfc.sh`.
+**Note**: The Homebrew wrapper supports only running cases. For developer commands (`build`, `test`, `clean`, etc.), [clone the repository](https://github.com/MFlowCode/MFC) and use `./figr.sh`.
 
 ## Documentation
 
-- [MFC Documentation](https://mflowcode.github.io/)
+- [figr Documentation](https://mflowcode.github.io/)
 - [Getting Started Guide](https://mflowcode.github.io/documentation/md_getting-started.html)
 - [Running Cases](https://mflowcode.github.io/documentation/md_running.html)
 

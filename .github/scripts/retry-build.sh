@@ -5,8 +5,8 @@
 # exit triggers the same nuke-and-retry, catching e.g. SIGILL from binaries
 # compiled on a different CPU architecture.
 # Usage: source .github/scripts/retry-build.sh
-#        retry_build ./mfc.sh build -j 8 --gpu acc
-#        RETRY_VALIDATE_CMD='./syscheck' retry_build ./mfc.sh build -j 8
+#        retry_build ./figr.sh build -j 8 --gpu acc
+#        RETRY_VALIDATE_CMD='./syscheck' retry_build ./figr.sh build -j 8
 
 retry_build() {
     local max_attempts=2

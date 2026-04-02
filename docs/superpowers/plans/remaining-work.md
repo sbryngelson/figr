@@ -29,8 +29,8 @@ File: `toolchain/mfc/params/descriptions.py`
 
 ### Step 4d: Clean remaining toolchain files
 - Grep toolchain/ for dead refs and fix
-- Run `./mfc.sh lint` to verify
-- Run `./mfc.sh validate examples/3D_IGR_TaylorGreenVortex/case.py`
+- Run `./figr.sh lint` to verify
+- Run `./figr.sh validate examples/3D_IGR_TaylorGreenVortex/case.py`
 - Commit
 
 ## Stage 5: Examples, tests, golden files (3 steps)
@@ -47,11 +47,11 @@ File: `toolchain/mfc/test/cases.py`
 - Remove dead alter_* functions
 - Remove mhd_cases(), chemistry_cases() if incompatible
 - Update foreach_dimension() and foreach_example()
-- Verify: `./mfc.sh test -l`
+- Verify: `./figr.sh test -l`
 - Commit
 
 ### Step 5c: Regenerate golden files
 - Delete tests/ directory
-- `./mfc.sh test --generate -j 8`
-- `./mfc.sh test -j 8`
+- `./figr.sh test --generate -j 8`
+- `./figr.sh test -j 8`
 - Final commit and push

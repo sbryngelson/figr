@@ -36,11 +36,11 @@ def load():
 
     d = common.file_load_yaml(common.MFC_LOCK_FILEPATH)
 
-    # 0 is the default version in order to accommodate versions of mfc.sh
+    # 0 is the default version in order to accommodate versions of figr.sh
     # prior to the introduction of the "version" attribute to the lock file.
 
     if d["version"] < MFC_LOCK_CURRENT_VERSION:
-        raise common.MFCException(f"""\
+        raise common.FigrException(f"""\
 There has been a breaking change to the MFC build system. Please delete your \
 build/ directory and run MFC again. (v{d["version"]} -> v{MFC_LOCK_CURRENT_VERSION}).\
 """)

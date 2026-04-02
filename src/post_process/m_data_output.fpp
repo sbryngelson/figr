@@ -311,7 +311,7 @@ contains
             write (file_loc, '(A,I0,A)') '/', t_step, '.silo'
             file_loc = trim(proc_rank_dir) // trim(file_loc)
 
-            ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'MFC v3.0', 8, DB_HDF5, dbfile)
+            ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'figr', 8, DB_HDF5, dbfile)
 
             if (dbfile == -1) then
                 call s_mpi_abort('Unable to create Silo-HDF5 database ' // 'slave file ' // trim(file_loc) // '. ' // 'Exiting.')
@@ -321,7 +321,7 @@ contains
                 write (file_loc, '(A,I0,A)') '/collection_', t_step, '.silo'
                 file_loc = trim(rootdir) // trim(file_loc)
 
-                ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'MFC v3.0', 8, DB_HDF5, dbroot)
+                ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'figr', 8, DB_HDF5, dbroot)
 
                 if (dbroot == -1) then
                     call s_mpi_abort('Unable to create Silo-HDF5 database ' // 'master file ' // trim(file_loc) // '. ' &

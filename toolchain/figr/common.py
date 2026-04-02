@@ -18,7 +18,7 @@ def setup_debug_logging(enabled: bool = False):
     global _debug_logger  # noqa: PLW0603
     if enabled:
         logging.basicConfig(level=logging.DEBUG, format="[DEBUG %(asctime)s] %(message)s", datefmt="%H:%M:%S")
-        _debug_logger = logging.getLogger("mfc")
+        _debug_logger = logging.getLogger("figr")
         _debug_logger.setLevel(logging.DEBUG)
         cons.print("[dim]Debug logging enabled[/dim]")
     else:
@@ -41,7 +41,7 @@ MFC_LOCK_FILEPATH = abspath(join(MFC_BUILD_DIR, "lock.yaml"))
 MFC_TEMPLATE_DIR = abspath(join(MFC_TOOLCHAIN_DIR, "templates"))
 
 
-class MFCException(Exception):
+class FigrException(Exception):
     pass
 
 
@@ -65,7 +65,7 @@ def file_write(filepath: str, content: str, if_different: bool = False):
         with open(filepath, "w") as f:
             f.write(content)
     except IOError as exc:
-        raise MFCException(f'Failed to write to "{filepath}": {exc}') from exc
+        raise FigrException(f'Failed to write to "{filepath}": {exc}') from exc
 
 
 def file_read(filepath: str):
@@ -73,7 +73,7 @@ def file_read(filepath: str):
         with open(filepath, "r") as f:
             return f.read()
     except IOError as exc:
-        raise MFCException(f'Failed to read from "{filepath}": {exc}') from exc
+        raise FigrException(f'Failed to read from "{filepath}": {exc}') from exc
 
 
 def file_load_yaml(filepath: str):
@@ -81,7 +81,7 @@ def file_load_yaml(filepath: str):
         with open(filepath, "r") as f:
             return yaml.safe_load(f)
     except (IOError, yaml.YAMLError) as exc:
-        raise MFCException(f'Failed to load YAML from "{filepath}": {exc}') from exc
+        raise FigrException(f'Failed to load YAML from "{filepath}": {exc}') from exc
 
 
 def file_dump_yaml(filepath: str, data) -> None:
@@ -89,7 +89,7 @@ def file_dump_yaml(filepath: str, data) -> None:
         with open(filepath, "w") as f:
             yaml.dump(data, f)
     except (IOError, yaml.YAMLError) as exc:
-        raise MFCException(f'Failed to dump YAML to "{filepath}": {exc}.') from exc
+        raise FigrException(f'Failed to dump YAML to "{filepath}": {exc}.') from exc
 
 
 def delete_file(filepath: str) -> None:
@@ -103,7 +103,7 @@ def create_file(filepath: str) -> None:
             with open(filepath, "w"):
                 pass
         except IOError as exc:
-            raise MFCException(f"Failed to create file {filepath}: {exc}") from exc
+            raise FigrException(f"Failed to create file {filepath}: {exc}") from exc
 
 
 def create_directory(dirpath: str) -> None:

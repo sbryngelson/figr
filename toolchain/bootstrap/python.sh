@@ -95,7 +95,7 @@ fi
 
 
 # If the user wishes to enter the python venv
-# mfc.sh must be source'd for this to work
+# figr.sh must be source'd for this to work
 if [ "$1" == "venv" ]; then
     if [[ "$VIRTUAL_ENV" != "" ]]; then
         # Already inside the venv, exit out of it
@@ -111,7 +111,7 @@ if [ "$1" == "venv" ]; then
 
         log " > To exit, you can do any of the following:"
         log "    - Run 'deactivate'."
-        log "    - Run '. ./mfc.sh venv'."
+        log "    - Run '. ./figr.sh venv'."
         log "    - Close your terminal."
     fi
 

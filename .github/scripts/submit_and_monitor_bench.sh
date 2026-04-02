@@ -21,7 +21,7 @@ cd "$dir"
 
 # Use the PR's submit-slurm-job.sh and bench script for both master and PR jobs.
 # The bench script must come from the PR tree (master may not have common/bench.sh
-# yet), and the script only orchestrates build+bench — the actual MFC code under
+# yet), and the script only orchestrates build+bench — the actual figr code under
 # test is the cwd's checkout (master/ or pr/).
 PR_BENCH_SCRIPT="$(cd "${SCRIPT_DIR}/../workflows/common" && pwd)/bench.sh"
 bash "${SCRIPT_DIR}/submit-slurm-job.sh" "$PR_BENCH_SCRIPT" "$device" "$interface" "$cluster"

@@ -9,8 +9,8 @@ if [ -t 1 ]; then
     Y=$YELLOW; M=$MAGENTA; B=$BLUE; OR=$ORANGE; CR=$COLOR_RESET; W=$CR
 fi
 
-log()   { echo -e  "$CYAN"mfc"$COLOR_RESET: $1$COLOR_RESET"; }
-log_n() { echo -en "$CYAN"mfc"$COLOR_RESET: $1$COLOR_RESET"; }
+log()   { echo -e  "$CYAN"figr"$COLOR_RESET: $1$COLOR_RESET"; }
+log_n() { echo -en "$CYAN"figr"$COLOR_RESET: $1$COLOR_RESET"; }
 ok()    { log "$GREEN""OK$COLOR_RESET > $1";                 }
 warn()  { log "$YELLOW""WARNING$COLOR_RESET > $1";           }
 error() { log "$RED""ERROR$COLOR_RESET > $1";                }

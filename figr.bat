@@ -6,12 +6,12 @@ goto label_windows
 
 if not exist "%cd%\toolchain\main.py" (
   echo.
-  echo ^[mfc.bat^] You must call this script from within MFC's root folder
+  echo ^[mfc.bat^] You must call this script from within figr's root folder
   echo.
   exit /b 1
 )
 
-mkdir "%cd%\build" 2> NUL
+[figr.bat]kdir "%cd%\build" 2> NUL
 
 if not exist "%cd%\build\venv" (
 	python -m venv "%cd%\build\venv"
@@ -23,7 +23,7 @@ if not exist "%cd%\build\venv" (
 	)
 )
 
-call "%cd%\build\venv\Scripts\activate.bat"
+[figr.bat]all "%cd%\build\venv\Scripts\activate.bat"
 if %errorlevel% neq 0 (
 	echo.
 	echo ^[mfc.bat^] Failed to activate the Python virtual environment.
@@ -31,7 +31,7 @@ if %errorlevel% neq 0 (
 	exit /b 1
 )
 
-fc /b "%cd%\build\pyproject.toml" "%cd%\toolchain\pyproject.toml" 2> NUL
+[figr.bat]c /b "%cd%\build\pyproject.toml" "%cd%\toolchain\pyproject.toml" 2> NUL
 if %errorlevel% neq 0 (
     pip3 install -e toolchain
 
@@ -41,11 +41,11 @@ if %errorlevel% neq 0 (
 python "%cd%\toolchain\main.py" %*
 set main_py_err=%errorlevel%
 
-call "%cd%\build\venv\Scripts\deactivate.bat"
+[figr.bat]all "%cd%\build\venv\Scripts\deactivate.bat"
 
 if %main_py_err% neq 0 (
 	echo.
-	echo ^[mfc.bat^] Failed to run MFC.
+	echo ^[mfc.bat^] Failed to run figr.
 	echo.
 )
 

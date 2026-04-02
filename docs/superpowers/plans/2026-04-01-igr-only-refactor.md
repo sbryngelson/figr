@@ -156,14 +156,14 @@ Remove references to deleted files in compiler-specific workarounds.
 - [ ] **Step 1:** Format and precheck.
 
 ```bash
-./mfc.sh format -j 8
-./mfc.sh precheck -j 8
+./figr.sh format -j 8
+./figr.sh precheck -j 8
 ```
 
 - [ ] **Step 2:** Build all three targets.
 
 ```bash
-./mfc.sh build -j 8
+./figr.sh build -j 8
 ```
 
 - [ ] **Step 3:** Fix any compilation errors (missing symbols, dangling references).
@@ -391,14 +391,14 @@ Remove `use` statements, initialization/finalization calls, and feature-gated co
 - [ ] **Step 1:** Format and precheck.
 
 ```bash
-./mfc.sh format -j 8
-./mfc.sh precheck -j 8
+./figr.sh format -j 8
+./figr.sh precheck -j 8
 ```
 
 - [ ] **Step 2:** Build all three targets.
 
 ```bash
-./mfc.sh build -j 8
+./figr.sh build -j 8
 ```
 
 - [ ] **Step 3:** Fix any compilation errors.
@@ -474,14 +474,14 @@ Now that non-IGR code is gone, the `igr` boolean is always effectively true. Rem
 - [ ] **Step 1:** Format and precheck.
 
 ```bash
-./mfc.sh format -j 8
-./mfc.sh precheck -j 8
+./figr.sh format -j 8
+./figr.sh precheck -j 8
 ```
 
 - [ ] **Step 2:** Build.
 
 ```bash
-./mfc.sh build -j 8
+./figr.sh build -j 8
 ```
 
 - [ ] **Step 3:** Commit.
@@ -625,13 +625,13 @@ Search with: `grep -rn 'bubbles_euler\|bubbles_lagrange\|hypoelasticity\|hyperel
 - [ ] **Step 1:** Run Python linting.
 
 ```bash
-./mfc.sh lint
+./figr.sh lint
 ```
 
 - [ ] **Step 2:** Validate an IGR example case.
 
 ```bash
-./mfc.sh validate examples/3D_IGR_TaylorGreenVortex/case.py
+./figr.sh validate examples/3D_IGR_TaylorGreenVortex/case.py
 ```
 
 - [ ] **Step 3:** Commit.
@@ -739,7 +739,7 @@ This is the most complex part of Stage 5. The test generator must be rewritten t
 - [ ] **Step 3:** Remove dead `alter_*` functions and `mhd_cases()`.
 - [ ] **Step 4:** Update `foreach_dimension()` to remove calls to dead functions.
 - [ ] **Step 5:** Update `foreach_example()` skip list.
-- [ ] **Step 6:** Verify test list generates without errors: `./mfc.sh test -l`.
+- [ ] **Step 6:** Verify test list generates without errors: `./figr.sh test -l`.
 
 ---
 
@@ -756,13 +756,13 @@ git rm -r tests/
 - [ ] **Step 2:** Regenerate golden files for the new IGR-only test suite.
 
 ```bash
-./mfc.sh test --generate -j 8
+./figr.sh test --generate -j 8
 ```
 
 - [ ] **Step 3:** Verify the new tests pass.
 
 ```bash
-./mfc.sh test -j 8
+./figr.sh test -j 8
 ```
 
 - [ ] **Step 4:** Commit.
@@ -779,20 +779,20 @@ git commit -m "rewrite test suite for IGR-only, regenerate golden files"
 - [ ] **Step 1:** Full precheck.
 
 ```bash
-./mfc.sh format -j 8
-./mfc.sh precheck -j 8
+./figr.sh format -j 8
+./figr.sh precheck -j 8
 ```
 
 - [ ] **Step 2:** Full build.
 
 ```bash
-./mfc.sh build -j 8
+./figr.sh build -j 8
 ```
 
 - [ ] **Step 3:** Run full test suite.
 
 ```bash
-./mfc.sh test -j 8
+./figr.sh test -j 8
 ```
 
 - [ ] **Step 4:** Grep for any remaining references to deleted features that were missed.

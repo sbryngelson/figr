@@ -10,8 +10,8 @@ import re
 import sys
 
 from .cli.argparse_gen import generate_parser
-from .cli.commands import COMMAND_ALIASES, MFC_CLI_SCHEMA
-from .common import MFCException
+from .cli.commands import COMMAND_ALIASES, FIGR_CLI_SCHEMA
+from .common import FigrException
 from .state import MFCConfig
 
 
@@ -55,12 +55,12 @@ def _get_command_from_args(args_list):
 def _handle_enhanced_help(args_list):
     """Handle --help with enhanced output for known commands."""
     if len(args_list) >= 2 and args_list[1] in ("-h", "--help"):
-        # ./mfc.sh --help -> show enhanced help
+        # ./figr.sh --help -> show enhanced help
         print_help()
         sys.exit(0)
 
     if len(args_list) >= 3 and args_list[2] in ("-h", "--help"):
-        # ./mfc.sh <command> --help -> show enhanced command help
+        # ./figr.sh <command> --help -> show enhanced command help
         command = args_list[1]
         # Resolve alias
         command = COMMAND_ALIASES.get(command, command)
@@ -77,7 +77,7 @@ def parse(config: MFCConfig):
     help_command = _handle_enhanced_help(sys.argv)
 
     # Generate parser from schema
-    parser, subparser_map = generate_parser(MFC_CLI_SCHEMA, config)
+    parser, subparser_map = generate_parser(FIGR_CLI_SCHEMA, config)
 
     # If enhanced help was printed, also show argparse help and exit
     if help_command and help_command in subparser_map:
@@ -170,10 +170,10 @@ def parse(config: MFCConfig):
     # the limitations of argparse.
     if args["command"] == "build":
         if (args["input"] is not None) ^ args["case_optimization"]:
-            raise MFCException("./mfc.sh build's --case-optimization and --input must be used together.")
+            raise FigrException("./figr.sh build's --case-optimization and --input must be used together.")
     if args["command"] == "run":
         if args["binary"] is not None and args["engine"] != "interactive":
-            raise MFCException("./mfc.sh run's --binary can only be used with --engine=interactive.")
+            raise FigrException("./figr.sh run's --binary can only be used with --engine=interactive.")
 
     # Resolve test case defaults (deferred to avoid slow startup for non-test commands)
     if args["command"] == "test":

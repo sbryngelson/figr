@@ -1,8 +1,8 @@
-## How to Profile MFC using `omniperf`
+## How to Profile figr using `omniperf`
 
 * Start an interactive session with the desired number of nodes and total tasks using `salloc -A [account] -J interactive -t 2:00:00 -p batch -N [nnodes] -n [total tasks]`
 
-* Generate MFC input files by running `./mfc.sh run [path to casefile] -N [nnodes] -n  [total tasks] --gpu -t pre_process simulation --case-optimization`
+* Generate figr input files by running `./figr.sh run [path to casefile] -N [nnodes] -n  [total tasks] --gpu -t pre_process simulation --case-optimization`
 
 * Move to the simulation directory using `cd [path to casefile]`
 
@@ -11,7 +11,7 @@
     - cray-python
     - omniperf
 
-* `omniperf profile -n [profile name] -- [path to MFC beginning with /]/build/install/bin/simulation`
+* `omniperf profile -n [profile name] -- [path to figr beginning with /]/build/install/bin/simulation`
 
 * `omniperf analyze --gui -p [path to casefile]/workloads/[profile name]/mi200`
 

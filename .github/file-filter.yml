@@ -17,8 +17,8 @@ tests: &tests
   - 'tests/**'
 
 scripts: &scripts
-  - 'mfc.sh'
-  - 'mfc.bat'
+  - 'figr.sh'
+  - 'figr.bat'
   - 'toolchain/bootstrap/**'
 
 yml: &yml
@@ -40,4 +40,4 @@ checkall: &checkall
   - *yml
 
 cases_py:
-  - 'toolchain/mfc/test/cases.py'
+  - 'toolchain/figr/test/cases.py'

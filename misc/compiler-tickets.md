@@ -2,7 +2,7 @@
 
 __Authors:__ Spencer Bryngleson (Georgia Tech), Henry Le Berre (Georgia Tech), Steve Abbott (HPE/Cray), Reuben Budiardja (OLCF)
 
-MFC has been used to isolate many compiler bugs. A short summary is below.
+figr has been used to isolate many compiler bugs. A short summary is below.
 
 ## OLCF (Frontier)
 

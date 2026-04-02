@@ -23,8 +23,8 @@ Every Fortran module follows this pattern:
 
 ## Forbidden Patterns
 
-All checks below are enforced by `python3 toolchain/mfc/lint_source.py`
-(runs via `./mfc.sh precheck` and CI). See that file for the full list.
+All checks below are enforced by `python3 toolchain/figr/lint_source.py`
+(runs via `./figr.sh precheck` and CI). See that file for the full list.
 
 Fortran/Fypp source (`src/`):
 - `dsqrt`, `dexp`, `dlog`, `dble`, `dabs`, `dcos`, `dsin`, `dtan`, etc. → use generic intrinsics

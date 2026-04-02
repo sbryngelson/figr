@@ -17,10 +17,10 @@ job_interface=$2
 source .github/scripts/gpu-opts.sh
 build_opts="$gpu_opts"
 
-. ./mfc.sh load -c $compiler_flag -m $([ "$job_device" = "gpu" ] && echo "g" || echo "c")
+. ./figr.sh load -c $compiler_flag -m $([ "$job_device" = "gpu" ] && echo "g" || echo "c")
 
 source .github/scripts/clean-build.sh
 clean_build
 
 source .github/scripts/retry-build.sh
-retry_build ./mfc.sh build --deps-only -j 8 $build_opts || exit 1
+retry_build ./figr.sh build --deps-only -j 8 $build_opts || exit 1

@@ -13,9 +13,9 @@ show_help() {
   echo "  PATHS                 Paths to format. Defaults to src/, examples/, benchmarks/"
   echo ""
   echo "Examples:"
-  echo "  ./mfc.sh format                          Format all code"
-  echo "  ./mfc.sh format -j 8                     Format with 8 parallel jobs"
-  echo "  ./mfc.sh format examples/1D_sodshocktube Format a specific directory"
+  echo "  ./figr.sh format                          Format all code"
+  echo "  ./figr.sh format -j 8                     Format with 8 parallel jobs"
+  echo "  ./figr.sh format examples/1D_sodshocktube Format a specific directory"
   echo ""
   exit 0
 }

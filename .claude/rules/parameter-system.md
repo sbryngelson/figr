@@ -1,21 +1,21 @@
 # Parameter System
 
 ## Overview
-MFC has ~3,400 simulation parameters defined in Python and read by Fortran via namelist files.
+figr has ~3,400 simulation parameters defined in Python and read by Fortran via namelist files.
 
 ## Parameter Flow: Python → Fortran
 
-1. **Definition**: `toolchain/mfc/params/definitions.py` — source of truth
+1. **Definition**: `toolchain/figr/params/definitions.py` — source of truth
    - Parameters are indexed families: `patch_icpp(i)%attr`, `fluid_pp(i)%attr`, etc.
    - Each has type, default, constraints, and tags
 
 2. **Validation** (two layers):
-   - `toolchain/mfc/case.py` / `toolchain/mfc/params/registry.py` — JSON schema validation
+   - `toolchain/figr/case.py` / `toolchain/figr/params/registry.py` — JSON schema validation
      via fastjsonschema (type checking, defaults)
-   - `toolchain/mfc/case_validator.py` — Physics constraint checking
+   - `toolchain/figr/case_validator.py` — Physics constraint checking
      (e.g., volume fractions sum to 1, dependency validation)
 
-3. **Input Generation**: `toolchain/mfc/run/input.py`
+3. **Input Generation**: `toolchain/figr/run/input.py`
    - Python case dict → Fortran namelist `.inp` file
    - Format: `&user_inputs` ... `&end/`
 
@@ -28,21 +28,21 @@ MFC has ~3,400 simulation parameters defined in Python and read by Fortran via n
 YOU MUST update the first 3 locations. Missing any causes silent failures or compile errors.
 Location 4 is required only if the parameter has physics constraints.
 
-1. **`toolchain/mfc/params/definitions.py`**: Add parameter with type, default, constraints
+1. **`toolchain/figr/params/definitions.py`**: Add parameter with type, default, constraints
 2. **`src/*/m_global_parameters.fpp`**: Declare the Fortran variable in the relevant
    target(s). If the param is used by simulation only, add it there. If shared, add to
    all three targets' m_global_parameters.fpp.
 3. **`src/*/m_start_up.fpp`**: Add to the Fortran `namelist` declaration in the relevant
    target(s).
-4. **`toolchain/mfc/case_validator.py`**: Add validation rules if the parameter has
+4. **`toolchain/figr/case_validator.py`**: Add validation rules if the parameter has
    physics constraints. Include `PHYSICS_DOCS` entry with title, category, explanation.
 
 ## Case Files
 - Case files are Python scripts (`.py`) that define a dict of parameters
-- Validated with `./mfc.sh validate case.py`
+- Validated with `./figr.sh validate case.py`
 - Examples in `examples/` directory
-- Create new cases with `./mfc.sh new <name>`
-- Search parameters with `./mfc.sh params <query>`
+- Create new cases with `./figr.sh new <name>`
+- Search parameters with `./figr.sh params <query>`
 
 ## Fortran-Side Runtime Validation
 Each target has `m_checker*.fpp` files (e.g., `src/simulation/m_checker.fpp`,

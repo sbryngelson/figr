@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 3.20)
 # We include C as a language because - for some reason -
 # FIND_LIBRARY_USE_LIB64_PATHS is otherwise ignored.
 
-project(MFC LANGUAGES C CXX Fortran)
+project(figr LANGUAGES C CXX Fortran)
 
 # Build options exposed to users and their default values.
 
@@ -72,7 +72,7 @@ include(CheckFortranCompilerFlag)
 
 
 # Check Compiler Support: Some compilers, especially old ones, are known not to
-# be able to compile MFC. We throw our own error early - at configure time - in
+# be able to compile figr. We throw our own error early - at configure time - in
 # such cases.
 
 set(__err_msg "\
@@ -86,24 +86,24 @@ compiler (or a different version thereof), please:\n\
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 5)
-        message(FATAL_ERROR "ERROR: GNU v5.0 or newer is required to build MFC.\n${__err_msg}")
+        message(FATAL_ERROR "ERROR: GNU v5.0 or newer is required to build figr.\n${__err_msg}")
     endif()
     if (MFC_OpenACC)
-        message(FATAL_ERROR "ERROR: MFC with GPU processing is not currently compatible with GNU compilers. Please use NVIDIA or Cray compilers.\n${__err_msg}")
+        message(FATAL_ERROR "ERROR: figr with GPU processing is not currently compatible with GNU compilers. Please use NVIDIA or Cray compilers.\n${__err_msg}")
     endif()
 elseif ((CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC") OR (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI"))
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 21.7)
-        message(FATAL_ERROR "ERROR: When using NVHPC, v21.7 or newer is required to build MFC.\n${__err_msg}")
+        message(FATAL_ERROR "ERROR: When using NVHPC, v21.7 or newer is required to build figr.\n${__err_msg}")
     endif()
 
     if ((CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 24.5) AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelDebug") AND MFC_OpenACC)
-        message(FATAL_ERROR "ERROR: When using NVHPC, MFC with Debug and GPU options requires NVHPC v24.5 or newer.\n${__err_msg}")
+        message(FATAL_ERROR "ERROR: When using NVHPC, figr with Debug and GPU options requires NVHPC v24.5 or newer.\n${__err_msg}")
     endif()
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
-    message(FATAL_ERROR "ERROR: MFC does not support the Apple Clang compilers. Please consult the documentation.\n${__err_msg}")
+    message(FATAL_ERROR "ERROR: figr does not support the Apple Clang compilers. Please consult the documentation.\n${__err_msg}")
 endif()
 
-# Fypp is required to build MFC. We try to locate it. The path to the binary is
+# Fypp is required to build figr. We try to locate it. The path to the binary is
 # returned in FYPP_EXE upon success. This is used later.
 
 find_program(FYPP_EXE fypp REQUIRED)
@@ -124,7 +124,7 @@ endif()
 
 # Compiler Flags: Here, we specify our own compiler flags for both release and
 # debug builds. These include optimization and debug flags, as well as some that
-# are required for a successful build of MFC.
+# are required for a successful build of figr.
 
 set(FYPP_GCOV_OPTS "")
 
@@ -291,7 +291,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
             add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-march=native>)
             # Disable AVX-512 FP16: gfortran >=12 emits vmovw instructions on
             # Granite Rapids CPUs, but binutils <2.38 cannot assemble them.
-            # FP16 is unused in MFC's double-precision computations.
+            # FP16 is unused in figr's double-precision computations.
             CHECK_FORTRAN_COMPILER_FLAG("-mno-avx512fp16" SUPPORTS_MNO_AVX512FP16)
             if (SUPPORTS_MNO_AVX512FP16)
                 add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:-mno-avx512fp16>)
@@ -709,7 +709,7 @@ if (MFC_POST_PROCESS)
                      SOURCES "${post_process_SRCs}"
                      MPI SILO HDF5)
 
-    # -O0 is in response to https://github.com/MFlowCode/MFC-develop/issues/95
+    # -O0 is in response to https://github.com/sbryngelson/figr/issues/95
     target_compile_options(post_process PRIVATE -O0)
 endif()
 
@@ -875,11 +875,11 @@ if (MFC_DOCUMENTATION)
          \"${CMAKE_CURRENT_SOURCE_DIR}/docs/custom.css\"")
 
     # > Generate Documentation & Landing Page
-    GEN_DOCS(pre_process   "MFC")
-    GEN_DOCS(simulation    "MFC")
-    GEN_DOCS(post_process  "MFC")
-    GEN_DOCS(api           "MFC")
-    GEN_DOCS(documentation "MFC")
+    GEN_DOCS(pre_process   "figr")
+    GEN_DOCS(simulation    "figr")
+    GEN_DOCS(post_process  "figr")
+    GEN_DOCS(api           "figr")
+    GEN_DOCS(documentation "figr")
 
     # Generate API landing pages for pre_process, simulation, post_process.
     # Scans src/{target}/*.fpp to produce module lists in docs/{target}/readme.md.

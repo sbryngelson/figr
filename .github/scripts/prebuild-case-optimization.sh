@@ -25,7 +25,7 @@ esac
 source .github/scripts/clean-build.sh
 clean_build
 
-. ./mfc.sh load -c "$flag" -m g
+. ./figr.sh load -c "$flag" -m g
 
 # Set GPU build flags from interface — this is always a GPU build.
 # Don't use gpu-opts.sh since $job_device may be "cpu" when submitted
@@ -38,5 +38,5 @@ esac
 
 for case in benchmarks/*/case.py; do
     echo "=== Pre-building: $case ==="
-    ./mfc.sh build -i "$case" --case-optimization $gpu_opts -j 8
+    ./figr.sh build -i "$case" --case-optimization $gpu_opts -j 8
 done

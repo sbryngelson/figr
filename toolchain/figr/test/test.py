@@ -13,7 +13,7 @@ from rich.panel import Panel
 
 from .. import common, sched
 from ..build import HDF5, POST_PROCESS, PRE_PROCESS, SIMULATION, build
-from ..common import MFCException, does_command_exist, format_list_to_string, get_program_output
+from ..common import FigrException, does_command_exist, format_list_to_string, get_program_output
 from ..packer import packer
 from ..packer import tol as packtol
 from ..printer import cons
@@ -44,7 +44,7 @@ TEST_TIMEOUT_SECONDS = 3600
 abort_tests = threading.Event()
 
 
-class TestTimeoutError(MFCException):
+class TestTimeoutError(FigrException):
     pass
 
 
@@ -103,13 +103,13 @@ def __filter(cases_) -> typing.Tuple[typing.List[TestCase], typing.List[TestCase
             break
 
     if not bFoundTo:
-        raise MFCException("Testing: Your specified range [--from,--to] is incorrect. Please ensure both IDs exist and are in the correct order.")
+        raise FigrException("Testing: Your specified range [--from,--to] is incorrect. Please ensure both IDs exist and are in the correct order.")
 
     if len(ARG("only")) > 0:
         cases, skipped_cases = _filter_only(cases, skipped_cases)
 
         if not cases:
-            raise MFCException(f"--only filter matched zero test cases. Specified: {ARG('only')}. Check that UUIDs/names are valid.")
+            raise FigrException(f"--only filter matched zero test cases. Specified: {ARG('only')}. Check that UUIDs/names are valid.")
 
     for case in cases[:]:
         if case.ppn > 1 and not ARG("mpi"):
@@ -148,13 +148,13 @@ def __filter(cases_) -> typing.Tuple[typing.List[TestCase], typing.List[TestCase
     if ARG("shard") is not None:
         parts = ARG("shard").split("/")
         if len(parts) != 2 or not all(p.isdigit() for p in parts) or int(parts[1]) < 1 or not 1 <= int(parts[0]) <= int(parts[1]):
-            raise MFCException(f"Invalid --shard '{ARG('shard')}': expected 'i/n' with 1 <= i <= n (e.g., '1/2').")
+            raise FigrException(f"Invalid --shard '{ARG('shard')}': expected 'i/n' with 1 <= i <= n (e.g., '1/2').")
         shard_idx, shard_count = int(parts[0]), int(parts[1])
         skipped_cases += [c for i, c in enumerate(cases) if i % shard_count != shard_idx - 1]
         cases = [c for i, c in enumerate(cases) if i % shard_count == shard_idx - 1]
 
         if not cases:
-            raise MFCException(f"--shard {ARG('shard')} matched zero test cases. Total cases before sharding may be less than shard count.")
+            raise FigrException(f"--shard {ARG('shard')} matched zero test cases. Total cases before sharding may be less than shard count.")
 
     if ARG("percent") == 100:
         return cases, skipped_cases
@@ -249,8 +249,8 @@ def test():
         cons.print()
         cons.unindent()
         if total_completed > 0:
-            raise MFCException(f"Excessive test failures: {nFAIL}/{total_completed} failed ({nFAIL / total_completed * 100:.1f}%)")
-        raise MFCException(f"Excessive test failures: {nFAIL} failed, but no tests were completed.")
+            raise FigrException(f"Excessive test failures: {nFAIL}/{total_completed} failed ({nFAIL / total_completed * 100:.1f}%)")
+        raise FigrException(f"Excessive test failures: {nFAIL} failed, but no tests were completed.")
 
     nSKIP = len(skipped_cases)
     cons.print()
@@ -331,7 +331,7 @@ def _print_test_summary(passed: int, failed: int, skipped: int, minutes: int, se
         summary_lines.append("  [bold]Next Steps:[/bold]")
         summary_lines.append("    • Run with [cyan]--generate[/cyan] to update golden files (if changes are intentional)")
         summary_lines.append("    • Check individual test output in [cyan]tests/<UUID>/[/cyan]")
-        summary_lines.append("    • Run specific test: [cyan]./mfc.sh test --only <UUID>[/cyan]")
+        summary_lines.append("    • Run specific test: [cyan]./figr.sh test --only <UUID>[/cyan]")
 
     cons.print()
     cons.raw.print(Panel("\n".join(summary_lines), title="[bold]Test Summary[/bold]", border_style=border_style, padding=(1, 2)))
@@ -344,19 +344,19 @@ def _process_silo_file(silo_filepath: str, case: TestCase, out_filepath: str):
 
     if not os.path.exists(h5dump or ""):
         if not does_command_exist("h5dump"):
-            raise MFCException("h5dump couldn't be found.")
+            raise FigrException("h5dump couldn't be found.")
         h5dump = shutil.which("h5dump")
 
     output, err = get_program_output([h5dump, silo_filepath])
 
     if err != 0:
-        raise MFCException(f"Test {case}: Failed to run h5dump. You can find the run's output in {out_filepath}, and the case dictionary in {case.get_filepath()}.")
+        raise FigrException(f"Test {case}: Failed to run h5dump. You can find the run's output in {out_filepath}, and the case dictionary in {case.get_filepath()}.")
 
     if "nan," in output:
-        raise MFCException(f"Test {case}: Post Process has detected a NaN. You can find the run's output in {out_filepath}, and the case dictionary in {case.get_filepath()}.")
+        raise FigrException(f"Test {case}: Post Process has detected a NaN. You can find the run's output in {out_filepath}, and the case dictionary in {case.get_filepath()}.")
 
     if "inf," in output:
-        raise MFCException(f"Test {case}: Post Process has detected an Infinity. You can find the run's output in {out_filepath}, and the case dictionary in {case.get_filepath()}.")
+        raise FigrException(f"Test {case}: Post Process has detected an Infinity. You can find the run's output in {out_filepath}, and the case dictionary in {case.get_filepath()}.")
 
 
 def _handle_case(case: TestCase, devices: typing.Set[int]):
@@ -398,14 +398,14 @@ def _handle_case(case: TestCase, devices: typing.Set[int]):
 
         if cmd.returncode != 0:
             cons.print(cmd.stdout)
-            raise MFCException(f"Test {case}: Failed to execute MFC.")
+            raise FigrException(f"Test {case}: Failed to execute MFC.")
 
         pack, err = packer.pack(case.get_dirpath())
         if err is not None:
-            raise MFCException(f"Test {case}: {err}")
+            raise FigrException(f"Test {case}: {err}")
 
         if pack.has_bad_values():
-            raise MFCException(f"Test {case}: NaN or Inf detected in the case.")
+            raise FigrException(f"Test {case}: NaN or Inf detected in the case.")
 
         golden_filepath = os.path.join(case.get_dirpath(), "golden.txt")
         if ARG("generate"):
@@ -413,7 +413,7 @@ def _handle_case(case: TestCase, devices: typing.Set[int]):
             pack.save(golden_filepath)
         else:
             if not os.path.isfile(golden_filepath):
-                raise MFCException(f"Test {case}: The golden file does not exist! To generate golden files, use the '--generate' flag.")
+                raise FigrException(f"Test {case}: The golden file does not exist! To generate golden files, use the '--generate' flag.")
 
             golden = packer.load(golden_filepath)
 
@@ -430,7 +430,7 @@ def _handle_case(case: TestCase, devices: typing.Set[int]):
             else:
                 err, msg = packtol.compare(pack, packer.load(golden_filepath), packtol.Tolerance(tol, tol))
                 if msg is not None:
-                    raise MFCException(f"Test {case}: {msg}")
+                    raise FigrException(f"Test {case}: {msg}")
 
         if ARG("test_all"):
             case.delete_output()
@@ -464,7 +464,7 @@ def _handle_case(case: TestCase, devices: typing.Set[int]):
             log_msg = f"Check the log at: {log_path}"
         else:
             log_msg = f"Log file ({log_path}) may not exist if the timeout occurred early."
-        raise MFCException(f"Test {case} exceeded 1 hour timeout. This may indicate a hung simulation or misconfigured case. {log_msg}") from exc
+        raise FigrException(f"Test {case} exceeded 1 hour timeout. This may indicate a hung simulation or misconfigured case. {log_msg}") from exc
     finally:
         timeout_timer.cancel()  # Cancel timeout timer
 

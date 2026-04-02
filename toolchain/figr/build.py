@@ -14,7 +14,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn
 from rich.text import Text
 
 from .case import Case
-from .common import MFCException, create_directory, debug, delete_directory, format_list_to_string, system
+from .common import FigrException, create_directory, debug, delete_directory, format_list_to_string, system
 from .printer import cons
 from .run import input
 from .state import ARG, CFG, gpuConfigOptions
@@ -363,7 +363,7 @@ class MFCTarget:
 
     def configure(self, case: Case):
         if ARG("debug") and ARG("reldebug"):
-            raise MFCException("--debug and --reldebug are mutually exclusive.")
+            raise FigrException("--debug and --reldebug are mutually exclusive.")
 
         build_dirpath = self.get_staging_dirpath(case)
         cmake_dirpath = self.get_cmake_dirpath()
@@ -447,7 +447,7 @@ class MFCTarget:
             if verbosity < 2:
                 _show_build_error(result, "Configuration")
             pass
-            raise MFCException(f"Failed to configure the [bold magenta]{self.name}[/bold magenta] target.")
+            raise FigrException(f"Failed to configure the [bold magenta]{self.name}[/bold magenta] target.")
 
         cons.print(f"  [bold green]✓[/bold green] Configured [magenta]{self.name}[/magenta]")
         cons.print(no_indent=True)
@@ -494,7 +494,7 @@ class MFCTarget:
             if verbosity < 2:
                 _show_build_error(result, "Build")
             pass
-            raise MFCException(f"Failed to build the [bold magenta]{self.name}[/bold magenta] target.")
+            raise FigrException(f"Failed to build the [bold magenta]{self.name}[/bold magenta] target.")
 
         cons.print(f"  [bold green]✓[/bold green] Built [magenta]{self.name}[/magenta]")
         cons.print(no_indent=True)
@@ -510,7 +510,7 @@ class MFCTarget:
         if result.returncode != 0:
             cons.print(f"  [bold red]✗[/bold red] Install failed for [magenta]{self.name}[/magenta]")
             _show_build_error(result, "Install")
-            raise MFCException(f"Failed to install the [bold magenta]{self.name}[/bold magenta] target.")
+            raise FigrException(f"Failed to install the [bold magenta]{self.name}[/bold magenta] target.")
 
         cons.print(f"  [bold green]✓[/bold green] Installed [magenta]{self.name}[/magenta]")
         cons.print(no_indent=True)
@@ -541,7 +541,7 @@ def get_target(target: typing.Union[str, MFCTarget]) -> MFCTarget:
     if target in TARGET_MAP:
         return TARGET_MAP[target]
 
-    raise MFCException(f"Target '{target}' does not exist.")
+    raise FigrException(f"Target '{target}' does not exist.")
 
 
 def get_targets(targets: typing.List[typing.Union[str, MFCTarget]]) -> typing.List[MFCTarget]:

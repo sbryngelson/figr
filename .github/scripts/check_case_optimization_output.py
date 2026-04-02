@@ -13,7 +13,7 @@ if len(sys.argv) != 2:
 # Allow importing from the repo root
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from toolchain.mfc.packer.pack import compile as pack_compile
+from toolchain.figr.packer.pack import compile as pack_compile
 
 case_dir = sys.argv[1]
 if os.path.isfile(case_dir):

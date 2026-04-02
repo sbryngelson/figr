@@ -8,7 +8,7 @@ All command definitions live here. This file is used to generate:
 - CLI reference documentation
 
 When adding a new command or option, ONLY modify this file.
-Then run `./mfc.sh generate` to update completions.
+Then run `./figr.sh generate` to update completions.
 """
 
 from .schema import ArgAction, Argument, CLISchema, Command, CommonArgumentSet, Completion, CompletionType, Example, MutuallyExclusiveGroup, Positional
@@ -143,10 +143,10 @@ BUILD_COMMAND = Command(
         ),
     ],
     examples=[
-        Example("./mfc.sh build", "Build all default targets (CPU)"),
-        Example("./mfc.sh build -j 8", "Build with 8 parallel jobs"),
-        Example("./mfc.sh build --gpu", "Build with GPU (OpenACC) support"),
-        Example("./mfc.sh build -i case.py --case-optimization -j 8", "Case optimization (10x faster!)"),
+        Example("./figr.sh build", "Build all default targets (CPU)"),
+        Example("./figr.sh build -j 8", "Build with 8 parallel jobs"),
+        Example("./figr.sh build --gpu", "Build with GPU (OpenACC) support"),
+        Example("./figr.sh build -i case.py --case-optimization -j 8", "Case optimization (10x faster!)"),
     ],
     key_options=[
         ("-j, --jobs N", "Number of parallel build jobs"),
@@ -329,10 +329,10 @@ RUN_COMMAND = Command(
         ),
     ],
     examples=[
-        Example("./mfc.sh run case.py", "Run interactively with 1 rank"),
-        Example("./mfc.sh run case.py -n 4", "Run with 4 MPI ranks"),
-        Example("./mfc.sh run case.py --case-optimization -j 8", "10x faster with case optimization!"),
-        Example("./mfc.sh run case.py -e batch -N 2 -n 4", "Submit batch job: 2 nodes, 4 ranks/node"),
+        Example("./figr.sh run case.py", "Run interactively with 1 rank"),
+        Example("./figr.sh run case.py -n 4", "Run with 4 MPI ranks"),
+        Example("./figr.sh run case.py --case-optimization -j 8", "10x faster with case optimization!"),
+        Example("./figr.sh run case.py -e batch -N 2 -n 4", "Submit batch job: 2 nodes, 4 ranks/node"),
     ],
     key_options=[
         ("--case-optimization", "Hard-code params for 10x speedup!"),
@@ -494,12 +494,12 @@ TEST_COMMAND = Command(
         ),
     ],
     examples=[
-        Example("./mfc.sh test", "Run all tests"),
-        Example("./mfc.sh test -j 4", "Run with 4 parallel jobs"),
-        Example("./mfc.sh test --only 3D", "Run only 3D tests"),
-        Example("./mfc.sh test --generate", "Regenerate golden files"),
-        Example("./mfc.sh test --only-changes -j 4", "Run tests affected by changed files"),
-        Example("./mfc.sh build --gcov -j 8 && ./mfc.sh test --build-coverage-cache", "One-time: build file-coverage cache"),
+        Example("./figr.sh test", "Run all tests"),
+        Example("./figr.sh test -j 4", "Run with 4 parallel jobs"),
+        Example("./figr.sh test --only 3D", "Run only 3D tests"),
+        Example("./figr.sh test --generate", "Regenerate golden files"),
+        Example("./figr.sh test --only-changes -j 4", "Run tests affected by changed files"),
+        Example("./figr.sh build --gcov -j 8 && ./figr.sh test --build-coverage-cache", "One-time: build file-coverage cache"),
     ],
     key_options=[
         ("-j, --jobs N", "Number of parallel test jobs"),
@@ -519,7 +519,7 @@ CLEAN_COMMAND = Command(
     description="Remove build artifacts and cache files.",
     include_common=["targets", "mfc_config", "jobs", "verbose", "debug_log"],
     examples=[
-        Example("./mfc.sh clean", "Clean all build files"),
+        Example("./figr.sh clean", "Clean all build files"),
     ],
     key_options=[],
 )
@@ -538,8 +538,8 @@ VALIDATE_COMMAND = Command(
         ),
     ],
     examples=[
-        Example("./mfc.sh validate case.py", "Check syntax and constraints"),
-        Example("./mfc.sh validate case.py -d", "Validate with toolchain debug output"),
+        Example("./figr.sh validate case.py", "Check syntax and constraints"),
+        Example("./figr.sh validate case.py -d", "Validate with toolchain debug output"),
     ],
     key_options=[
         ("-d, --debug-log", "Enable toolchain debug logging"),
@@ -572,13 +572,13 @@ HELP_TOPICS = {
 
 # COMPLETE CLI SCHEMA
 
-MFC_CLI_SCHEMA = CLISchema(
-    prog="./mfc.sh",
+FIGR_CLI_SCHEMA = CLISchema(
+    prog="./figr.sh",
     description="""\
 Welcome to the MFC master script. This tool automates and manages building, testing, \
 running, and cleaning of MFC in various configurations on all supported platforms. \
 The README documents this tool and its various commands in more detail. To get \
-started, run `./mfc.sh build -h`.""",
+started, run `./figr.sh build -h`.""",
     arguments=[
         Argument(
             name="help",
@@ -610,7 +610,7 @@ started, run `./mfc.sh build -h`.""",
 
 # Command aliases mapping (replaces COMMAND_ALIASES in user_guide.py)
 COMMAND_ALIASES = {}
-for cmd in MFC_CLI_SCHEMA.commands:
+for cmd in FIGR_CLI_SCHEMA.commands:
     for alias in cmd.aliases:
         COMMAND_ALIASES[alias] = cmd.name
 
@@ -625,7 +625,7 @@ def get_commands_dict():
             "examples": [(e.command, e.description) for e in cmd.examples],
             "key_options": list(cmd.key_options),
         }
-        for cmd in MFC_CLI_SCHEMA.commands
+        for cmd in FIGR_CLI_SCHEMA.commands
     }
 
 

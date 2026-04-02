@@ -175,7 +175,7 @@ class CLISchema:
     - CLI reference documentation
     """
 
-    prog: str = "./mfc.sh"
+    prog: str = "./figr.sh"
     description: str = ""
 
     # Top-level arguments (like --help)

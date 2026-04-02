@@ -50,7 +50,7 @@ case "$cluster" in
     frontier)
         compiler_flag="f"
         account="CFD154"
-        job_prefix="MFC"
+        job_prefix="figr"
         qos="develop"
         extra_sbatch=""
         test_time="01:59:00"
@@ -60,7 +60,7 @@ case "$cluster" in
     frontier_amd)
         compiler_flag="famd"
         account="CFD154"
-        job_prefix="MFC"
+        job_prefix="figr"
         qos="develop"
         extra_sbatch=""
         test_time="01:59:00"
@@ -187,7 +187,7 @@ job_shard="$shard"
 job_cluster="$cluster"
 export GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME"
 
-. ./mfc.sh load -c $compiler_flag -m $module_mode
+. ./figr.sh load -c $compiler_flag -m $module_mode
 
 $sbatch_script_contents
 

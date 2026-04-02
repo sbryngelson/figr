@@ -119,7 +119,7 @@ class TestCase(case.Case):
         if self.params.get("bubbles_lagrange", "F") == "T":
             input_bubbles_lagrange(self)
 
-        mfc_script = ".\\mfc.bat" if os.name == "nt" else "./mfc.sh"
+        mfc_script = ".\\figr.bat" if os.name == "nt" else "./figr.sh"
 
         target_names = [get_target(t).name for t in targets]
 

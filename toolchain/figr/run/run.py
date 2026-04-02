@@ -10,7 +10,7 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 from ..build import REQUIRED_TARGETS, SIMULATION, build, get_targets
-from ..common import MFC_ROOT_DIR, MFC_TEMPLATE_DIR, MFCException, does_command_exist, file_dump_yaml, file_read, file_write, format_list_to_string, isspace, system
+from ..common import MFC_ROOT_DIR, MFC_TEMPLATE_DIR, FigrException, does_command_exist, file_dump_yaml, file_read, file_write, format_list_to_string, isspace, system
 from ..printer import cons
 from ..state import ARG, ARGS, CFG, gpuConfigOptions
 from . import input, queues
@@ -18,42 +18,42 @@ from . import input, queues
 
 def __validate_job_options() -> None:
     if not ARG("mpi") and any({ARG("nodes") > 1, ARG("tasks_per_node") > 1}):
-        raise MFCException("RUN: Cannot run on more than one rank with --no-mpi.")
+        raise FigrException("RUN: Cannot run on more than one rank with --no-mpi.")
 
     if ARG("nodes") <= 0:
-        raise MFCException("RUN: At least one node must be requested.")
+        raise FigrException("RUN: At least one node must be requested.")
 
     if ARG("tasks_per_node") <= 0:
-        raise MFCException("RUN: At least one task per node must be requested.")
+        raise FigrException("RUN: At least one task per node must be requested.")
 
     if not isspace(ARG("email")):
         # https://stackoverflow.com/questions/8022530/how-to-check-for-valid-email-address
         if not re.match(r"\"?([-a-zA-Z0-9.`?{}]+@\w+\.\w+)\"?", ARG("email")):
-            raise MFCException(f"RUN: {ARG('email')} is not a valid e-mail address.")
+            raise FigrException(f"RUN: {ARG('email')} is not a valid e-mail address.")
 
 
 def __profiler_prepend() -> typing.List[str]:
     if ARG("ncu") is not None:
         if not does_command_exist("ncu"):
-            raise MFCException("Failed to locate [bold green]NVIDIA Nsight Compute[/bold green] (ncu).")
+            raise FigrException("Failed to locate [bold green]NVIDIA Nsight Compute[/bold green] (ncu).")
 
         return ["ncu", "--nvtx", "--mode=launch-and-attach", "--cache-control=none", "--clock-control=none"] + ARG("ncu")
 
     if ARG("nsys") is not None:
         if not does_command_exist("nsys"):
-            raise MFCException("Failed to locate [bold green]NVIDIA Nsight Systems[/bold green] (nsys).")
+            raise FigrException("Failed to locate [bold green]NVIDIA Nsight Systems[/bold green] (nsys).")
 
         return ["nsys", "profile", "--stats=true", "--trace=mpi,nvtx,openacc"] + ARG("nsys")
 
     if ARG("rcu") is not None:
         if not does_command_exist("rocprof-compute"):
-            raise MFCException("Failed to locate [bold red]ROCM rocprof-compute[/bold red] (rocprof-compute).")
+            raise FigrException("Failed to locate [bold red]ROCM rocprof-compute[/bold red] (rocprof-compute).")
 
         return ["rocprof-compute", "profile", "-n", ARG("name").replace("-", "_").replace(".", "_")] + ARG("rcu") + ["--"]
 
     if ARG("rsys") is not None:
         if not does_command_exist("rocprof"):
-            raise MFCException("Failed to locate [bold red]ROCM rocprof-systems[/bold red] (rocprof-systems).")
+            raise FigrException("Failed to locate [bold red]ROCM rocprof-systems[/bold red] (rocprof-systems).")
 
         return ["rocprof"] + ARG("rsys")
 
@@ -81,7 +81,7 @@ def __get_template() -> Template:
         cons.print(f"Using template from [magenta]{computer}[/magenta].")
         return Template(file_read(computer), lookup=lookup)
 
-    raise MFCException(f"Failed to find a template for --computer '{computer}'. Baked-in templates are: {format_list_to_string(list(baked.keys()), 'magenta')}.")
+    raise FigrException(f"Failed to find a template for --computer '{computer}'. Baked-in templates are: {format_list_to_string(list(baked.keys()), 'magenta')}.")
 
 
 def __generate_job_script(targets, case: input.MFCInputFile):
@@ -96,7 +96,7 @@ def __generate_job_script(targets, case: input.MFCInputFile):
     # Validate gpu_mode is one of the expected values
     valid_gpu_modes = {e.value for e in gpuConfigOptions}
     if gpu_mode not in valid_gpu_modes:
-        raise MFCException(f"Invalid GPU mode '{gpu_mode}'. Must be one of: {', '.join(sorted(valid_gpu_modes))}")
+        raise FigrException(f"Invalid GPU mode '{gpu_mode}'. Must be one of: {', '.join(sorted(valid_gpu_modes))}")
 
     gpu_enabled = gpu_mode != gpuConfigOptions.NONE.value
     gpu_acc = gpu_mode == gpuConfigOptions.ACC.value
@@ -145,7 +145,7 @@ def __execute_job_script(qsystem: queues.QueueSystem):
     print_cmd = verbosity >= 2
 
     if system(cmd, cwd=os.path.dirname(ARG("input")), print_cmd=print_cmd).returncode != 0:
-        raise MFCException(f"Submitting batch file for {qsystem.name} failed. It can be found here: {__job_script_filepath()}. Please check the file for errors.")
+        raise FigrException(f"Submitting batch file for {qsystem.name} failed. It can be found here: {__job_script_filepath()}. Please check the file for errors.")
 
 
 def run(targets=None, case=None):

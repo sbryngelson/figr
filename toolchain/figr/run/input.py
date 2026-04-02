@@ -106,7 +106,7 @@ class MFCInputFile(Case):
 def load(filepath: str = None, args: typing.List[str] = None, empty_data: dict = None, do_print: bool = True) -> MFCInputFile:
     if not filepath:
         if empty_data is None:
-            raise common.MFCException("Please provide an input file.")
+            raise common.FigrException("Please provide an input file.")
 
         input_file = MFCInputFile("empty.py", "empty.py", empty_data)
         input_file.validate_params()
@@ -121,13 +121,13 @@ def load(filepath: str = None, args: typing.List[str] = None, empty_data: dict =
     dictionary: dict = {}
 
     if not os.path.exists(filename):
-        raise common.MFCException(f"Input file '{filename}' does not exist. Please check the path is valid.")
+        raise common.FigrException(f"Input file '{filename}' does not exist. Please check the path is valid.")
 
     if filename.endswith(".py"):
         (json_str, err) = common.get_py_program_output(filename, ["--mfc", json.dumps(ARGS())] + (args or []))
 
         if err != 0:
-            raise common.MFCException(f"Input file {filename} terminated with a non-zero exit code. Please make sure running the file doesn't produce any errors.")
+            raise common.FigrException(f"Input file {filename} terminated with a non-zero exit code. Please make sure running the file doesn't produce any errors.")
     elif filename.endswith(".json"):
         json_str = common.file_read(filename)
     elif filename.endswith((".yaml", ".yml")):
@@ -137,12 +137,12 @@ def load(filepath: str = None, args: typing.List[str] = None, empty_data: dict =
             dictionary = yaml.safe_load(f)
         json_str = json.dumps(dictionary)
     else:
-        raise common.MFCException("Unrecognized input file format. Supported: .py, .json, .yaml, .yml. Please check the README and sample cases in the examples directory.")
+        raise common.FigrException("Unrecognized input file format. Supported: .py, .json, .yaml, .yml. Please check the README and sample cases in the examples directory.")
 
     try:
         dictionary = json.loads(json_str)
     except Exception as exc:
-        raise common.MFCException(f"Input file {filename} did not produce valid JSON. It should only print the case dictionary.\n\n{exc}\n")
+        raise common.FigrException(f"Input file {filename} did not produce valid JSON. It should only print the case dictionary.\n\n{exc}\n")
 
     input_file = MFCInputFile(filename, dirpath, dictionary)
     input_file.validate_params(f"Input file {filename}")

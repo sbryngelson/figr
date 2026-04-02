@@ -2,7 +2,7 @@ import dataclasses
 import os
 import typing
 
-from mfc import common
+from figr import common
 
 from ..state import ARG
 
@@ -15,10 +15,10 @@ class QueueSystem:
         self.name = name
 
     def is_active(self) -> bool:
-        raise common.MFCException("QueueSystem::is_active: not implemented.")
+        raise common.FigrException("QueueSystem::is_active: not implemented.")
 
     def gen_submit_cmd(self, filepath: str) -> typing.List[str]:
-        raise common.MFCException("QueueSystem::gen_submit_cmd: not implemented.")
+        raise common.FigrException("QueueSystem::gen_submit_cmd: not implemented.")
 
 
 class InteractiveSystem(QueueSystem):
@@ -44,7 +44,7 @@ class PBSSystem(QueueSystem):
 
     def gen_submit_cmd(self, filepath: str) -> typing.List[str]:
         if ARG("wait"):
-            raise common.MFCException("PBS Queue: Sorry, --wait is unimplemented.")
+            raise common.FigrException("PBS Queue: Sorry, --wait is unimplemented.")
 
         return ["qsub", filepath]
 
@@ -92,4 +92,4 @@ def get_system() -> QueueSystem:
         if system.is_active():
             return system
 
-    raise common.MFCException(f"Failed to detect a queue system for engine [magenta]{ARG('engine')}[/magenta].")
+    raise common.FigrException(f"Failed to detect a queue system for engine [magenta]{ARG('engine')}[/magenta].")

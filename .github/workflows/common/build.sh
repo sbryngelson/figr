@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build-only script for all clusters.
 # Runs inside a SLURM job via submit-slurm-job.sh.
-# Builds MFC without running tests (--dry-run).
+# Builds figr without running tests (--dry-run).
 # Expects env vars: $job_device, $job_interface, $job_shard, $job_cluster
 
 set -euo pipefail
@@ -40,4 +40,4 @@ if [ "$job_cluster" = "phoenix" ]; then
 fi
 
 RETRY_VALIDATE_CMD="$validate_cmd" \
-    retry_build ./mfc.sh test -v --dry-run -j 8 $build_opts || exit 1
+    retry_build ./figr.sh test -v --dry-run -j 8 $build_opts || exit 1

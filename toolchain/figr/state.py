@@ -40,7 +40,7 @@ class MFCConfig:
         return dataclasses.asdict(self).items()
 
     def make_options(self) -> typing.List[str]:
-        """Returns a list of options that could be passed to mfc.sh again.
+        """Returns a list of options that could be passed to figr.sh again.
         Example: --no-debug --mpi --no-gpu --no-gcov --no-unified"""
         options = []
         for k, v in self.items():

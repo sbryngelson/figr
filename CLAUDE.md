@@ -1,6 +1,6 @@
-# MFC — Multi-component Flow Code
+# figr — IGR Mini-App
 
-MFC is an exascale multi-physics CFD solver written in modern Fortran 2008+ with Fypp
+figr is an IGR multi-physics CFD solver written in modern Fortran 2008+ with Fypp
 preprocessing. It has three executables (pre_process, simulation, post_process), a Python
 toolchain for building/running/testing, and supports GPU acceleration via OpenACC and
 OpenMP target offload. It must compile with gfortran, nvfortran, Cray ftn, and Intel ifx (CI-gated).
@@ -8,58 +8,58 @@ AMD flang is additionally supported for OpenMP target offload GPU builds.
 
 ## Commands
 
-Prefer using `./mfc.sh` as the entry point for building, running, testing, formatting,
+Prefer using `./figr.sh` as the entry point for building, running, testing, formatting,
 and linting. It handles virtual environments, module loading, dependency bootstrapping,
 and build configuration. Avoid invoking CMake, Python toolchain scripts, or Fortran
 compilers directly unless you have a specific reason.
 
-All commands run from the repo root via `./mfc.sh`.
+All commands run from the repo root via `./figr.sh`.
 
 ```bash
 # Building
-./mfc.sh build -j 8                        # Build all 3 targets (pre_process, simulation, post_process)
-./mfc.sh build -t simulation -j 8          # Build only simulation
-./mfc.sh build --gpu acc -j 8              # Build with OpenACC GPU support
-./mfc.sh build --gpu mp -j 8              # Build with OpenMP target offload GPU support
-./mfc.sh build --debug -j 8                # Debug build
-./mfc.sh build -i case.py --case-optimization -j 8  # Case-optimized build (10x speedup)
+./figr.sh build -j 8                        # Build all 3 targets (pre_process, simulation, post_process)
+./figr.sh build -t simulation -j 8          # Build only simulation
+./figr.sh build --gpu acc -j 8              # Build with OpenACC GPU support
+./figr.sh build --gpu mp -j 8              # Build with OpenMP target offload GPU support
+./figr.sh build --debug -j 8                # Debug build
+./figr.sh build -i case.py --case-optimization -j 8  # Case-optimized build (10x speedup)
 
 # Running
-./mfc.sh run case.py -n 4                  # Run case with 4 MPI ranks
-./mfc.sh run case.py --no-build            # Run without rebuilding
-./mfc.sh run case.py -e batch -N 2 -n 4 -c phoenix -a ACCOUNT  # Batch submit on Phoenix
+./figr.sh run case.py -n 4                  # Run case with 4 MPI ranks
+./figr.sh run case.py --no-build            # Run without rebuilding
+./figr.sh run case.py -e batch -N 2 -n 4 -c phoenix -a ACCOUNT  # Batch submit on Phoenix
 
 # Testing
-./mfc.sh test -j 8                         # Run full test suite (560+ tests)
-./mfc.sh test --only 1D -j 8              # Only 1D tests
-./mfc.sh test --only 2D Bubbles -j 8      # Only 2D bubble tests
-./mfc.sh test --only <UUID> -j 8          # Run one specific test by UUID
-./mfc.sh test -l                           # List all tests with UUIDs and traces
-./mfc.sh test -% 10 -j 8                  # Run 10% random sample
-./mfc.sh test --generate --only <feature>  # Regenerate golden files after intentional output change
+./figr.sh test -j 8                         # Run full test suite (560+ tests)
+./figr.sh test --only 1D -j 8              # Only 1D tests
+./figr.sh test --only 2D Bubbles -j 8      # Only 2D bubble tests
+./figr.sh test --only <UUID> -j 8          # Run one specific test by UUID
+./figr.sh test -l                           # List all tests with UUIDs and traces
+./figr.sh test -% 10 -j 8                  # Run 10% random sample
+./figr.sh test --generate --only <feature>  # Regenerate golden files after intentional output change
 
 # Verification (pre-commit CI checks)
-./mfc.sh precheck -j 8                     # Run all 6 lint checks (same as CI gate)
-./mfc.sh format -j 8                       # Auto-format Fortran (.fpp/.f90) + Python
-./mfc.sh lint                              # Ruff lint + Python unit tests
-./mfc.sh spelling                          # Spell check
+./figr.sh precheck -j 8                     # Run all 6 lint checks (same as CI gate)
+./figr.sh format -j 8                       # Auto-format Fortran (.fpp/.f90) + Python
+./figr.sh lint                              # Ruff lint + Python unit tests
+./figr.sh spelling                          # Spell check
 
 # Module loading (HPC clusters only — must use `source`)
-source ./mfc.sh load -c p -m g             # Load Phoenix GPU modules
-source ./mfc.sh load -c f -m g             # Load Frontier GPU modules
-source ./mfc.sh load -c p -m c             # Load Phoenix CPU modules
+source ./figr.sh load -c p -m g             # Load Phoenix GPU modules
+source ./figr.sh load -c f -m g             # Load Frontier GPU modules
+source ./figr.sh load -c p -m c             # Load Phoenix CPU modules
 
 # Other
-./mfc.sh validate case.py                  # Validate case file without running
-./mfc.sh params <query>                    # Search 3,400 case parameters
-./mfc.sh clean                             # Remove build artifacts
-./mfc.sh new <name>                        # Create new case from template
+./figr.sh validate case.py                  # Validate case file without running
+./figr.sh params <query>                    # Search 3,400 case parameters
+./figr.sh clean                             # Remove build artifacts
+./figr.sh new <name>                        # Create new case from template
 ```
 
 ## System Identification and Module Loading
 
-MFC targets HPC clusters. Before building on a cluster, load the correct modules
-via `source ./mfc.sh load -c <slug> -m <mode>`.
+figr targets HPC clusters. Before building on a cluster, load the correct modules
+via `source ./figr.sh load -c <slug> -m <mode>`.
 
 To identify the current system, check multiple signals — hostname alone is not always
 sufficient (compute nodes may differ from login nodes):
@@ -75,21 +75,21 @@ Supported systems and their slugs (full list in `toolchain/modules`):
 
 | Slug | System | GPU Backend | Example |
 |------|--------|-------------|---------|
-| `p` | GT Phoenix | OpenACC (nvfortran) | `source ./mfc.sh load -c p -m g` |
-| `f` | OLCF Frontier | OpenACC/OpenMP (Cray ftn) | `source ./mfc.sh load -c f -m g` |
-| `tuo` | LLNL Tuolumne | OpenMP (Cray ftn) | `source ./mfc.sh load -c tuo -m g` |
-| `d` | NCSA Delta | OpenACC (nvfortran) | `source ./mfc.sh load -c d -m g` |
-| `b` | PSC Bridges2 | OpenACC (nvfortran) | `source ./mfc.sh load -c b -m g` |
-| `cc` | DoD Carpenter (Cray) | CPU only | `source ./mfc.sh load -c cc -m c` |
-| `c` | DoD Carpenter (GNU) | CPU only | `source ./mfc.sh load -c c -m c` |
-| `o` | Brown Oscar | OpenACC (nvfortran) | `source ./mfc.sh load -c o -m g` |
-| `h` | UF HiPerGator | OpenACC (nvfortran) | `source ./mfc.sh load -c h -m g` |
+| `p` | GT Phoenix | OpenACC (nvfortran) | `source ./figr.sh load -c p -m g` |
+| `f` | OLCF Frontier | OpenACC/OpenMP (Cray ftn) | `source ./figr.sh load -c f -m g` |
+| `tuo` | LLNL Tuolumne | OpenMP (Cray ftn) | `source ./figr.sh load -c tuo -m g` |
+| `d` | NCSA Delta | OpenACC (nvfortran) | `source ./figr.sh load -c d -m g` |
+| `b` | PSC Bridges2 | OpenACC (nvfortran) | `source ./figr.sh load -c b -m g` |
+| `cc` | DoD Carpenter (Cray) | CPU only | `source ./figr.sh load -c cc -m c` |
+| `c` | DoD Carpenter (GNU) | CPU only | `source ./figr.sh load -c c -m c` |
+| `o` | Brown Oscar | OpenACC (nvfortran) | `source ./figr.sh load -c o -m g` |
+| `h` | UF HiPerGator | OpenACC (nvfortran) | `source ./figr.sh load -c h -m g` |
 
 The `-m` flag selects mode: `g`/`gpu` for GPU builds, `c`/`cpu` for CPU-only.
-Batch job templates for `./mfc.sh run -e batch -c <system>` are in `toolchain/templates/`.
+Batch job templates for `./figr.sh run -e batch -c <system>` are in `toolchain/templates/`.
 
 IMPORTANT: `source` (or `.`) is required for `load` — it sets environment variables
-in the current shell. Using `./mfc.sh load` without `source` will error.
+in the current shell. Using `./figr.sh load` without `source` will error.
 
 ## Development Workflow Contract
 
@@ -98,14 +98,14 @@ IMPORTANT: Follow this loop for ALL code changes. Do not skip steps.
 1. **Read first** — Read and understand relevant code before modifying it.
 2. **Plan** — For multi-file changes, outline your approach before implementing.
 3. **Implement** — Make small, focused changes. One logical change per commit.
-4. **Format** — Run `./mfc.sh format -j 8` to auto-format.
-5. **Verify** — Run `./mfc.sh precheck -j 8` (same 6 checks as CI lint gate).
-6. **Build** — Run `./mfc.sh build -j 8` to verify compilation.
-7. **Test** — Run relevant tests: `./mfc.sh test --only <feature> -j 8`.
-   For changes to `src/common/`, test ALL three targets: `./mfc.sh test -j 8`.
+4. **Format** — Run `./figr.sh format -j 8` to auto-format.
+5. **Verify** — Run `./figr.sh precheck -j 8` (same 6 checks as CI lint gate).
+6. **Build** — Run `./figr.sh build -j 8` to verify compilation.
+7. **Test** — Run relevant tests: `./figr.sh test --only <feature> -j 8`.
+   For changes to `src/common/`, test ALL three targets: `./figr.sh test -j 8`.
 8. **Commit** — Only after steps 4-7 pass. Do not commit untested code.
 
-YOU MUST run `./mfc.sh precheck` before any commit. This is enforced by pre-commit hooks.
+YOU MUST run `./figr.sh precheck` before any commit. This is enforced by pre-commit hooks.
 YOU MUST run tests relevant to your changes before claiming work is done.
 NEVER commit code that does not compile or fails tests.
 NEVER use heredocs for git commit messages. Use simple `git commit -m "message"` instead.
@@ -119,9 +119,9 @@ src/
   simulation/     # CFD solver (GPU-accelerated via OpenACC / OpenMP target offload)
   post_process/   # Data output and visualization
 toolchain/        # Python CLI, build system, testing, parameter management
-  mfc/params/definitions.py   # ~3,400 parameter definitions (source of truth)
-  mfc/case_validator.py       # Physics constraint validation
-  mfc/test/                   # Test runner and case generation
+  figr/params/definitions.py   # ~3,400 parameter definitions (source of truth)
+  figr/case_validator.py       # Physics constraint validation
+  figr/test/                   # Test runner and case generation
 examples/         # Example simulation cases (case.py files)
 tests/            # 560+ regression test golden files
 ```
@@ -140,10 +140,10 @@ NEVER use `goto`, `COMMON` blocks, or global `save` variables.
 
 Every `@:ALLOCATE(...)` MUST have a matching `@:DEALLOCATE(...)`.
 Every new parameter MUST be added in at least 3 places (4 if it has constraints):
-  1. `toolchain/mfc/params/definitions.py` (parameter definition)
+  1. `toolchain/figr/params/definitions.py` (parameter definition)
   2. Fortran variable declaration in `src/*/m_global_parameters.fpp`
   3. Fortran namelist in `src/*/m_start_up.fpp` (namelist binding)
-  4. `toolchain/mfc/case_validator.py` (only if parameter has physics constraints)
+  4. `toolchain/figr/case_validator.py` (only if parameter has physics constraints)
 
 Changes to `src/common/` affect ALL three executables. Test comprehensively.
 

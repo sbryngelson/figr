@@ -141,7 +141,7 @@ class Case:
             ptype = self.params[f"patch_icpp({pid})%geometry"]
 
             if ptype not in DATA["ptypes"]:
-                raise common.MFCException(f"Patch #{pid} of type {ptype} cannot be analytically defined.")
+                raise common.FigrException(f"Patch #{pid} of type {ptype} cannot be analytically defined.")
 
             # function that defines how we will replace variable names with
             # values from the case file

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Check whether this script was called from MFC's root directory.
+# Check whether this script was called from figr's root directory.
 if [ ! -f "$(pwd)/toolchain/util.sh" ]; then
-    echo "mfc: ERROR > You must call this script from within MFC's root folder."
+    echo "figr: ERROR > You must call this script from within figr's root folder."
 
     exit 1
 fi
@@ -13,7 +13,7 @@ fi
 # Auto-install git pre-commit hook (once, silently)
 if [ -d "$(pwd)/.git" ] && [ ! -e "$(pwd)/.git/hooks/pre-commit" ] && [ -f "$(pwd)/.githooks/pre-commit" ]; then
     ln -sf "$(pwd)/.githooks/pre-commit" "$(pwd)/.git/hooks/pre-commit"
-    log "Installed git pre-commit hook (runs$MAGENTA ./mfc.sh precheck$COLOR_RESET before commits)."
+    log "Installed git pre-commit hook (runs$MAGENTA ./figr.sh precheck$COLOR_RESET before commits)."
 fi
 
 # Shell completions auto-install/update
@@ -22,13 +22,13 @@ fi
 # Print startup message immediately for user feedback
 log "Starting..."
 
-# Handle upgrading from older MFC build systems
-if [ -d "$(pwd)/bootstrap" ] || [ -d "$(pwd)/dependencies" ] || [ -f "$(pwd)/build/mfc.lock.yaml" ]; then
+# Handle upgrading from older figr build systems
+if [ -d "$(pwd)/bootstrap" ] || [ -d "$(pwd)/dependencies" ] || [ -f "$(pwd)/build/figr.lock.yaml" ]; then
     error "Please remove, if applicable, the following directories:"
     error "* dependencies/"
     error "* bootstrap/"
     error "* build/"
-    error "These are incompatible with modern versions of MFC."
+    error "These are incompatible with modern versions of figr."
 
     exit 1
 fi
@@ -38,13 +38,13 @@ if [ "$1" '==' 'load' ] && [ "$2" != "--help" ] && [ "$2" != "-h" ]; then
     # Check if the script is being sourced (required for load to work)
     if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         echo ""
-        echo "mfc: ERROR > The 'load' command must be run with 'source' to set environment variables."
+        echo "figr: ERROR > The 'load' command must be run with 'source' to set environment variables."
         echo ""
-        echo "  Instead of:  ./mfc.sh load ..."
-        echo "  Please use:  source ./mfc.sh load ..."
-        echo "          or:  . ./mfc.sh load ..."
+        echo "  Instead of:  ./figr.sh load ..."
+        echo "  Please use:  source ./figr.sh load ..."
+        echo "          or:  . ./figr.sh load ..."
         echo ""
-        echo "  Example:     source ./mfc.sh load -c p -m g"
+        echo "  Example:     source ./figr.sh load -c p -m g"
         echo ""
         exit 1
     fi

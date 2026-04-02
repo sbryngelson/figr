@@ -4,12 +4,12 @@
 
 Only `src/simulation/` is GPU-accelerated. Pre/post_process run on CPU only.
 
-MFC uses a **backend-agnostic GPU abstraction** via Fypp macros. The same source code
+figr uses a **backend-agnostic GPU abstraction** via Fypp macros. The same source code
 compiles to either OpenACC or OpenMP target offload depending on the build flag:
 
-- `./mfc.sh build --gpu acc` → OpenACC backend (NVIDIA nvfortran, Cray ftn)
-- `./mfc.sh build --gpu mp`  → OpenMP target offload backend (Cray ftn, AMD flang)
-- `./mfc.sh build` (no --gpu) → CPU-only, GPU macros expand to plain Fortran
+- `./figr.sh build --gpu acc` → OpenACC backend (NVIDIA nvfortran, Cray ftn)
+- `./figr.sh build --gpu mp`  → OpenMP target offload backend (Cray ftn, AMD flang)
+- `./figr.sh build` (no --gpu) → CPU-only, GPU macros expand to plain Fortran
 
 ### Macro Layers (in src/common/include/)
 - `parallel_macros.fpp` — **Use these.** Generic `GPU_*` macros that dispatch to the
