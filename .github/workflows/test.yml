@@ -135,8 +135,8 @@ jobs:
       # --- Standard build + test ---
       - name: Build
         if:   '!matrix.nvhpc'
-        run:  |
-          /bin/bash figr.sh test -v --dry-run -j $(nproc) --${{ matrix.debug }} $PRECISION --test-all
+        run:  /bin/bash figr.sh test -v --dry-run -j $(nproc) --${{ matrix.debug }} $PRECISION --test-all
+        env:
           PRECISION: ${{ matrix.precision != '' && format('--{0}', matrix.precision) || '' }}
 
       - name: Test
