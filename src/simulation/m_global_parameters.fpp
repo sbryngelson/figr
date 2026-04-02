@@ -94,18 +94,10 @@ module m_global_parameters
     #:if MFC_CASE_OPTIMIZATION
         integer, parameter :: recon_type = ${recon_type}$    !< Reconstruction type
         integer, parameter :: weno_polyn = ${weno_polyn}$    !< Degree of the WENO polynomials (polyn)
-        integer, parameter :: muscl_polyn = ${muscl_polyn}$  !< Degree of the MUSCL polynomials (polyn)
         integer, parameter :: weno_order = ${weno_order}$    !< Order of the WENO reconstruction
-        integer, parameter :: muscl_order = ${muscl_order}$  !< Order of the MUSCL order
         !> Number of stencils for WENO reconstruction (only different from weno_polyn for TENO(>5))
         integer, parameter  :: weno_num_stencils = ${weno_num_stencils}$
-        integer, parameter  :: muscl_lim = ${muscl_lim}$               !< MUSCL Limiter
         integer, parameter  :: num_fluids = ${num_fluids}$             !< number of fluids in the simulation
-        logical, parameter  :: wenojs = (${wenojs}$ /= 0)              !< WENO-JS (default)
-        logical, parameter  :: mapped_weno = (${mapped_weno}$ /= 0)    !< WENO-M (WENO with mapping of nonlinear weights)
-        logical, parameter  :: wenoz = (${wenoz}$ /= 0)                !< WENO-Z
-        logical, parameter  :: teno = (${teno}$ /= 0)                  !< TENO (Targeted ENO)
-        real(wp), parameter :: wenoz_q = ${wenoz_q}$                   !< Power constant for WENO-Z
         integer, parameter  :: igr_iter_solver = ${igr_iter_solver}$   !< IGR elliptic solver
         integer, parameter  :: igr_order = ${igr_order}$               !< Reconstruction order for IGR
         logical, parameter  :: igr_pres_lim = (${igr_pres_lim}$ /= 0)  !< Limit to positive pressures for IGR
@@ -113,17 +105,9 @@ module m_global_parameters
     #:else
         integer  :: recon_type         !< Reconstruction Type
         integer  :: weno_polyn         !< Degree of the WENO polynomials (polyn)
-        integer  :: muscl_polyn        !< Degree of the MUSCL polynomials (polyn)i
         integer  :: weno_order         !< Order of the WENO reconstruction
-        integer  :: muscl_order        !< Order of the MUSCL reconstruction
         integer  :: weno_num_stencils  !< Number of stencils for WENO reconstruction (only different from weno_polyn for TENO(>5))
-        integer  :: muscl_lim          !< MUSCL Limiter
         integer  :: num_fluids         !< number of fluids in the simulation
-        logical  :: wenojs             !< WENO-JS (default)
-        logical  :: mapped_weno        !< WENO-M (WENO with mapping of nonlinear weights)
-        logical  :: wenoz              !< WENO-Z
-        logical  :: teno               !< TENO (Targeted ENO)
-        real(wp) :: wenoz_q            !< Power constant for WENO-Z
         integer  :: igr_iter_solver    !< IGR elliptic solver
         integer  :: igr_order          !< Reconstruction order for IGR
         logical  :: igr_pres_lim       !< Limit to positive pressures for IGR
@@ -139,11 +123,6 @@ module m_global_parameters
     logical :: nv_uvm_pref_gpu  !< Enable explicit gpu memory hints (default FALSE)
     !> @}
 
-    real(wp) :: weno_eps                  !< Binding for the WENO nonlinear weights
-    real(wp) :: teno_CT                   !< Smoothness threshold for TENO
-    logical  :: mp_weno                   !< Monotonicity preserving (MP) WENO
-    logical  :: weno_avg                  !< Average left/right cell-boundary states
-    logical  :: mixture_err               !< Mixture properties correction
     logical  :: shear_stress              !< Shear stresses (computed from Re)
     logical  :: bulk_stress               !< Bulk stresses (computed from Re)
     integer  :: num_igr_iters             !< number of iterations for elliptic solve
@@ -153,14 +132,12 @@ module m_global_parameters
 
     #:if not MFC_CASE_OPTIMIZATION
         $:GPU_DECLARE(create='[num_dims, weno_polyn, weno_order]')
-        $:GPU_DECLARE(create='[weno_num_stencils, num_fluids, wenojs]')
-        $:GPU_DECLARE(create='[mapped_weno, wenoz, teno, wenoz_q]')
+        $:GPU_DECLARE(create='[weno_num_stencils, num_fluids]')
         $:GPU_DECLARE(create='[igr_iter_solver, igr_order, viscous, igr_pres_lim]')
-        $:GPU_DECLARE(create='[recon_type, muscl_order, muscl_polyn, muscl_lim]')
+        $:GPU_DECLARE(create='[recon_type]')
     #:endif
 
-    $:GPU_DECLARE(create='[model_eqns, mixture_err]')
-    $:GPU_DECLARE(create='[mp_weno, weno_eps, teno_CT]')
+    $:GPU_DECLARE(create='[model_eqns]')
     $:GPU_DECLARE(create='[shear_stress, bulk_stress]')
 
     integer :: num_bc_patches
@@ -226,13 +203,6 @@ module m_global_parameters
     !> @}
 
     $:GPU_DECLARE(create='[Re_size, Re_size_max, Re_idx]')
-
-    ! WENO averaging flag: use arithmetic mean or unaltered WENO-reconstructed cell-boundary values
-    !> @{
-    real(wp) :: wa_flg
-    !> @}
-
-    $:GPU_DECLARE(create='[wa_flg]')
 
     !> @name The coordinate direction indexes and flags (flg), respectively, for which the configurations will be determined with
     !! respect to a working direction and that will be used to isolate the contributions, in that direction, in the dimensionally
@@ -314,11 +284,6 @@ contains
         ! Simulation algorithm parameters
         model_eqns = dflt_int
         time_stepper = dflt_int
-        weno_eps = dflt_real
-        teno_CT = dflt_real
-        mp_weno = .false.
-        weno_avg = .false.
-        mixture_err = .false.
         parallel_io = .false.
         file_per_process = .false.
         precision = 2
@@ -331,10 +296,6 @@ contains
         alf_factor = dflt_alf_factor
 
         #:if not MFC_CASE_OPTIMIZATION
-            mapped_weno = .false.
-            wenoz = .false.
-            teno = .false.
-            wenoz_q = dflt_real
             igr_order = dflt_int
             igr_pres_lim = .false.
             viscous = .false.
@@ -376,8 +337,6 @@ contains
         #:if not MFC_CASE_OPTIMIZATION
             recon_type = WENO_TYPE
             weno_order = dflt_int
-            muscl_order = dflt_int
-            muscl_lim = dflt_int
             num_fluids = dflt_int
         #:endif
 
@@ -396,15 +355,9 @@ contains
 
             if (recon_type == WENO_TYPE) then
                 weno_polyn = (weno_order - 1)/2
-                if (teno) then
-                    weno_num_stencils = weno_order - 3
-                else
-                    weno_num_stencils = weno_polyn
-                end if
-            else if (recon_type == MUSCL_TYPE) then
-                muscl_polyn = muscl_order
+                weno_num_stencils = weno_polyn
             end if
-            $:GPU_UPDATE(device='[weno_polyn, muscl_polyn]')
+            $:GPU_UPDATE(device='[weno_polyn]')
             $:GPU_UPDATE(device='[weno_num_stencils]')
             $:GPU_UPDATE(device='[num_dims, num_fluids]')
             $:GPU_UPDATE(device='[igr_order, igr_iter_solver]')
@@ -470,15 +423,6 @@ contains
             end do
         end if
 
-        ! Configure WENO averaging flag (arithmetic mean vs. unaltered values)
-        wa_flg = 0._wp; if (weno_avg) wa_flg = 1._wp
-        $:GPU_UPDATE(device='[wa_flg]')
-
-        ! Resort to default WENO-JS if no other WENO scheme is selected
-        #:if not MFC_CASE_OPTIMIZATION
-            wenojs = .not. (mapped_weno .or. wenoz .or. teno)
-        #:endif
-
         call s_configure_coordinate_bounds(igr_order, buff_size, idwint, idwbuff, viscous, m, n, p, num_dims)
         $:GPU_UPDATE(device='[idwint, idwbuff]')
 
@@ -492,14 +436,11 @@ contains
 
         $:GPU_UPDATE(device='[cfl_target, m, n, p]')
 
-        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns, mixture_err, mp_weno, weno_eps, teno_CT]')
+        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns]')
 
         #:if not MFC_CASE_OPTIMIZATION
-            $:GPU_UPDATE(device='[wenojs, mapped_weno, wenoz, teno]')
-            $:GPU_UPDATE(device='[wenoz_q]')
-            $:GPU_UPDATE(device='[muscl_order, muscl_lim]')
             $:GPU_UPDATE(device='[igr_order]')
-            $:GPU_UPDATE(device='[num_fluids, num_dims, viscous, muscl_lim]')
+            $:GPU_UPDATE(device='[num_fluids, num_dims, viscous]')
         #:endif
 
         $:GPU_UPDATE(device='[dir_idx, dir_flg]')
