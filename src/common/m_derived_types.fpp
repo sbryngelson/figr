@@ -54,10 +54,7 @@ module m_derived_types
         real(wp)                            :: ve1
         real(wp)                            :: ve2
         real(wp)                            :: ve3
-        real(wp)                            :: pres_in, pres_out
-        real(wp), dimension(3)              :: vel_in, vel_out
         real(wp), dimension(num_fluids_max) :: alpha_rho_in, alpha_in
-        logical                             :: grcbc_in, grcbc_out, grcbc_vel_out
     end type int_bounds_info
 
     type bc_patch_parameters

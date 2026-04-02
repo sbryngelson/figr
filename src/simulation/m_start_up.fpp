@@ -743,10 +743,6 @@ contains
         $:GPU_UPDATE(device='[bc_y%vb1, bc_y%vb2, bc_y%vb3, bc_y%ve1, bc_y%ve2, bc_y%ve3]')
         $:GPU_UPDATE(device='[bc_z%vb1, bc_z%vb2, bc_z%vb3, bc_z%ve1, bc_z%ve2, bc_z%ve3]')
 
-        $:GPU_UPDATE(device='[bc_x%grcbc_in, bc_x%grcbc_out, bc_x%grcbc_vel_out]')
-        $:GPU_UPDATE(device='[bc_y%grcbc_in, bc_y%grcbc_out, bc_y%grcbc_vel_out]')
-        $:GPU_UPDATE(device='[bc_z%grcbc_in, bc_z%grcbc_out, bc_z%grcbc_vel_out]')
-
         #:if not MFC_CASE_OPTIMIZATION
             $:GPU_UPDATE(device='[igr_order]')
         #:endif

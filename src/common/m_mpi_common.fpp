@@ -265,35 +265,6 @@ contains
 
     end subroutine s_mpi_allreduce_sum
 
-    !> Reduce an array of vectors to their global sums across all MPI ranks.
-    impure subroutine s_mpi_allreduce_vectors_sum(var_loc, var_glb, num_vectors, vector_length)
-
-        integer, intent(in)                   :: num_vectors, vector_length
-        real(wp), dimension(:,:), intent(in)  :: var_loc
-        real(wp), dimension(:,:), intent(out) :: var_glb
-
-        integer :: ierr  !< Generic flag used to identify and report MPI errors
-
-        if (loc(var_loc) == loc(var_glb)) then
-            call MPI_Allreduce(MPI_IN_PLACE, var_glb, num_vectors*vector_length, mpi_p, MPI_SUM, MPI_COMM_WORLD, ierr)
-        else
-            call MPI_Allreduce(var_loc, var_glb, num_vectors*vector_length, mpi_p, MPI_SUM, MPI_COMM_WORLD, ierr)
-        end if
-
-    end subroutine s_mpi_allreduce_vectors_sum
-
-    !> Reduce a local integer value to its global sum across all MPI ranks.
-    impure subroutine s_mpi_allreduce_integer_sum(var_loc, var_glb)
-
-        integer, intent(in)  :: var_loc
-        integer, intent(out) :: var_glb
-
-        integer :: ierr  !< Generic flag used to identify and report MPI errors
-
-        call MPI_ALLREDUCE(var_loc, var_glb, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-
-    end subroutine s_mpi_allreduce_integer_sum
-
     !> Reduce a local real value to its global minimum across all MPI ranks.
     impure subroutine s_mpi_allreduce_min(var_loc, var_glb)
 

@@ -143,8 +143,6 @@ module m_global_parameters
     real(wp) :: teno_CT                   !< Smoothness threshold for TENO
     logical  :: mp_weno                   !< Monotonicity preserving (MP) WENO
     logical  :: weno_avg                  !< Average left/right cell-boundary states
-    logical  :: weno_Re_flux              !< WENO reconstruct velocity gradients for viscous stress tensor
-    logical  :: null_weights              !< Null undesired WENO weights
     logical  :: mixture_err               !< Mixture properties correction
     logical  :: shear_stress              !< Shear stresses (computed from Re)
     logical  :: bulk_stress               !< Bulk stresses (computed from Re)
@@ -320,8 +318,6 @@ contains
         teno_CT = dflt_real
         mp_weno = .false.
         weno_avg = .false.
-        weno_Re_flux = .false.
-        null_weights = .false.
         mixture_err = .false.
         parallel_io = .false.
         file_per_process = .false.
@@ -386,13 +382,6 @@ contains
         #:endif
 
         dummy = .false.
-
-        ! GRCBC flags
-        #:for dir in {'x', 'y', 'z'}
-            bc_${dir}$%grcbc_in = .false.
-            bc_${dir}$%grcbc_out = .false.
-            bc_${dir}$%grcbc_vel_out = .false.
-        #:endfor
 
     end subroutine s_assign_default_values_to_user_inputs
 
