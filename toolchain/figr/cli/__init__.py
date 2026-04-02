@@ -1,7 +1,7 @@
 """
 CLI Schema and Auto-Generation Module.
 
-This package provides the single source of truth for MFC's CLI definition,
+This package provides the single source of truth for figr's CLI definition,
 with generators for argparse, shell completions, and documentation.
 
 Usage:

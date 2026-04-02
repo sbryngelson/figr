@@ -1,3 +1,3 @@
 """
-MFC Parameter Package — namelist-parser-based parameter filtering.
+figr Parameter Package — namelist-parser-based parameter filtering.
 """

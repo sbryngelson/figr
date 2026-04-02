@@ -288,11 +288,11 @@ class MFCTarget:
 
     name: str  # Name of the target
     flags: typing.List[str]  # Extra flags to pass to CMakeMFCTarget
-    isDependency: bool  # Is it a dependency of an MFC target?
+    isDependency: bool  # Is it a dependency of an figr target?
     isDefault: bool  # Should it be built by default? (unspecified -t | --targets)
     isRequired: bool  # Should it always be built? (no matter what -t | --targets is)
     requires: Dependencies  # Build dependencies of the target
-    runOrder: int  # For MFC Targets: Order in which targets should logically run
+    runOrder: int  # For figr targets: Order in which targets should logically run
 
     def __hash__(self) -> int:
         return hash(self.name)

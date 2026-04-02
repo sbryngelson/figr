@@ -119,11 +119,11 @@ class TestCase(case.Case):
         if self.params.get("bubbles_lagrange", "F") == "T":
             input_bubbles_lagrange(self)
 
-        mfc_script = ".\\figr.bat" if os.name == "nt" else "./figr.sh"
+        figr_script = ".\\figr.bat" if os.name == "nt" else "./figr.sh"
 
         target_names = [get_target(t).name for t in targets]
 
-        command = [mfc_script, "run", filepath, "--no-build", *tasks, *case_optimization, *jobs, "-t", *target_names, *gpus_select, *ARG("--")]
+        command = [figr_script, "run", filepath, "--no-build", *tasks, *case_optimization, *jobs, "-t", *target_names, *gpus_select, *ARG("--")]
 
         return common.system(command, print_cmd=False, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -184,15 +184,15 @@ parser = argparse.ArgumentParser(
     description="{self.get_filepath()}: {self.trace}",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument("--mfc", type=json.loads, default='{{}}', metavar="DICT",
-                    help="MFC's toolchain's internal state.")
+parser.add_argument("--figr", type=json.loads, default='{{}}', metavar="DICT",
+                    help="figr's toolchain's internal state.")
 
 ARGS = vars(parser.parse_args())
 
 case = {self.gen_json_dict_str()}
 mods = {{}}
 
-if "post_process" in ARGS["mfc"]["targets"]:
+if "post_process" in ARGS["figr"]["targets"]:
     mods = {json.dumps(POST_PROCESS_OUTPUT_PARAMS)}
     if case['p'] != 0:
         mods.update({json.dumps(POST_PROCESS_3D_PARAMS)})

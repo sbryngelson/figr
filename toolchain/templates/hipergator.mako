@@ -36,7 +36,7 @@ ${helpers.template_prologue()}
 ok ":) Loading modules:\n"
 cd "${MFC_ROOT_DIR}"
 % if engine == 'batch':
-. ./mfc.sh load -c h -m ${'g' if gpu_enabled else 'c'}
+. ./figr.sh load -c h -m ${'g' if gpu_enabled else 'c'}
 % endif
 cd - > /dev/null
 echo

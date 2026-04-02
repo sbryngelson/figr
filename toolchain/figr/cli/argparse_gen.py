@@ -107,7 +107,7 @@ def _add_common_arguments(parser: argparse.ArgumentParser, command: Command, com
         if common_set is None:
             continue
 
-        # Handle MFC config flags specially
+        # Handle figr config flags specially
         if common_set.mfc_config_flags and config is not None:
             _add_mfc_config_arguments(parser, config)
         else:

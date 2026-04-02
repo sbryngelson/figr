@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.12)
 
-project(MFC-Dependencies LANGUAGES C CXX Fortran)
+project(figr-Dependencies LANGUAGES C CXX Fortran)
 
 list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/regular")
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")

@@ -41,7 +41,7 @@ def load():
 
     if d["version"] < MFC_LOCK_CURRENT_VERSION:
         raise common.FigrException(f"""\
-There has been a breaking change to the MFC build system. Please delete your \
+There has been a breaking change to the figr build system. Please delete your \
 build/ directory and run MFC again. (v{d["version"]} -> v{MFC_LOCK_CURRENT_VERSION}).\
 """)
 

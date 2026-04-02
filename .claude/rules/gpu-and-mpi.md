@@ -88,7 +88,7 @@ AMD flang is additionally supported for GPU builds but not in the CI matrix.
 
 ## Preprocessor Defines (`#ifdef` / `#ifndef`)
 
-Raw `#ifdef` / `#ifndef` preprocessor guards are **normal and expected** in MFC.
+Raw `#ifdef` / `#ifndef` preprocessor guards are **normal and expected** in figr.
 They are NOT the same as raw `!$acc`/`!$omp` pragmas (which are forbidden).
 
 Use `#ifdef` for feature, target, compiler, and library gating:

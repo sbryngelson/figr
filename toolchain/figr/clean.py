@@ -1,5 +1,5 @@
 """
-MFC Clean Command - Remove build artifacts.
+figr Clean Command - Remove build artifacts.
 """
 
 import os

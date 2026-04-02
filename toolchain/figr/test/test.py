@@ -191,7 +191,7 @@ def test():
     total_test_count = len(cases)
 
     if ARG("list"):
-        table = rich.table.Table(title="MFC Test Cases", box=rich.table.box.SIMPLE)
+        table = rich.table.Table(title="figr Test Cases", box=rich.table.box.SIMPLE)
 
         table.add_column("UUID", style="bold magenta", justify="center")
         table.add_column("Trace")
@@ -203,9 +203,9 @@ def test():
 
         return
 
-    # Some cases require a specific build of MFC for features like Chemistry,
+    # Some cases require a specific build of figr for features like Chemistry,
     # Analytically defined patches, and --case-optimization. Here, we build all
-    # the unique versions of MFC we need to run cases.
+    # the unique versions of figr we need to run cases.
     codes = [PRE_PROCESS, SIMULATION] + ([POST_PROCESS] if ARG("test_all") else [])
     unique_builds = set()
     for case, code in itertools.product(cases, codes):
@@ -398,7 +398,7 @@ def _handle_case(case: TestCase, devices: typing.Set[int]):
 
         if cmd.returncode != 0:
             cons.print(cmd.stdout)
-            raise FigrException(f"Test {case}: Failed to execute MFC.")
+            raise FigrException(f"Test {case}: Failed to execute figr.")
 
         pack, err = packer.pack(case.get_dirpath())
         if err is not None:

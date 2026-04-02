@@ -15,7 +15,7 @@ def __print_greeting():
 
 def __checks():
     if not does_command_exist("cmake"):
-        raise FigrException("CMake is required to build MFC but couldn't be located on your system. Please ensure it installed and discoverable (e.g in your system's $PATH).")
+        raise FigrException("CMake is required to build figr but couldn't be located on your system. Please ensure it installed and discoverable (e.g in your system's $PATH).")
 
 
 def __run():

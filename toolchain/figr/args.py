@@ -1,5 +1,5 @@
 """
-MFC CLI argument parsing.
+figr CLI argument parsing.
 
 This module provides argument parsing using auto-generated parsers
 from the central CLI schema in cli/commands.py.

@@ -1,5 +1,5 @@
 """
-MFC CLI Command Definitions - SINGLE SOURCE OF TRUTH
+figr CLI Command Definitions - SINGLE SOURCE OF TRUTH
 
 All command definitions live here. This file is used to generate:
 - argparse parsers
@@ -80,7 +80,7 @@ COMMON_DEBUG_LOG = CommonArgumentSet(
         Argument(
             name="debug-log",
             short="d",
-            help="Enable Python toolchain debug logging (not MFC code).",
+            help="Enable Python toolchain debug logging (not figr code).",
             action=ArgAction.STORE_TRUE,
             dest="debug_log",
         ),
@@ -115,28 +115,28 @@ COMMON_MFC_CONFIG = CommonArgumentSet(
 BUILD_COMMAND = Command(
     name="build",
     aliases=["b"],
-    help="Build MFC and its dependencies.",
-    description="Build MFC targets with optional GPU support and case optimization.",
+    help="Build figr and its dependencies.",
+    description="Build figr targets with optional GPU support and case optimization.",
     include_common=["targets", "mfc_config", "jobs", "verbose", "debug_log"],
     arguments=[
         Argument(
             name="input",
             short="i",
-            help="(GPU Optimization) Build a version of MFC optimized for a case.",
+            help="(GPU Optimization) Build a version of figr optimized for a case.",
             type=str,
             default=None,
             completion=Completion(type=CompletionType.FILES_PY),
         ),
         Argument(
             name="case-optimization",
-            help="(GPU Optimization) Compile MFC targets with some case parameters hard-coded (requires --input).",
+            help="(GPU Optimization) Compile figr targets with some case parameters hard-coded (requires --input).",
             action=ArgAction.STORE_TRUE,
             default=False,
             dest="case_optimization",
         ),
         Argument(
             name="deps-only",
-            help="Only fetch and build dependencies, do not build MFC targets.",
+            help="Only fetch and build dependencies, do not build figr targets.",
             action=ArgAction.STORE_TRUE,
             default=False,
             dest="deps_only",
@@ -160,8 +160,8 @@ BUILD_COMMAND = Command(
 RUN_COMMAND = Command(
     name="run",
     aliases=["r"],
-    help="Run a case with MFC.",
-    description="Run an MFC simulation case interactively or submit as a batch job.",
+    help="Run a case with figr.",
+    description="Run a figr simulation case interactively or submit as a batch job.",
     include_common=["targets", "mfc_config", "jobs", "verbose", "debug_log", "gpus"],
     positionals=[
         Positional(
@@ -235,7 +235,7 @@ RUN_COMMAND = Command(
             name="name",
             short="#",
             help="(Batch) Job name.",
-            default="MFC",
+            default="figr",
             metavar="NAME",
         ),
         Argument(
@@ -262,14 +262,14 @@ RUN_COMMAND = Command(
         ),
         Argument(
             name="case-optimization",
-            help="(GPU Optimization) Compile MFC targets with some case parameters hard-coded.",
+            help="(GPU Optimization) Compile figr targets with some case parameters hard-coded.",
             action=ArgAction.STORE_TRUE,
             default=False,
             dest="case_optimization",
         ),
         Argument(
             name="no-build",
-            help="(Testing) Do not rebuild MFC.",
+            help="(Testing) Do not rebuild figr.",
             action=ArgAction.STORE_TRUE,
             default=False,
             dest="no_build",
@@ -347,8 +347,8 @@ RUN_COMMAND = Command(
 TEST_COMMAND = Command(
     name="test",
     aliases=["t"],
-    help="Run MFC's test suite.",
-    description="Run MFC's test suite with various filtering and generation options.",
+    help="Run figr's test suite.",
+    description="Run figr's test suite with various filtering and generation options.",
     include_common=["mfc_config", "jobs", "verbose", "debug_log", "gpus"],
     # Note: does NOT include "targets" - test uses different target handling
     arguments=[
@@ -413,7 +413,7 @@ TEST_COMMAND = Command(
         ),
         Argument(
             name="no-build",
-            help="(Testing) Do not rebuild MFC.",
+            help="(Testing) Do not rebuild figr.",
             action=ArgAction.STORE_TRUE,
             default=False,
             dest="no_build",
@@ -427,7 +427,7 @@ TEST_COMMAND = Command(
         ),
         Argument(
             name="case-optimization",
-            help="(GPU Optimization) Compile MFC targets with some case parameters hard-coded.",
+            help="(GPU Optimization) Compile figr targets with some case parameters hard-coded.",
             action=ArgAction.STORE_TRUE,
             default=False,
             dest="case_optimization",
@@ -506,7 +506,7 @@ TEST_COMMAND = Command(
         ("-o, --only PROP", "Run tests matching property"),
         ("-f, --from UUID", "Start from specific test"),
         ("--generate", "Generate/update golden files"),
-        ("--no-build", "Skip rebuilding MFC"),
+        ("--no-build", "Skip rebuilding figr"),
         ("--build-coverage-cache", "Build file-level gcov coverage cache (one-time)"),
         ("--only-changes", "Run tests affected by changed files (requires cache)"),
     ],
@@ -557,15 +557,15 @@ HELP_TOPICS = {
     },
     "clusters": {
         "title": "Cluster Configuration",
-        "description": "How to configure MFC for different HPC clusters",
+        "description": "How to configure figr for different HPC clusters",
     },
     "batch": {
         "title": "Batch Job Submission",
-        "description": "How to submit batch jobs with MFC",
+        "description": "How to submit batch jobs with figr",
     },
     "debugging": {
         "title": "Debugging & Troubleshooting",
-        "description": "Tips for debugging MFC issues",
+        "description": "Tips for debugging figr issues",
     },
 }
 
@@ -575,8 +575,8 @@ HELP_TOPICS = {
 FIGR_CLI_SCHEMA = CLISchema(
     prog="./figr.sh",
     description="""\
-Welcome to the MFC master script. This tool automates and manages building, testing, \
-running, and cleaning of MFC in various configurations on all supported platforms. \
+Welcome to the figr master script. This tool automates and manages building, testing, \
+running, and cleaning of figr in various configurations on all supported platforms. \
 The README documents this tool and its various commands in more detail. To get \
 started, run `./figr.sh build -h`.""",
     arguments=[

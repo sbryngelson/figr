@@ -1,7 +1,7 @@
 """
 IGR test case generator.
 
-Uses the upstream MFC Sod shock tube base configuration (3-patch, ghost
+Uses the upstream Sod shock tube base configuration (3-patch, ghost
 extrapolation BCs) adapted for the IGR-only mini-app.
 """
 

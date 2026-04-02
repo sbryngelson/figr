@@ -1,5 +1,5 @@
-# List of modules used by . ./mfc.sh load to load modules known to be compatible
-# with MFC on different clusters.
+# List of modules used by . ./figr.sh load to load modules known to be compatible
+# with figr on different clusters.
 #
 # [slug]     [system name]
 # [slug]-all [common modules]    (any number of lines)

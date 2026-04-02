@@ -3,7 +3,7 @@
 <%def name="template_prologue()">
 % if os.name != 'nt':
     #>
-    #> The MFC prologue prints a summary of the running job and starts a timer.
+    #> The figr prologue prints a summary of the running job and starts a timer.
     #>
 
     . "${MFC_ROOT_DIR}/toolchain/util.sh"
@@ -23,7 +23,7 @@ END
 )
 
     printf "$TABLE_HEADER"
-    printf "$TABLE_TITLE_FORMAT" "MFC case # ${name} @ ${input}:"
+    printf "$TABLE_TITLE_FORMAT" "figr case # ${name} @ ${input}:"
     printf "$TABLE_HEADER"
     printf "$TABLE_CONTENT\\n"
     printf "$TABLE_FOOTER\\n"
@@ -34,7 +34,7 @@ END
 
     t_start=$(date +%s)
 % else:
-    echo MFC case # ${name} @ ${input}:
+    echo figr case # ${name} @ ${input}:
     echo.
     echo Start Date: %DATE%
     echo Start Time: %TIME%
@@ -48,7 +48,7 @@ END
 <%def name="template_epilogue()">
 % if os.name != 'nt':
     #>
-    #> The MFC epilogue stops the timer and prints the execution summary. It also
+    #> The figr epilogue stops the timer and prints the execution summary. It also
     #> performs some cleanup and housekeeping tasks before exiting.
     #>
 

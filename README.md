@@ -69,7 +69,7 @@
 | **Codespaces** (fastest) 💨 | [Open a Codespace](https://github.com/codespaces/new?hide_repo_select=true&ref=master&repo=MFlowCode%2FMFC) - pre-built, zero install |
 | **Docker** 🐳 | `docker run -it --rm --entrypoint bash sbryngelson/figr:latest-cpu` |
 | **Homebrew** (macOS) 🍺 | `brew install mflowcode/mfc/mfc` |
-| **From source** 💻 | `git clone https://github.com/sbryngelson/figr && cd MFC && ./figr.sh build -j $(nproc)` |
+| **From source** 💻 | `git clone https://github.com/sbryngelson/figr && cd figr && ./figr.sh build -j $(nproc)` |
 
 Your first simulation:
 ```bash

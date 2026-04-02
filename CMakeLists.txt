@@ -77,7 +77,7 @@ compiler (or a different version thereof), please:\n\
  - Install the compiler or load its module. (e.g. module load gcc/10.1)\n\
  - Set/Export the C, CXX, and FC environment variables. (e.g. 'export CC=gcc', \
  'export CXX=g++', and 'export FC=gfortran'.\n\
- - If using mfc.sh, delete the build/<code name> directory and try again. (e.g. 'rm -rf build/pre_process')")
+ - If using figr.sh, delete the build/<code name> directory and try again. (e.g. 'rm -rf build/pre_process')")
 
 if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 5)
