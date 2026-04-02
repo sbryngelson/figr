@@ -103,13 +103,10 @@ module m_global_parameters
     #:if not FIGR_CASE_OPTIMIZATION
         $:GPU_DECLARE(create='[num_dims, weno_polyn, weno_order]')
         $:GPU_DECLARE(create='[weno_num_stencils, num_fluids]')
-        $:GPU_DECLARE()
         $:GPU_DECLARE(create='[igr_iter_solver, igr_order, viscous, igr_pres_lim]')
         $:GPU_DECLARE(create='[recon_type]')
     #:endif
 
-    $:GPU_DECLARE(create='[model_eqns]')
-    $:GPU_DECLARE()
     $:GPU_DECLARE(create='[shear_stress, bulk_stress]')
 
     integer :: num_bc_patches
@@ -394,7 +391,7 @@ contains
 
         $:GPU_UPDATE(device='[cfl_target, m, n, p]')
 
-        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns, mixture_err, mp_weno, weno_eps, teno_CT]')
+        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx]')
 
         #:if not FIGR_CASE_OPTIMIZATION
             $:GPU_UPDATE()

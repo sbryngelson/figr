@@ -92,7 +92,6 @@ contains
         real(wp), dimension(0:m,0:n,0:p), intent(inout), optional :: vcfl_sf, Rc_sf
         real(wp), dimension(2), intent(in)                        :: Re_l
         integer, intent(in)                                       :: j, k, l
-        real(wp)                                                  :: fltr_dtheta
 
         ! Inviscid CFL calculation
         if (p > 0 .or. n > 0) then
@@ -135,7 +134,6 @@ contains
         real(wp), dimension(2), intent(in)              :: Re_l
         integer, intent(in)                             :: j, k, l
         real(wp)                                        :: icfl_dt, vcfl_dt
-        real(wp)                                        :: fltr_dtheta
 
         ! Inviscid CFL calculation
         if (p > 0 .or. n > 0) then

@@ -221,16 +221,14 @@ contains
             if (E_wrt .or. cons_vars_wrt) dbvars = dbvars + 1
             if (pres_wrt .or. prim_vars_wrt) dbvars = dbvars + 1
 
-            if (model_eqns == 2) then
-                do i = 1, num_fluids - 1
-                    if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                        dbvars = dbvars + 1
-                    end if
-                end do
-
-                if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+            do i = 1, num_fluids - 1
+                if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
                     dbvars = dbvars + 1
                 end if
+            end do
+
+            if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+                dbvars = dbvars + 1
             end if
 
             if (gamma_wrt) then

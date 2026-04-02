@@ -188,17 +188,15 @@ contains
             call s_compute_finite_difference_coefficients(p, z_cc, fd_coeff_z, buff_size, fd_number, fd_order, offset_z)
         end if
 
-        if (model_eqns == 2) then
-            do i = 1, num_fluids
-                if (alpha_rho_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                    q_sf(:,:,:) = q_cons_vf(i)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
-                    write (varname, '(A,I0)') 'alpha_rho', i
-                    call s_write_variable_to_formatted_database_file(varname, t_step)
+        do i = 1, num_fluids
+            if (alpha_rho_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+                q_sf(:,:,:) = q_cons_vf(i)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
+                write (varname, '(A,I0)') 'alpha_rho', i
+                call s_write_variable_to_formatted_database_file(varname, t_step)
 
-                    varname(:) = ' '
-                end if
-            end do
-        end if
+                varname(:) = ' '
+            end if
+        end do
 
         if (rho_wrt) then
             q_sf(:,:,:) = rho_sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
@@ -255,33 +253,31 @@ contains
             varname(:) = ' '
         end if
 
-        if (model_eqns == 2) then
-            do i = 1, num_fluids - 1
-                if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                    q_sf(:,:,:) = q_cons_vf(i + E_idx)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
-                    write (varname, '(A,I0)') 'alpha', i
-                    call s_write_variable_to_formatted_database_file(varname, t_step)
-
-                    varname(:) = ' '
-                end if
-            end do
-
-            if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                do k = z_beg, z_end
-                    do j = y_beg, y_end
-                        do i = x_beg, x_end
-                            q_sf(i, j, k) = 1._wp
-                            do l = 1, num_fluids - 1
-                                q_sf(i, j, k) = q_sf(i, j, k) - q_cons_vf(E_idx + l)%sf(i, j, k)
-                            end do
-                        end do
-                    end do
-                end do
-                write (varname, '(A,I0)') 'alpha', num_fluids
+        do i = 1, num_fluids - 1
+            if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+                q_sf(:,:,:) = q_cons_vf(i + E_idx)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
+                write (varname, '(A,I0)') 'alpha', i
                 call s_write_variable_to_formatted_database_file(varname, t_step)
 
                 varname(:) = ' '
             end if
+        end do
+
+        if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+            do k = z_beg, z_end
+                do j = y_beg, y_end
+                    do i = x_beg, x_end
+                        q_sf(i, j, k) = 1._wp
+                        do l = 1, num_fluids - 1
+                            q_sf(i, j, k) = q_sf(i, j, k) - q_cons_vf(E_idx + l)%sf(i, j, k)
+                        end do
+                    end do
+                end do
+            end do
+            write (varname, '(A,I0)') 'alpha', num_fluids
+            call s_write_variable_to_formatted_database_file(varname, t_step)
+
+            varname(:) = ' '
         end if
 
         if (gamma_wrt) then

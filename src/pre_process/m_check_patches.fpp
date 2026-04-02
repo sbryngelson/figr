@@ -460,11 +460,11 @@ contains
         @:PROHIBIT(p > 0 .and. f_is_default(patch_icpp(patch_id)%vel(3)), "Patch "//trim(iStr)//": vel(3) must be set when p > 0")
         @:PROHIBIT(patch_icpp(patch_id)%geometry == 5 .and. patch_icpp(patch_id)%pi_inf > 0, &
                    & "Patch " // trim(iStr) // ": pi_inf must be less than or equal to zero when geometry = 5")
-        @:PROHIBIT(model_eqns == 2 .and. any(patch_icpp(patch_id)%alpha_rho(1:num_fluids) < 0._wp), &
+        @:PROHIBIT(any(patch_icpp(patch_id)%alpha_rho(1:num_fluids) < 0._wp), &
                    & "Patch " // trim(iStr) &
-                   & // ": alpha_rho(1:num_fluids) must be greater than or equal to zero when model_eqns = 2")
+                   & // ": alpha_rho(1:num_fluids) must be greater than or equal to zero")
 
-        if (model_eqns == 2 .and. num_fluids < num_fluids_max) then
+        if (num_fluids < num_fluids_max) then
             @:PROHIBIT(.not. f_all_default(patch_icpp(patch_id)%alpha_rho(num_fluids + 1:)), &
                        & "Patch " // trim(iStr) // ": alpha_rho(i) must not be set for i > num_fluids")
             @:PROHIBIT(.not. f_all_default(patch_icpp(patch_id)%alpha(num_fluids + 1:)), &
