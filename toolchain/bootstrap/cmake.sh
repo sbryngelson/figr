@@ -76,7 +76,7 @@ if [ "$bShouldInstallCMake" = true ]; then
     log "Downloading$MAGENTA CMake v$version$COLOR_RESET for $MAGENTA$arch$COLOR_RESET from $CYAN$repository$COLOR_RESET."
 
     cmake_fatal_error() {
-        log   "$MAGENTA""CMake$COLOR_RESET is not discoverable or is an older release, incompatible with$MAGENTA MFC$COLOR_RESET. Please download"
+        log   "$MAGENTA""CMake$COLOR_RESET is not discoverable or is an older release, incompatible with figr$COLOR_RESET. Please download"
         log   "or install a recent version of$MAGENTA CMake$COLOR_RESET to get past this step. If you are currently on a"
         log   "managed system like a cluster, provided there is no suitable environment module, you can"
         log   "either build it from source, or get it via$MAGENTA Spack$COLOR_RESET."
