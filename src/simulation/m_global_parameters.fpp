@@ -206,16 +206,11 @@ module m_global_parameters
     integer               :: sys_size              !< Number of unknowns in system of eqns.
     type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
     type(int_bounds_info) :: mom_idx               !< Indexes of first & last momentum eqns.
-    integer               :: E_idx                 !< Index of energy equation
-    integer               :: n_idx                 !< Index of number density
-    type(int_bounds_info) :: adv_idx               !< Indexes of first & last advection eqns.
-    type(int_bounds_info) :: internalEnergies_idx  !< Indexes of first & last internal energy eqns.
-    integer               :: alf_idx               !< Index of void fraction
-    integer               :: gamma_idx             !< Index of specific heat ratio func. eqn.
-    integer               :: pi_inf_idx            !< Index of liquid stiffness func. eqn.
+    integer               :: E_idx    !< Index of energy equation
+    type(int_bounds_info) :: adv_idx  !< Indexes of first & last advection eqns.
+    integer               :: alf_idx  !< Index of void fraction
     !> @}
-    $:GPU_DECLARE(create='[sys_size, E_idx, n_idx, alf_idx, gamma_idx]')
-    $:GPU_DECLARE(create='[pi_inf_idx]')
+    $:GPU_DECLARE(create='[sys_size, E_idx, alf_idx]')
 
     ! Cell Indices for the (local) interior points (O-m, O-n, 0-p). Stands for "InDices With INTerior".
     type(int_bounds_info) :: idwint(1:3)
@@ -261,15 +256,6 @@ module m_global_parameters
     ! Fluids Physical Parameters
 
     type(physical_parameters), dimension(num_fluids_max) :: fluid_pp  !< Stiffened gas EOS parameters and Reynolds numbers per fluid
-    integer                                              :: fd_order  !< Finite-difference order for CoM and flow probe derivatives
-    integer                                              :: fd_number  !< Finite-difference half-stencil size: MAX(1, fd_order/2)
-    $:GPU_DECLARE(create='[fd_order, fd_number]')
-
-    logical                                              :: integral_wrt
-    integer                                              :: num_probes
-    integer                                              :: num_integrals
-    type(vec3_dt), dimension(num_probes_max)             :: probe
-    type(integral_parameters), dimension(num_probes_max) :: integral
 
     !> @name Reference density and pressure for Tait EOS
     !> @{
@@ -277,82 +263,11 @@ module m_global_parameters
     !> @}
     $:GPU_DECLARE(create='[rhoref, pref]')
 
-    !> @name Bubble modeling
-    !> @{
-    #:if MFC_CASE_OPTIMIZATION
-        integer, parameter :: nb = ${nb}$  !< Number of eq. bubble sizes
-    #:else
-        integer :: nb  !< Number of eq. bubble sizes
-    #:endif
-
-    real(wp) :: Eu      !< Euler number
-    real(wp) :: Ca      !< Cavitation number
-    real(wp) :: Web     !< Weber number
-    real(wp) :: Re_inv  !< Inverse Reynolds number
-    $:GPU_DECLARE(create='[Eu, Ca, Web, Re_inv]')
-
-    real(wp), dimension(:), allocatable :: weight  !< Simpson quadrature weights
-    real(wp), dimension(:), allocatable :: R0      !< Bubble sizes
-    $:GPU_DECLARE(create='[weight, R0]')
-
-    logical :: bubbles_euler  !< Bubbles euler on/off
-    logical :: polytropic     !< Polytropic switch
-    logical :: polydisperse   !< Polydisperse bubbles
-    $:GPU_DECLARE(create='[bubbles_euler, polytropic, polydisperse]')
-
-    logical  :: adv_n              !< Solve the number density equation and compute alpha from number density
-    logical  :: adap_dt            !< Adaptive step size control
-    real(wp) :: adap_dt_tol        !< Tolerance to control adaptive step size
-    integer  :: adap_dt_max_iters  !< Maximum number of iterations
-    $:GPU_DECLARE(create='[adv_n, adap_dt, adap_dt_tol, adap_dt_max_iters]')
-
-    integer :: bubble_model  !< Gilmore or Keller--Miksis bubble model
-    integer :: thermal       !< Thermal behavior. 1 = adiabatic, 2 = isotherm, 3 = transfer
-    $:GPU_DECLARE(create='[bubble_model, thermal]')
-
-    real(wp), allocatable, dimension(:,:,:) :: ptil        !< Pressure modification
-    real(wp)                                :: poly_sigma  !< log normal sigma for polydisperse PDF
-    $:GPU_DECLARE(create='[ptil, poly_sigma]')
-
-    logical            :: qbmm      !< Quadrature moment method
-    integer, parameter :: nmom = 6  !< Number of carried moments per R0 location
-    integer            :: nmomsp    !< Number of moments required by ensemble-averaging
-    integer            :: nmomtot   !< Total number of carried moments moments/transport equations
-    real(wp)           :: pi_fac    !< Factor for artificial pi_inf
-    $:GPU_DECLARE(create='[qbmm, nmomsp, nmomtot, pi_fac]')
-
-    #:if not MFC_CASE_OPTIMIZATION
-        $:GPU_DECLARE(create='[nb]')
-    #:endif
-
-    type(scalar_field), allocatable, dimension(:)     :: mom_sp
-    type(scalar_field), allocatable, dimension(:,:,:) :: mom_3d
-    $:GPU_DECLARE(create='[mom_sp, mom_3d]')
-    !> @}
-
-    !> @name Physical bubble parameters (see Ando 2010, Preston 2007)
-    !> @{
-    real(wp) :: phi_vg, phi_gv, Pe_c, Tw, k_vl, k_gl
-    $:GPU_DECLARE(create='[phi_vg, phi_gv, Pe_c, Tw, k_vl, k_gl]')
-
-    real(wp), dimension(:), allocatable :: pb0, mass_g0, mass_v0, Pe_T, k_v, k_g
-    real(wp), dimension(:), allocatable :: Re_trans_T, Re_trans_c, Im_trans_T, Im_trans_c, omegaN
-    $:GPU_DECLARE(create='[pb0, mass_g0, mass_v0, Pe_T, k_v, k_g]')
-    $:GPU_DECLARE(create='[Re_trans_T, Re_trans_c, Im_trans_T, Im_trans_c, omegaN]')
-
-    real(wp) :: gam, gam_m
-    $:GPU_DECLARE(create='[gam, gam_m]')
-
-    real(wp) :: R0ref, p0ref, rho0ref, T0ref, ss, pv, vd, mu_l, mu_v, mu_g, gam_v, gam_g, M_v, M_g, cp_v, cp_g, R_v, R_g
-    $:GPU_DECLARE(create='[R0ref, p0ref, rho0ref, T0ref, ss, pv, vd, mu_l, mu_v, mu_g, gam_v, gam_g, M_v, M_g, cp_v, cp_g, R_v, R_g]')
-    !> @}
 
     integer :: momxb, momxe
     integer :: advxb, advxe
     integer :: contxb, contxe
-    integer :: intxb, intxe
     $:GPU_DECLARE(create='[momxb, momxe, advxb, advxe, contxb, contxe]')
-    $:GPU_DECLARE(create='[intxb, intxe]')
 
     real(wp), allocatable, dimension(:) :: gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps
     $:GPU_DECLARE(create='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
@@ -470,7 +385,6 @@ contains
         pref = dflt_real
 
         #:if not MFC_CASE_OPTIMIZATION
-            nb = 1
             recon_type = WENO_TYPE
             weno_order = dflt_int
             muscl_order = dflt_int
@@ -478,34 +392,7 @@ contains
             num_fluids = dflt_int
         #:endif
 
-        adv_n = .false.
-        adap_dt = .false.
-        adap_dt_tol = dflt_adap_dt_tol
-        adap_dt_max_iters = dflt_adap_dt_max_iters
-
-        pi_fac = 1._wp
-
         dummy = .false.
-
-        fd_order = dflt_int
-        integral_wrt = .false.
-        num_probes = dflt_int
-        num_integrals = dflt_int
-
-        do i = 1, num_probes_max
-            probe(i)%x = dflt_real
-            probe(i)%y = dflt_real
-            probe(i)%z = dflt_real
-        end do
-
-        do i = 1, num_probes_max
-            integral(i)%xmin = dflt_real
-            integral(i)%xmax = dflt_real
-            integral(i)%ymin = dflt_real
-            integral(i)%ymax = dflt_real
-            integral(i)%zmin = dflt_real
-            integral(i)%zmax = dflt_real
-        end do
 
         ! GRCBC flags
         #:for dir in {'x', 'y', 'z'}
@@ -537,7 +424,6 @@ contains
             end if
             $:GPU_UPDATE(device='[weno_polyn, muscl_polyn]')
             $:GPU_UPDATE(device='[weno_num_stencils]')
-            $:GPU_UPDATE(device='[nb]')
             $:GPU_UPDATE(device='[num_dims, num_fluids]')
             $:GPU_UPDATE(device='[igr_order, igr_iter_solver]')
         #:endif
@@ -611,12 +497,8 @@ contains
             wenojs = .not. (mapped_weno .or. wenoz .or. teno)
         #:endif
 
-        fd_number = max(1, fd_order/2)
-
         call s_configure_coordinate_bounds(igr_order, buff_size, idwint, idwbuff, viscous, m, n, p, num_dims)
         $:GPU_UPDATE(device='[idwint, idwbuff]')
-
-        $:GPU_UPDATE(device='[fd_order, fd_number]')
 
         momxb = mom_idx%beg
         momxe = mom_idx%end
@@ -624,13 +506,11 @@ contains
         advxe = adv_idx%end
         contxb = cont_idx%beg
         contxe = cont_idx%end
-        intxb = internalEnergies_idx%beg
-        intxe = internalEnergies_idx%end
-        $:GPU_UPDATE(device='[momxb, momxe, advxb, advxe, contxb, contxe, intxb, intxe, sys_size, buff_size, E_idx, alf_idx]')
+        $:GPU_UPDATE(device='[momxb, momxe, advxb, advxe, contxb, contxe, sys_size, buff_size, E_idx, alf_idx]')
 
         $:GPU_UPDATE(device='[cfl_target, m, n, p]')
 
-        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, gamma_idx, pi_inf_idx, E_idx, alf_idx, model_eqns, &
+        $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns, &
                      & mixture_err, mp_weno, weno_eps, teno_CT]')
 
         #:if not MFC_CASE_OPTIMIZATION

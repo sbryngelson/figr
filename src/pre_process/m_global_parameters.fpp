@@ -65,14 +65,9 @@ module m_global_parameters
     ! Annotations of the structure, i.e. the organization, of the state vectors
     type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
     type(int_bounds_info) :: mom_idx               !< Indexes of first & last momentum eqns.
-    integer               :: E_idx                 !< Index of total energy equation
-    integer               :: alf_idx               !< Index of void fraction
-    type(int_bounds_info) :: adv_idx               !< Indexes of first & last advection eqns.
-    type(int_bounds_info) :: internalEnergies_idx  !< Indexes of first & last internal energy eqns.
-    integer               :: gamma_idx             !< Index of specific heat ratio func. eqn.
-    integer               :: pi_inf_idx            !< Index of liquid stiffness func. eqn.
-    type(int_bounds_info) :: stress_idx            !< Indexes of elastic shear stress eqns.
-    type(int_bounds_info) :: xi_idx                !< Indexes of first and last reference map eqns.
+    integer               :: E_idx    !< Index of total energy equation
+    integer               :: alf_idx  !< Index of void fraction
+    type(int_bounds_info) :: adv_idx  !< Indexes of first & last advection eqns.
     ! Cell Indices for the (local) interior points (O-m, O-n, 0-p). Stands for "InDices With BUFFer".
     type(int_bounds_info) :: idwint(1:3)
 
@@ -90,7 +85,6 @@ module m_global_parameters
     real(wp)                   :: mixlayer_perturb_k0   !< Peak wavenumber for mixlayer perturbation (default: most unstable mode)
     logical                    :: simplex_perturb
     type(simplex_noise_params) :: simplex_params
-    real(wp)                   :: pi_fac                !< Factor for artificial pi_inf
     logical                    :: viscous
 
     ! Perturb density of surrounding air so as to break symmetry of grid
@@ -125,7 +119,6 @@ module m_global_parameters
     integer :: momxb, momxe
     integer :: advxb, advxe
     integer :: contxb, contxe
-    integer :: intxb, intxe
     !> @}
 
     integer, allocatable, dimension(:,:,:) :: logic_grid
@@ -300,8 +293,6 @@ contains
         ! Tait EOS
         rhoref = dflt_real
         pref = dflt_real
-
-        pi_fac = 1._wp
 
         ! Fluids physical parameters
         do i = 1, num_fluids_max

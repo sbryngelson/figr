@@ -17,7 +17,6 @@ module m_start_up
     use m_rhs
     use m_data_output
     use m_time_steppers
-    use m_derived_variables
     use ieee_arithmetic
     use m_helper_basic
     use m_helper
@@ -34,7 +33,7 @@ module m_start_up
     implicit none
 
     private; public :: s_read_input_file, s_check_input_file, s_read_data_files, s_read_serial_data_files, &
-        & s_read_parallel_data_files, s_initialize_internal_energy_equations, s_initialize_modules, s_initialize_gpu_vars, &
+        & s_read_parallel_data_files, s_initialize_modules, s_initialize_gpu_vars, &
         & s_initialize_mpi_domain, s_finalize_modules, s_perform_time_step, s_save_data, s_save_performance_metrics
 
     type(scalar_field), allocatable, dimension(:) :: q_cons_temp
@@ -73,14 +72,14 @@ contains
             x_a, y_a, z_a, x_b, y_b, z_b, &
             x_domain, y_domain, z_domain, &
             fluid_pp, prim_vars_wrt, &
-            fd_order, probe, num_probes, t_step_old, &
+            t_step_old, &
             precision, parallel_io, &
             rhoref, pref, &
         #:if not MFC_CASE_OPTIMIZATION
             num_fluids, igr_order, viscous, &
             igr_iter_solver, igr_pres_lim, &
         #:endif
-        integral, integral_wrt, num_integrals, file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, &
+        file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, &
             & num_bc_patches, alf_factor, num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, &
             & nv_uvm_pref_gpu, down_sample
 
@@ -424,44 +423,6 @@ contains
 
     end subroutine s_read_parallel_data_files
 
-    !> Initialize internal-energy equations from phase mass, mixture momentum, and total energy
-    subroutine s_initialize_internal_energy_equations(v_vf)
-
-        type(scalar_field), dimension(sys_size), intent(inout) :: v_vf
-        real(wp)                                               :: rho
-        real(wp)                                               :: dyn_pres
-        real(wp)                                               :: gamma
-        real(wp)                                               :: pi_inf
-        real(wp)                                               :: qv
-        real(wp), dimension(2)                                 :: Re
-        real(wp)                                               :: pres, T
-        integer                                                :: i, j, k, l
-        real(wp), dimension(1)                                 :: rhoYks
-
-        T = dflt_T_guess
-
-        do j = 0, m
-            do k = 0, n
-                do l = 0, p
-                    call s_convert_to_mixture_variables(v_vf, j, k, l, rho, gamma, pi_inf, qv, Re)
-
-                    dyn_pres = 0._wp
-                    do i = mom_idx%beg, mom_idx%end
-                        dyn_pres = dyn_pres + 5.e-1_wp*v_vf(i)%sf(j, k, l)*v_vf(i)%sf(j, k, l)/max(rho, sgm_eps)
-                    end do
-
-                    call s_compute_pressure(v_vf(E_idx)%sf(j, k, l), 0._stp, dyn_pres, pi_inf, gamma, rho, qv, pres)
-
-                    do i = 1, num_fluids
-                        v_vf(i + intxb - 1)%sf(j, k, l) = v_vf(i + advxb - 1)%sf(j, k, &
-                             & l)*(gammas(i)*pres + pi_infs(i)) + v_vf(i + contxb - 1)%sf(j, k, l)*qvs(i)
-                    end do
-                end do
-            end do
-        end do
-
-    end subroutine s_initialize_internal_energy_equations
-
     !> Advance the simulation by one time step, handling CFL-based dt and time-stepper dispatch
     impure subroutine s_perform_time_step(t_step, time_avg)
 
@@ -669,7 +630,6 @@ contains
         call s_initialize_rhs_module()
 
         call s_initialize_data_output_module()
-        call s_initialize_derived_variables_module()
         call s_initialize_time_steppers_module()
 
         call s_initialize_boundary_common_module()
@@ -705,7 +665,6 @@ contains
         ! needed to properly configure the modules. The preparations below DO DEPEND on the grid being complete.
         call s_initialize_igr_module()
 
-        call s_initialize_derived_variables()
 
     end subroutine s_initialize_modules
 
@@ -809,7 +768,6 @@ contains
     impure subroutine s_finalize_modules
 
         call s_finalize_time_steppers_module()
-        call s_finalize_derived_variables_module()
         call s_finalize_data_output_module()
         call s_finalize_rhs_module()
         call s_finalize_igr_module()

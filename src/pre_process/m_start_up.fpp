@@ -75,7 +75,7 @@ contains
         namelist /user_inputs/ case_dir, old_grid, old_ic, t_step_old, t_step_start, m, n, p, x_domain, y_domain, z_domain, &
             & stretch_x, stretch_y, stretch_z, a_x, a_y, a_z, x_a, y_a, z_a, x_b, y_b, z_b, model_eqns, num_fluids, bc_x, bc_y, &
             & bc_z, num_patches, patch_icpp, fluid_pp, precision, parallel_io, mixlayer_vel_profile, mixlayer_vel_coef, &
-            & mixlayer_perturb, mixlayer_perturb_nk, mixlayer_perturb_k0, pi_fac, perturb_flow, perturb_flow_fluid, &
+            & mixlayer_perturb, mixlayer_perturb_nk, mixlayer_perturb_k0, perturb_flow, perturb_flow_fluid, &
             & perturb_flow_mag, perturb_sph, perturb_sph_fluid, fluid_rho, loops_x, loops_y, loops_z, rhoref, pref, &
             & file_per_process, cfl_adap_dt, cfl_const_dt, n_start, n_start_old, elliptic_smoothing, elliptic_smoothing_iters, &
             & viscous, num_bc_patches, patch_bc, igr_order, down_sample, simplex_perturb, simplex_params

@@ -54,7 +54,7 @@ contains
             & 'a_z', 'x_a', 'x_b', 'y_a', 'y_b', 'z_a', 'z_b', 'bc_x%beg',     &
             & 'bc_x%end', 'bc_y%beg', 'bc_y%end', 'bc_z%beg', 'bc_z%end',      &
             & 'perturb_flow_mag', 'pref', 'rhoref',                             &
-            & 'pi_fac', 'mixlayer_vel_coef',                                    &
+            & 'mixlayer_vel_coef',                                              &
             & 'mixlayer_perturb_k0']
             call MPI_BCAST(${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
         #:endfor

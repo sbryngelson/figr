@@ -21,29 +21,13 @@ module m_rhs
 
     private; public :: s_initialize_rhs_module, s_compute_rhs, s_finalize_rhs_module
 
-    type(vector_field) :: q_cons_qp  !< Conservative variables at quadrature points
-    $:GPU_DECLARE(create='[q_cons_qp]')
-
-    type(vector_field) :: q_prim_qp  !< Primitive variables at cell-interior quadrature points
-    $:GPU_DECLARE(create='[q_prim_qp]')
-
 contains
 
     !> Initialize the RHS module
     impure subroutine s_initialize_rhs_module
 
-        integer :: i, j, k, l, id  !< Generic loop iterators
-
         $:GPU_ENTER_DATA(copyin='[idwbuff]')
         $:GPU_UPDATE(device='[idwbuff]')
-
-        @:ALLOCATE(q_cons_qp%vf(1:sys_size))
-        @:ALLOCATE(q_prim_qp%vf(1:sys_size))
-
-        do l = adv_idx%end + 1, sys_size
-            @:ALLOCATE(q_prim_qp%vf(l)%sf(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, &
-                       & idwbuff(3)%beg:idwbuff(3)%end))
-        end do
 
     end subroutine s_initialize_rhs_module
 
@@ -134,10 +118,6 @@ contains
 
     !> Module deallocation and/or disassociation procedures
     impure subroutine s_finalize_rhs_module
-
-        integer :: i, j, l
-
-        @:DEALLOCATE(q_cons_qp%vf, q_prim_qp%vf)
 
     end subroutine s_finalize_rhs_module
 

@@ -90,11 +90,9 @@ module m_global_parameters
     !> @{
     type(int_bounds_info) :: cont_idx    !< Indexes of first & last continuity eqns.
     type(int_bounds_info) :: mom_idx     !< Indexes of first & last momentum eqns.
-    integer               :: E_idx       !< Index of energy equation
-    type(int_bounds_info) :: adv_idx     !< Indexes of first & last advection eqns.
-    integer               :: gamma_idx   !< Index of specific heat ratio func. eqn.
-    integer               :: alf_idx     !< Index of specific heat ratio func. eqn.
-    integer               :: pi_inf_idx  !< Index of liquid stiffness func. eqn.
+    integer               :: E_idx    !< Index of energy equation
+    type(int_bounds_info) :: adv_idx  !< Indexes of first & last advection eqns.
+    integer               :: alf_idx  !< Index of void fraction
     !> @}
 
     ! Cell Indices for the (local) interior points (O-m, O-n, 0-p). Stands for "InDices With BUFFer".

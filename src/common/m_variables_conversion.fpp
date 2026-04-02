@@ -19,7 +19,6 @@ module m_variables_conversion
     private
     public :: s_initialize_variables_conversion_module, &
               s_convert_to_mixture_variables, &
-              s_convert_mixture_to_mixture_variables, &
               s_convert_species_to_mixture_variables, &
               s_convert_species_to_mixture_variables_acc, &
               s_convert_conservative_to_primitive_variables, &
@@ -52,8 +51,7 @@ module m_variables_conversion
 
 contains
 
-    !> Dispatch to the s_convert_mixture_to_mixture_variables and s_convert_species_to_mixture_variables subroutines. Replaces a
-    !! procedure pointer.
+    !> Dispatch to s_convert_species_to_mixture_variables.
     subroutine s_convert_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K, G_K, G)
 
         type(scalar_field), dimension(sys_size), intent(in)   :: q_vf
@@ -83,34 +81,6 @@ contains
 
     end subroutine s_compute_pressure
 
-    !> Convert mixture variables to density, gamma, pi_inf, and qv for the gamma/pi_inf model. Given conservative or primitive
-    !! variables, transfers the density, specific heat ratio function and the liquid stiffness function from q_vf to rho, gamma and
-    !! pi_inf.
-    subroutine s_convert_mixture_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv)
-
-        type(scalar_field), dimension(sys_size), intent(in) :: q_vf
-        integer, intent(in)                                 :: i, j, k
-        real(wp), intent(out), target                       :: rho
-        real(wp), intent(out), target                       :: gamma
-        real(wp), intent(out), target                       :: pi_inf
-        real(wp), intent(out), target                       :: qv
-
-        ! Transferring the density, the specific heat ratio function and the liquid stiffness function, respectively
-
-        rho = q_vf(1)%sf(i, j, k)
-        gamma = q_vf(gamma_idx)%sf(i, j, k)
-        pi_inf = q_vf(pi_inf_idx)%sf(i, j, k)
-        qv = 0._wp  ! keep this value nil for now. For future adjustment
-
-        ! Post process requires rho_sf/gamma_sf/pi_inf_sf/qv_sf to also be updated
-#ifdef MFC_POST_PROCESS
-        rho_sf(i, j, k) = rho
-        gamma_sf(i, j, k) = gamma
-        pi_inf_sf(i, j, k) = pi_inf
-        qv_sf(i, j, k) = qv
-#endif
-
-    end subroutine s_convert_mixture_to_mixture_variables
 
     !> Convert species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv. Given conservative or
     !! primitive variables, computes the density, the specific heat ratio function and the liquid stiffness function from q_vf and

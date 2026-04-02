@@ -18,7 +18,6 @@ module m_time_steppers
     use m_sim_helpers
     use m_variables_conversion
     use m_nvtx
-    use m_derived_variables
 
     implicit none
 
@@ -35,7 +34,6 @@ module m_time_steppers
     integer, private                            :: num_ts  !< Number of time stages in the time-stepping scheme
     integer                                     :: stor    !< storage index
     real(wp), allocatable, dimension(:,:)       :: rk_coef
-    integer, private                            :: num_probe_ts
 
     $:GPU_DECLARE(create='[q_cons_ts, q_prim_vf, rhs_vf, q_prim_ts1, q_prim_ts2, rhs_mv, rhs_pb, max_dt, rk_coef, stor, bc_type]')
 

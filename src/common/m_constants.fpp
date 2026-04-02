@@ -22,13 +22,11 @@ module m_constants
     integer, parameter  :: dflt_int = -100  !< Default integer value
     integer, parameter  :: fourier_rings = 5  !< Fourier filter ring limit
     integer, parameter  :: num_fluids_max = 10  !< Maximum number of fluids in the simulation
-    integer, parameter  :: num_probes_max = 10  !< Maximum number of flow probes in the simulation
     integer, parameter  :: num_patches_max = 1000  !< Maximum number of IC patches
     integer, parameter  :: num_bc_patches_max = 10  !< Maximum number of boundary condition patches
     integer, parameter  :: max_2d_fourier_modes = 10  !< Max Fourier mode index for 2D modal patch (geometry 13)
     integer, parameter  :: max_sph_harm_degree = 5  !< Max degree L for 3D spherical harmonic patch (geometry 14)
     integer, parameter  :: pathlen_max = 400  !< Maximum path length
-    integer, parameter  :: nnode = 4  !< Number of QBMM nodes (kept for array compat)
     integer, parameter  :: dflt_num_igr_iters = 2  !< number of iterations for IGR elliptic solve
     integer, parameter  :: dflt_num_igr_warm_start_iters = 50  !< default number of iterations for IGR elliptic solve
     real(wp), parameter :: dflt_alf_factor = 10._wp  !< scaling factor for IGR alpha

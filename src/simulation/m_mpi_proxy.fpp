@@ -49,21 +49,17 @@ contains
             & 't_step_start','t_step_stop','t_step_save','t_step_print',       &
             & 'model_eqns','time_stepper',                                     &
             & 'precision', 'bc_x%beg', 'bc_x%end',               &
-            & 'bc_y%beg', 'bc_y%end', 'bc_z%beg', 'bc_z%end',  'fd_order',     &
-            & 'num_probes', 'num_integrals', 'bubble_model', 'thermal',        &
+            & 'bc_y%beg', 'bc_y%end', 'bc_z%beg', 'bc_z%end',     &
             & 'n_start',    &
-            & 'num_bc_patches', 'num_igr_iters', 'num_igr_warm_start_iters', &
-            & 'adap_dt_max_iters' ]
+            & 'num_bc_patches', 'num_igr_iters', 'num_igr_warm_start_iters' ]
             call MPI_BCAST(${VAR}$, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
         #:for VAR in [ 'run_time_info',     &
             & 'mp_weno', 'rdma_mpi', 'bc_io', &
             & 'weno_Re_flux', 'null_weights', 'mixture_err',   &
-            & 'parallel_io', 'polytropic',    &
-            & 'polydisperse', 'qbmm', 'integral_wrt',   &
+            & 'parallel_io', &
             & 'prim_vars_wrt', 'weno_avg', 'file_per_process',   &
-            & 'adv_n', 'adap_dt',    &
             & 'bc_x%grcbc_in', 'bc_x%grcbc_out', 'bc_x%grcbc_vel_out',          &
             & 'bc_y%grcbc_in', 'bc_y%grcbc_out', 'bc_y%grcbc_vel_out',          &
             & 'bc_z%grcbc_in', 'bc_z%grcbc_out', 'bc_z%grcbc_vel_out',          &
@@ -72,16 +68,14 @@ contains
             call MPI_BCAST(${VAR}$, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
-        #:for VAR in [ 'dt','weno_eps','teno_CT','pref','rhoref','R0ref','Web','Ca', &
-            & 'Re_inv', 'poly_sigma', 'pi_fac',    &
+        #:for VAR in [ 'dt','weno_eps','teno_CT','pref','rhoref', &
             & 'bc_x%vb1','bc_x%vb2','bc_x%vb3','bc_x%ve1','bc_x%ve2','bc_x%ve3', &
             & 'bc_y%vb1','bc_y%vb2','bc_y%vb3','bc_y%ve1','bc_y%ve2','bc_y%ve3', &
             & 'bc_z%vb1','bc_z%vb2','bc_z%vb3','bc_z%ve1','bc_z%ve2','bc_z%ve3', &
             & 'bc_x%pres_in','bc_x%pres_out','bc_y%pres_in','bc_y%pres_out', 'bc_z%pres_in','bc_z%pres_out', &
             & 'x_domain%beg', 'x_domain%end', 'y_domain%beg', 'y_domain%end',    &
             & 'z_domain%beg', 'z_domain%end', 'x_a', 'x_b', 'y_a', 'y_b', 'z_a', &
-            & 'z_b', 't_stop', 't_save', 'cfl_target', 'alf_factor',  &
-            & 'adap_dt_tol' ]
+            & 'z_b', 't_stop', 't_save', 'cfl_target', 'alf_factor' ]
             call MPI_BCAST(${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
@@ -119,16 +113,6 @@ contains
             #:for VAR in ['bc_x%alpha_rho_in','bc_x%alpha_in','bc_y%alpha_rho_in','bc_y%alpha_in','bc_z%alpha_rho_in', &
                 & 'bc_z%alpha_in']
                 call MPI_BCAST(${VAR}$ (i), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            #:endfor
-        end do
-
-        do j = 1, num_probes_max
-            #:for VAR in [ 'x','y','z' ]
-                call MPI_BCAST(probe(j)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            #:endfor
-
-            #:for VAR in [ 'xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax' ]
-                call MPI_BCAST(integral(j)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             #:endfor
         end do
 
