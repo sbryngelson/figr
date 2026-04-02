@@ -14,7 +14,7 @@
 #:enddef MPIC
 
 #:def ACCC(*args)
-#ifdef MFC_OpenACC
+#ifdef FIGR_OpenACC
     @:LOG("[TEST] ACC: ${','.join([ x.replace("'", '') for x in args ])}$")
     ${','.join([ x.replace("'", '') for x in args ])}$
 #else
@@ -23,7 +23,7 @@
 #:enddef ACCC
 
 #:def OMPC(*args)
-#ifdef MFC_OpenMP
+#ifdef FIGR_OpenMP
     @:LOG("[TEST] OMP: ${','.join([ x.replace("'", '') for x in args ])}$")
     ${','.join([ x.replace("'", '') for x in args ])}$
 #else
@@ -36,13 +36,13 @@
 #:enddef MPI
 
 #:def ACC(*args)
-#ifdef MFC_OpenACC
+#ifdef FIGR_OpenACC
     ${','.join([ x.replace("'", '') for x in args ])}$
 #endif
 #:enddef ACC
 
 #:def OMP(*args)
-#ifdef MFC_OpenMP
+#ifdef FIGR_OpenMP
     ${','.join([ x.replace("'", '') for x in args ])}$
 #endif
 #:enddef OMP

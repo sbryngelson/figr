@@ -320,7 +320,7 @@ class Case:
 
             # Throw error if wenoz_q is required but not set
             out = f"""\
-#:set MFC_CASE_OPTIMIZATION = {ARG("case_optimization")}
+#:set FIGR_CASE_OPTIMIZATION = {ARG("case_optimization")}
 #:set recon_type            = {recon_type}
 #:set weno_order            = {weno_order}
 #:set weno_polyn            = {weno_polyn}

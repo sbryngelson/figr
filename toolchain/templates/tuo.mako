@@ -22,7 +22,7 @@
 ${helpers.template_prologue()}
 
 ok ":) Loading modules:\n"
-cd "${MFC_ROOT_DIR}"
+cd "${FIGR_ROOT_DIR}"
 % if engine == 'batch':
 . ./figr.sh load -c tuo -m ${'g' if gpu else 'c'}
 % endif

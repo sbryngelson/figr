@@ -32,13 +32,13 @@ def debug(msg: str):
         cons.print(f"[dim][DEBUG][/dim] {msg}")
 
 
-MFC_ROOT_DIR = abspath(normpath(f"{dirname(realpath(__file__))}/../.."))
-MFC_TEST_DIR = abspath(join(MFC_ROOT_DIR, "tests"))
-MFC_BUILD_DIR = abspath(join(MFC_ROOT_DIR, "build"))
-MFC_TOOLCHAIN_DIR = abspath(join(MFC_ROOT_DIR, "toolchain"))
-MFC_EXAMPLE_DIRPATH = abspath(join(MFC_ROOT_DIR, "examples"))
-MFC_LOCK_FILEPATH = abspath(join(MFC_BUILD_DIR, "lock.yaml"))
-MFC_TEMPLATE_DIR = abspath(join(MFC_TOOLCHAIN_DIR, "templates"))
+FIGR_ROOT_DIR = abspath(normpath(f"{dirname(realpath(__file__))}/../.."))
+FIGR_TEST_DIR = abspath(join(FIGR_ROOT_DIR, "tests"))
+FIGR_BUILD_DIR = abspath(join(FIGR_ROOT_DIR, "build"))
+FIGR_TOOLCHAIN_DIR = abspath(join(FIGR_ROOT_DIR, "toolchain"))
+FIGR_EXAMPLE_DIRPATH = abspath(join(FIGR_ROOT_DIR, "examples"))
+FIGR_LOCK_FILEPATH = abspath(join(FIGR_BUILD_DIR, "lock.yaml"))
+FIGR_TEMPLATE_DIR = abspath(join(FIGR_TOOLCHAIN_DIR, "templates"))
 
 
 class FigrException(Exception):

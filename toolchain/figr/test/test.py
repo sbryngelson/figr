@@ -172,17 +172,17 @@ def test():
     global errors, failed_tests, test_start_time  # noqa: PLW0603
 
     test_start_time = time.time()  # Start timing
-    failed_uuids_path = os.path.join(common.MFC_TEST_DIR, "failed_uuids.txt")
+    failed_uuids_path = os.path.join(common.FIGR_TEST_DIR, "failed_uuids.txt")
     cases = list_cases()
 
     # Delete UUIDs that are not in the list of cases from tests/
     if ARG("remove_old_tests"):
-        dir_uuids = set(os.listdir(common.MFC_TEST_DIR))
+        dir_uuids = set(os.listdir(common.FIGR_TEST_DIR))
         new_uuids = {case.get_uuid() for case in cases}
 
         for old_uuid in dir_uuids - new_uuids:
             cons.print(f"[bold red]Deleting:[/bold red] {old_uuid}")
-            common.delete_directory(f"{common.MFC_TEST_DIR}/{old_uuid}")
+            common.delete_directory(f"{common.FIGR_TEST_DIR}/{old_uuid}")
 
         return
 

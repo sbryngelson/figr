@@ -25,7 +25,7 @@ contains
 
         if (p > 0) then
             ! 3D
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                 cfl_terms = min(dx(j)/(abs(vel(1)) + c), dy(k)/(abs(vel(2)) + c), dz(l)/(abs(vel(3)) + c))
             #:endif
         else
@@ -41,7 +41,7 @@ contains
         $:GPU_ROUTINE(function_name='s_compute_enthalpy',parallelism='[seq]', cray_inline=True)
 
         type(scalar_field), intent(in), dimension(sys_size) :: q_prim_vf
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), intent(inout), dimension(3) :: alpha
             real(wp), intent(inout), dimension(3) :: vel
         #:else
@@ -52,7 +52,7 @@ contains
         real(wp), intent(out)                 :: qv
         integer, intent(in)                   :: j, k, l
         real(wp), dimension(2), intent(inout) :: Re
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3) :: alpha_rho, Gs
         #:else
             real(wp), dimension(num_fluids) :: alpha_rho, Gs
@@ -106,7 +106,7 @@ contains
         ! Viscous calculations
         if (viscous) then
             if (p > 0) then
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     ! 3D
                     vcfl_sf(j, k, l) = maxval(dt/Re_l/rho)/min(dx(j), dy(k), dz(l))**2._wp
                     Rc_sf(j, k, l) = min(dx(j)*(abs(vel(1)) + c), dy(k)*(abs(vel(2)) + c), &

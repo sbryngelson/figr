@@ -5,7 +5,7 @@ from . import common, state
 from .printer import cons
 from .state import MFCConfig
 
-MFC_LOCK_CURRENT_VERSION: int = 8
+FIGR_LOCK_CURRENT_VERSION: int = 8
 
 
 @dataclasses.dataclass
@@ -20,12 +20,12 @@ data: MFCLockData = None
 def init():
     global data  # noqa: PLW0603
 
-    if not os.path.exists(common.MFC_LOCK_FILEPATH):
+    if not os.path.exists(common.FIGR_LOCK_FILEPATH):
         config = MFCConfig()
-        data = MFCLockData(config, MFC_LOCK_CURRENT_VERSION)
+        data = MFCLockData(config, FIGR_LOCK_CURRENT_VERSION)
         state.gCFG = config
 
-        common.create_file(common.MFC_LOCK_FILEPATH)
+        common.create_file(common.FIGR_LOCK_FILEPATH)
         write()
     else:
         load()
@@ -34,15 +34,15 @@ def init():
 def load():
     global data  # noqa: PLW0603
 
-    d = common.file_load_yaml(common.MFC_LOCK_FILEPATH)
+    d = common.file_load_yaml(common.FIGR_LOCK_FILEPATH)
 
     # 0 is the default version in order to accommodate versions of figr.sh
     # prior to the introduction of the "version" attribute to the lock file.
 
-    if d["version"] < MFC_LOCK_CURRENT_VERSION:
+    if d["version"] < FIGR_LOCK_CURRENT_VERSION:
         raise common.FigrException(f"""\
 There has been a breaking change to the figr build system. Please delete your \
-build/ directory and run MFC again. (v{d["version"]} -> v{MFC_LOCK_CURRENT_VERSION}).\
+build/ directory and run MFC again. (v{d["version"]} -> v{FIGR_LOCK_CURRENT_VERSION}).\
 """)
 
     config = MFCConfig.from_dict(d["config"])
@@ -53,7 +53,7 @@ build/ directory and run MFC again. (v{d["version"]} -> v{MFC_LOCK_CURRENT_VERSI
 def write():
     global data  # noqa: PLW0603
 
-    common.file_dump_yaml(common.MFC_LOCK_FILEPATH, dataclasses.asdict(data))
+    common.file_dump_yaml(common.FIGR_LOCK_FILEPATH, dataclasses.asdict(data))
 
 
 def switch(to: MFCConfig):

@@ -22,13 +22,13 @@ module m_variables_conversion
               s_convert_primitive_to_flux_variables, &
               s_compute_pressure, &
               s_compute_species_fraction, &
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
     s_compute_speed_of_sound, &
 #endif
     s_finalize_variables_conversion_module
 
     ! In simulation, gammas, pi_infs, and qvs are already declared in m_global_variables
-#ifndef MFC_SIMULATION
+#ifndef FIGR_SIMULATION
     real(wp), allocatable, public, dimension(:) :: gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps
     $:GPU_DECLARE(create='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
 #endif
@@ -102,7 +102,7 @@ contains
             qv = qv + alpha_rho_K(i)*qvs(i)
         end do
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         ! Computing the shear and bulk Reynolds numbers from species analogs
         if (viscous) then
             do i = 1, 2
@@ -118,7 +118,7 @@ contains
 #endif
 
         ! Post process requires rho_sf/gamma_sf/pi_inf_sf/qv_sf to also be updated
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         rho_sf(k, l, r) = rho
         gamma_sf(k, l, r) = gamma
         pi_inf_sf(k, l, r) = pi_inf
@@ -133,7 +133,7 @@ contains
         $:GPU_ROUTINE(function_name='s_convert_species_to_mixture_variables_acc', parallelism='[seq]', cray_noinline=True)
 
         real(wp), intent(out) :: rho_K, gamma_K, pi_inf_K, qv_K
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3), intent(inout) :: alpha_rho_K, alpha_K
         #:else
             real(wp), dimension(num_fluids), intent(inout) :: alpha_rho_K, alpha_K
@@ -191,7 +191,7 @@ contains
         end do
         $:GPU_UPDATE(device='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         if (viscous) then
             @:ALLOCATE(Res_vc(1:2, 1:Re_size_max))
             do i = 1, 2
@@ -204,7 +204,7 @@ contains
         end if
 #endif
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         ! Allocating the density, the specific heat ratio function and the liquid stiffness function, respectively
 
         ! Simulation is at least 2D
@@ -243,7 +243,7 @@ contains
         type(scalar_field), dimension(sys_size), intent(inout) :: qK_prim_vf
         type(int_bounds_info), dimension(1:3), intent(in)      :: ibounds
 
-        #:if USING_AMD and not MFC_CASE_OPTIMIZATION
+        #:if USING_AMD and not FIGR_CASE_OPTIMIZATION
             real(wp), dimension(3) :: alpha_K, alpha_rho_K
             real(wp)               :: rhoYks(1:10)
         #:else
@@ -266,7 +266,7 @@ contains
 
                     call s_compute_species_fraction(qK_cons_vf, j, k, l, alpha_rho_K, alpha_K)
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
                     call s_convert_species_to_mixture_variables_acc(rho_K, gamma_K, pi_inf_K, qv_K, alpha_K, alpha_rho_K, Re_K)
 #else
                     call s_convert_to_mixture_variables(qK_cons_vf, j, k, l, rho_K, gamma_K, pi_inf_K, qv_K)
@@ -278,7 +278,7 @@ contains
                         qK_prim_vf(i)%sf(j, k, l) = qK_cons_vf(i)%sf(j, k, l)
                     end do
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
                     rho_K = max(rho_K, sgm_eps)
 #endif
 
@@ -327,7 +327,7 @@ contains
         real(wp), dimension(1) :: Ys
         real(wp)               :: e_mix, mix_mol_weight, T
 
-#ifndef MFC_SIMULATION
+#ifndef FIGR_SIMULATION
         ! Converting the primitive variables to the conservative variables
         do l = 0, p
             do k = 0, n
@@ -381,7 +381,7 @@ contains
         ! Partial densities, density, velocity, pressure, energy, advection variables, the specific heat ratio and liquid stiffness
         ! functions, the shear and volume Reynolds numbers and the Weber numbers
 
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3)  :: alpha_rho_K
             real(wp), dimension(3)  :: alpha_K
             real(wp), dimension(3)  :: vel_K
@@ -411,7 +411,7 @@ contains
 
         ! Computing the flux variables from the primitive variables, without accounting for the contribution of either viscosity or
         ! capillarity
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         $:GPU_PARALLEL_LOOP(collapse=3, private='[alpha_rho_K, vel_K, alpha_K, Re_K, Y_K, rho_K, vel_K_sum, pres_K, E_K, gamma_K, &
                             & pi_inf_K, qv_K, T_K, mix_mol_weight, R_gas]')
         do l = is3b, is3e
@@ -483,7 +483,7 @@ contains
         $:GPU_ROUTINE(function_name='s_compute_species_fraction', parallelism='[seq]', cray_noinline=True)
         type(scalar_field), dimension(sys_size), intent(in) :: q_vf
         integer, intent(in)                                 :: k, l, r
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3), intent(out) :: alpha_rho_K, alpha_K
         #:else
             real(wp), dimension(num_fluids), intent(out) :: alpha_rho_K, alpha_K
@@ -509,7 +509,7 @@ contains
     impure subroutine s_finalize_variables_conversion_module()
 
         ! Deallocating the density, the specific heat ratio function and the liquid stiffness function
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         deallocate (rho_sf, gamma_sf, pi_inf_sf, qv_sf)
 #endif
 
@@ -517,7 +517,7 @@ contains
 
     end subroutine s_finalize_variables_conversion_module
 
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
     !> Compute the speed of sound from thermodynamic state variables, supporting multiple equation-of-state models.
     subroutine s_compute_speed_of_sound(pres, rho, gamma, pi_inf, H, adv, vel_sum, c_c, c, qv)
 
@@ -526,7 +526,7 @@ contains
         real(wp), intent(in) :: pres
         real(wp), intent(in) :: rho, gamma, pi_inf, qv
         real(wp), intent(in) :: H
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3), intent(in) :: adv
         #:else
             real(wp), dimension(num_fluids), intent(in) :: adv

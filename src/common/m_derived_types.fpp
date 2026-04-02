@@ -15,7 +15,7 @@ module m_derived_types
 
     !> Derived type annexing an integer scalar field (SF)
     type integer_field
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), pointer, dimension(:,:,:) :: sf => null()
 #else
         integer, pointer, dimension(:,:,:) :: sf => null()

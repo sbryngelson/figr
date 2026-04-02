@@ -10,7 +10,7 @@ from mako.lookup import TemplateLookup
 from mako.template import Template
 
 from ..build import REQUIRED_TARGETS, SIMULATION, build, get_targets
-from ..common import MFC_ROOT_DIR, MFC_TEMPLATE_DIR, FigrException, does_command_exist, file_dump_yaml, file_read, file_write, format_list_to_string, isspace, system
+from ..common import FIGR_ROOT_DIR, FIGR_TEMPLATE_DIR, FigrException, does_command_exist, file_dump_yaml, file_read, file_write, format_list_to_string, isspace, system
 from ..printer import cons
 from ..state import ARG, ARGS, CFG, gpuConfigOptions
 from . import input, queues
@@ -58,7 +58,7 @@ def __profiler_prepend() -> typing.List[str]:
 
 
 def get_baked_templates() -> dict:
-    return {os.path.splitext(os.path.basename(f))[0]: file_read(f) for f in glob(os.path.join(MFC_TEMPLATE_DIR, "*.mako"))}
+    return {os.path.splitext(os.path.basename(f))[0]: file_read(f) for f in glob(os.path.join(FIGR_TEMPLATE_DIR, "*.mako"))}
 
 
 def __job_script_filepath() -> str:
@@ -67,7 +67,7 @@ def __job_script_filepath() -> str:
 
 def __get_template() -> Template:
     computer = ARG("computer")
-    lookup = TemplateLookup(directories=[MFC_TEMPLATE_DIR, os.path.join(MFC_TEMPLATE_DIR, "include")])
+    lookup = TemplateLookup(directories=[FIGR_TEMPLATE_DIR, os.path.join(FIGR_TEMPLATE_DIR, "include")])
     baked = get_baked_templates()
 
     if (content := baked.get(computer)) is not None:
@@ -104,7 +104,7 @@ def __generate_job_script(targets, case: input.MFCInputFile):
         ARG=ARG,
         env=env,
         case=case,
-        MFC_ROOT_DIR=MFC_ROOT_DIR,
+        FIGR_ROOT_DIR=FIGR_ROOT_DIR,
         SIMULATION=SIMULATION,
         qsystem=queues.get_system(),
         profiler=shlex.join(__profiler_prepend()),

@@ -132,7 +132,7 @@ contains
 
         sf_start_idx = (/0, 0, 0/)
 
-#ifndef MFC_POST_PROCESS
+#ifndef FIGR_POST_PROCESS
         m_ds = int((m + 1)/3) - 1
         n_ds = int((n + 1)/3) - 1
         p_ds = int((p + 1)/3) - 1
@@ -142,7 +142,7 @@ contains
         p_ds = p
 #endif
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         do i = 1, sys_size
             MPI_IO_DATA%var(i)%sf => q_cons_vf(i)%sf(-1:m_ds + 1,-1:n_ds + 1,-1:p_ds + 1)
         end do
@@ -236,7 +236,7 @@ contains
         real(wp), intent(out) :: vcfl_max_glb
         real(wp), intent(out) :: Rc_min_glb
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_REDUCE(icfl_max_loc, icfl_max_glb, 1, mpi_p, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
@@ -456,7 +456,7 @@ contains
         call nvtxEndRange  ! Packbuf
 
         ! Send/Recv
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         #:for rdma_mpi in [False, True]
             if (rdma_mpi .eqv. ${'.true.' if rdma_mpi else '.false.'}$) then
                 #:if rdma_mpi
@@ -667,7 +667,7 @@ contains
                     proc_coords(3) = proc_coords(3) - 1
                 end if
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
                 ! Ghost zone at the beginning
                 if (proc_coords(3) > 0 .and. format == 1) then
                     offset_z%beg = 2
@@ -691,7 +691,7 @@ contains
                         start_idx(3) = (p + 1)*proc_coords(3) + rem_cells
                     end if
                 else
-#ifdef MFC_PRE_PROCESS
+#ifdef FIGR_PRE_PROCESS
                     if (old_grid .neqv. .true.) then
                         dz = (z_domain%end - z_domain%beg)/real(p_glb + 1, wp)
 
@@ -779,7 +779,7 @@ contains
                 proc_coords(2) = proc_coords(2) - 1
             end if
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
             ! Ghost zone at the beginning
             if (proc_coords(2) > 0 .and. format == 1) then
                 offset_y%beg = 2
@@ -803,7 +803,7 @@ contains
                     start_idx(2) = (n + 1)*proc_coords(2) + rem_cells
                 end if
             else
-#ifdef MFC_PRE_PROCESS
+#ifdef FIGR_PRE_PROCESS
                 if (old_grid .neqv. .true.) then
                     dy = (y_domain%end - y_domain%beg)/real(n_glb + 1, wp)
 
@@ -862,7 +862,7 @@ contains
             proc_coords(1) = proc_coords(1) - 1
         end if
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         ! Ghost zone at the beginning
         if (proc_coords(1) > 0 .and. format == 1) then
             offset_x%beg = 2
@@ -886,7 +886,7 @@ contains
                 start_idx(1) = (m + 1)*proc_coords(1) + rem_cells
             end if
         else
-#ifdef MFC_PRE_PROCESS
+#ifdef FIGR_PRE_PROCESS
             if (old_grid .neqv. .true.) then
                 dx = (x_domain%end - x_domain%beg)/real(m_glb + 1, wp)
 
@@ -906,7 +906,7 @@ contains
     !> The goal of this procedure is to populate the buffers of the grid variables by communicating with the neighboring processors.
     !! Note that only the buffers of the cell-width distributions are handled in such a way. This is because the buffers of
     !! cell-boundary locations may be calculated directly from those of the cell-width distributions.
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
     subroutine s_mpi_sendrecv_grid_variables_buffers(mpi_dir, pbc_loc)
 
         integer, intent(in) :: mpi_dir

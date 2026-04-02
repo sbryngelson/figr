@@ -49,7 +49,7 @@ contains
         use hipfort
         use hipfort_hipmalloc
         use hipfort_check
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
         use openacc
 #endif
 #endif
@@ -107,7 +107,7 @@ contains
         end do
         pool_dims(4) = sys_size
         pool_starts(4) = 1
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         pool_size = 1_8*(idwbuff(1)%end - idwbuff(1)%beg + 1)*(idwbuff(2)%end - idwbuff(2)%beg + 1)*(idwbuff(3)%end - idwbuff(3) &
                          & %beg + 1)*sys_size
         call hipCheck(hipMalloc_(cptr_device, pool_size*2_8))
@@ -121,7 +121,7 @@ contains
         ! Doing hipMalloc then mapping should be most performant
         call hipCheck(hipMalloc(q_cons_ts_pool_device, dims8=pool_dims, lbounds8=pool_starts))
         ! Without this map CCE will still create a device copy, because it's silly like that
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
         call acc_map_data(q_cons_ts_pool_device, c_loc(q_cons_ts_pool_device), c_sizeof(q_cons_ts_pool_device))
 #endif
         ! CCE see it can access this and will leave it on the host. It will stay on the host so long as HSA_XNACK=1 NOTE: WE CANNOT
@@ -129,7 +129,7 @@ contains
         ! actually help performance since it can't be cached in GPU L2
         if (num_ts == 2) then
             call hipCheck(hipMallocManaged(q_cons_ts_pool_host, dims8=pool_dims, lbounds8=pool_starts, flags=hipMemAttachGlobal))
-#if defined(MFC_OpenMP)
+#if defined(FIGR_OpenMP)
             call hipCheck(hipMemAdvise(c_loc(q_cons_ts_pool_host), c_sizeof(q_cons_ts_pool_host), &
                           & hipMemAdviseSetPreferredLocation, -1))
 #endif
@@ -190,11 +190,11 @@ contains
 
         @:ALLOCATE(bc_type(1,1)%sf(0:0,0:n,0:p))
         @:ALLOCATE(bc_type(1,2)%sf(0:0,0:n,0:p))
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n > 0) then
                 @:ALLOCATE(bc_type(2,1)%sf(-buff_size:m+buff_size,0:0,0:p))
                 @:ALLOCATE(bc_type(2,2)%sf(-buff_size:m+buff_size,0:0,0:p))
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     if (p > 0) then
                         @:ALLOCATE(bc_type(3,1)%sf(-buff_size:m+buff_size,-buff_size:n+buff_size,0:0))
                         @:ALLOCATE(bc_type(3,2)%sf(-buff_size:m+buff_size,-buff_size:n+buff_size,0:0))
@@ -300,7 +300,7 @@ contains
 
         real(wp) :: rho  !< Cell-avg. density
 
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3) :: vel    !< Cell-avg. velocity
             real(wp), dimension(3) :: alpha  !< Cell-avg. volume fraction
         #:else
@@ -451,7 +451,7 @@ contains
                 nullify (q_cons_ts(i)%vf(j)%sf)
             end do
         end do
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         call hipCheck(hipHostFree_(c_loc(q_cons_ts_pool_host)))
         nullify (q_cons_ts_pool_host)
         call hipCheck(hipFree_(c_loc(q_cons_ts_pool_device)))

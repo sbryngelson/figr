@@ -17,21 +17,21 @@ project(figr LANGUAGES C CXX Fortran)
 
 # Build options exposed to users and their default values.
 
-option(MFC_OpenACC       "Build with OpenACC"                                OFF)
-option(MFC_OpenMP        "Build with OpenMP"                                 OFF)
-option(MFC_Unified       "Build with unified CPU & GPU memory (GH-200 only)" OFF)
-option(MFC_PRE_PROCESS   "Build pre_process"                                 OFF)
-option(MFC_SIMULATION    "Build simulation"                                  OFF)
-option(MFC_POST_PROCESS  "Build post_process"                                OFF)
-option(MFC_SYSCHECK      "Build syscheck"                                    OFF)
-option(MFC_ALL           "Build everything"                                  OFF)
-option(MFC_SINGLE_PRECISION "Build single precision"                         OFF)
-option(MFC_MIXED_PRECISION "Build mixed precision"                           OFF)
+option(FIGR_OpenACC       "Build with OpenACC"                                OFF)
+option(FIGR_OpenMP        "Build with OpenMP"                                 OFF)
+option(FIGR_Unified       "Build with unified CPU & GPU memory (GH-200 only)" OFF)
+option(FIGR_PRE_PROCESS   "Build pre_process"                                 OFF)
+option(FIGR_SIMULATION    "Build simulation"                                  OFF)
+option(FIGR_POST_PROCESS  "Build post_process"                                OFF)
+option(FIGR_SYSCHECK      "Build syscheck"                                    OFF)
+option(FIGR_ALL           "Build everything"                                  OFF)
+option(FIGR_SINGLE_PRECISION "Build single precision"                         OFF)
+option(FIGR_MIXED_PRECISION "Build mixed precision"                           OFF)
 
-if (MFC_ALL)
-    set(MFC_PRE_PROCESS   ON FORCE)
-    set(MFC_SIMULATION    ON FORCE)
-    set(MFC_POST_PROCESS  ON FORCE)
+if (FIGR_ALL)
+    set(FIGR_PRE_PROCESS   ON FORCE)
+    set(FIGR_SIMULATION    ON FORCE)
+    set(FIGR_POST_PROCESS  ON FORCE)
 endif()
 
 # Validate CMAKE_BUILD_TYPE to catch typos (CMake is case-sensitive).
@@ -46,14 +46,14 @@ set(CMAKE_C_FLAGS_RELDEBUG       "-g" CACHE STRING "")
 set(CMAKE_CXX_FLAGS_RELDEBUG     "-g" CACHE STRING "")
 set(CMAKE_Fortran_FLAGS_RELDEBUG "-g" CACHE STRING "")
 
-if (MFC_SINGLE_PRECISION)
-    add_compile_definitions(MFC_SINGLE_PRECISION)
+if (FIGR_SINGLE_PRECISION)
+    add_compile_definitions(FIGR_SINGLE_PRECISION)
 else()
-    add_compile_definitions(MFC_DOUBLE_PRECISION)
+    add_compile_definitions(FIGR_DOUBLE_PRECISION)
 endif()
 
-if (MFC_MIXED_PRECISION)
-    add_compile_definitions(MFC_MIXED_PRECISION)
+if (FIGR_MIXED_PRECISION)
+    add_compile_definitions(FIGR_MIXED_PRECISION)
 endif()
 
 
@@ -83,7 +83,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     if (CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 5)
         message(FATAL_ERROR "ERROR: GNU v5.0 or newer is required to build figr.\n${__err_msg}")
     endif()
-    if (MFC_OpenACC)
+    if (FIGR_OpenACC)
         message(FATAL_ERROR "ERROR: figr with GPU processing is not currently compatible with GNU compilers. Please use NVIDIA or Cray compilers.\n${__err_msg}")
     endif()
 elseif ((CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC") OR (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI"))
@@ -91,7 +91,7 @@ elseif ((CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC") OR (CMAKE_Fortran_COMPILER_
         message(FATAL_ERROR "ERROR: When using NVHPC, v21.7 or newer is required to build figr.\n${__err_msg}")
     endif()
 
-    if ((CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 24.5) AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelDebug") AND MFC_OpenACC)
+    if ((CMAKE_Fortran_COMPILER_VERSION VERSION_LESS 24.5) AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelDebug") AND FIGR_OpenACC)
         message(FATAL_ERROR "ERROR: When using NVHPC, figr with Debug and GPU options requires NVHPC v24.5 or newer.\n${__err_msg}")
     endif()
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
@@ -239,9 +239,9 @@ elseif ((CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC") OR (CMAKE_Fortran_COMPILER_
         )
     endif()
 
-    if (DEFINED ENV{MFC_CUDA_CC})
-        string(REGEX MATCHALL "[0-9]+" MFC_CUDA_CC $ENV{MFC_CUDA_CC})
-        message(STATUS "Found $MFC_CUDA_CC specified. GPU code will be generated for compute capability(ies) ${MFC_CUDA_CC}.")
+    if (DEFINED ENV{FIGR_CUDA_CC})
+        string(REGEX MATCHALL "[0-9]+" FIGR_CUDA_CC $ENV{FIGR_CUDA_CC})
+        message(STATUS "Found $FIGR_CUDA_CC specified. GPU code will be generated for compute capability(ies) ${FIGR_CUDA_CC}.")
     endif()
 endif()
 
@@ -263,7 +263,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 
     # Enable LTO/IPO if supported
     if (CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
-        if (MFC_Unified)
+        if (FIGR_Unified)
             message(STATUS "LTO/IPO is not available with NVHPC using Unified Memory")
         else()
             message(STATUS "Performing IPO using -Mextract followed by -Minline")
@@ -281,7 +281,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelDebug")
-    add_compile_definitions(MFC_DEBUG)
+    add_compile_definitions(FIGR_DEBUG)
 endif()
 
 
@@ -388,10 +388,10 @@ macro(HANDLE_SOURCES target useCommon)
                                  -I "${${target}_DIR}/include"
                                  -I "${common_DIR}/include"
                                  -I "${common_DIR}"
-                                 -D MFC_${CMAKE_Fortran_COMPILER_ID}
-                                 -D MFC_${${target}_UPPER}
-                                 -D MFC_COMPILER="${CMAKE_Fortran_COMPILER_ID}"
-				                 -D MFC_CASE_OPTIMIZATION=False
+                                 -D FIGR_${CMAKE_Fortran_COMPILER_ID}
+                                 -D FIGR_${${target}_UPPER}
+                                 -D FIGR_COMPILER="${CMAKE_Fortran_COMPILER_ID}"
+				                 -D FIGR_CASE_OPTIMIZATION=False
                                  -D chemistry=False
                                  --line-numbering
                                  --no-folding
@@ -414,7 +414,7 @@ HANDLE_SOURCES(post_process ON)
 HANDLE_SOURCES(syscheck OFF)
 
 
-# MFC_SETUP_TARGET: Given a target (herein <target>), this macro creates a new
+# FIGR_SETUP_TARGET: Given a target (herein <target>), this macro creates a new
 # executable <target> with the appropriate sources, compiler definitions, and
 # linked libraries (assuming HANDLE_SOURCES was called on <target>).
 #
@@ -428,14 +428,14 @@ HANDLE_SOURCES(syscheck OFF)
 #  * FFTW     (optional) Should be linked with an FFTW-like library (fftw/cufftw),
 #             depending on whether OpenACC is enabled and which compiler is
 #             being used.
-function(MFC_SETUP_TARGET)
+function(FIGR_SETUP_TARGET)
     cmake_parse_arguments(ARGS "OpenACC;MPI;SILO;HDF5;FFTW;OpenMP" "TARGET" "SOURCES" ${ARGN})
 
     add_executable(${ARGS_TARGET} ${ARGS_SOURCES})
     set(IPO_TARGETS ${ARGS_TARGET})
     # Here we need to split into "library" and "executable" to perform IPO on the NVIDIA compiler.
     # A little hacky, but it *is* an edge-case for *one* compiler.
-    if (NVHPC_USE_TWO_PASS_IPO AND NOT(MFC_OpenMP AND ARGS_OpenMP))
+    if (NVHPC_USE_TWO_PASS_IPO AND NOT(FIGR_OpenMP AND ARGS_OpenMP))
         add_library(${ARGS_TARGET}_lib OBJECT ${ARGS_SOURCES})
         target_compile_options(${ARGS_TARGET}_lib PRIVATE
 		    $<$<COMPILE_LANGUAGE:Fortran>:-Mextract=lib:${ARGS_TARGET}_lib>
@@ -474,13 +474,13 @@ function(MFC_SETUP_TARGET)
 
         string(TOUPPER "${ARGS_TARGET}" ${ARGS_TARGET}_UPPER)
         target_compile_definitions(
-            ${a_target} PRIVATE MFC_${CMAKE_Fortran_COMPILER_ID}
-                                MFC_${${ARGS_TARGET}_UPPER}
+            ${a_target} PRIVATE FIGR_${CMAKE_Fortran_COMPILER_ID}
+                                FIGR_${${ARGS_TARGET}_UPPER}
         )
 
         # MPI is always required
         find_package(MPI COMPONENTS Fortran REQUIRED)
-        target_compile_definitions(${a_target} PRIVATE MFC_MPI)
+        target_compile_definitions(${a_target} PRIVATE FIGR_MPI)
         if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
             target_compile_options(${a_target} PRIVATE "$ENV{CRAY_MPICH_INC}")
             target_link_libraries(${a_target} PRIVATE $ENV{CRAY_MPICH_LIB})
@@ -499,7 +499,7 @@ function(MFC_SETUP_TARGET)
         endif()
 
         if (ARGS_FFTW)
-            if ((MFC_OpenACC AND ARGS_OpenACC) OR (MFC_OpenMP AND ARGS_OpenMP))
+            if ((FIGR_OpenACC AND ARGS_OpenACC) OR (FIGR_OpenMP AND ARGS_OpenMP))
                 if (CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" OR CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
                     find_package(CUDAToolkit REQUIRED)
                     target_link_libraries(${a_target} PRIVATE CUDA::cudart CUDA::cufft)
@@ -515,8 +515,8 @@ function(MFC_SETUP_TARGET)
             endif()
         endif()
 
-        if ((MFC_OpenACC AND ARGS_OpenACC) OR (MFC_OpenMP AND ARGS_OpenMP))
-            if ((MFC_OpenACC AND ARGS_OpenACC))
+        if ((FIGR_OpenACC AND ARGS_OpenACC) OR (FIGR_OpenMP AND ARGS_OpenMP))
+            if ((FIGR_OpenACC AND ARGS_OpenACC))
                 find_package(OpenACC)
 
                 # This should be equivalent to if (NOT OpenACC_FC_FOUND)
@@ -525,8 +525,8 @@ function(MFC_SETUP_TARGET)
                 endif()
 
                 target_link_libraries(${a_target} PRIVATE OpenACC::OpenACC_Fortran)
-                target_compile_definitions(${a_target} PRIVATE MFC_OpenACC MFC_GPU)
-            elseif((MFC_OpenMP AND ARGS_OpenMP))
+                target_compile_definitions(${a_target} PRIVATE FIGR_OpenACC FIGR_GPU)
+            elseif((FIGR_OpenMP AND ARGS_OpenMP))
                 find_package(OpenMP)
 
                 # This should be equivalent to if (NOT OpenACC_FC_FOUND)
@@ -535,7 +535,7 @@ function(MFC_SETUP_TARGET)
                 endif()
                 set(ENV{OMP_TARGET_OFFLOAD} [MANDATORY])
                 # target_link_libraries(${a_target} PRIVATE OpenMP::OpenMP_Fortran)
-                target_compile_definitions(${a_target} PRIVATE MFC_OpenMP MFC_GPU)
+                target_compile_definitions(${a_target} PRIVATE FIGR_OpenMP FIGR_GPU)
 
                 if(CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" OR CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
                     target_compile_options(${a_target} PRIVATE "-mp=gpu" "-Minfo=mp")
@@ -560,7 +560,7 @@ function(MFC_SETUP_TARGET)
                     "-foffload-options=-lgfortran\ -lm"
                     "-fno-exceptions")
             elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC" OR CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
-                foreach (cc ${MFC_CUDA_CC})
+                foreach (cc ${FIGR_CUDA_CC})
                     target_compile_options(${a_target}
                         PRIVATE -gpu=cc${cc}
                     )
@@ -572,7 +572,7 @@ function(MFC_SETUP_TARGET)
 
 
                 # GH-200 Unified Memory Support
-                if (MFC_Unified)
+                if (FIGR_Unified)
                     target_compile_options(${ARGS_TARGET}
                         PRIVATE -gpu=mem:unified:managedalloc -cuda
                     )
@@ -589,7 +589,7 @@ function(MFC_SETUP_TARGET)
                 endif()
             elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
                 # Frontier Unified Memory Support
-                if (MFC_Unified)
+                if (FIGR_Unified)
                     target_compile_options(${ARGS_TARGET}
                         PRIVATE -DFRONTIER_UNIFIED)
                 endif()
@@ -599,7 +599,7 @@ function(MFC_SETUP_TARGET)
                 target_link_libraries(${a_target} PRIVATE hipfort::hip hipfort::hipfort-amdgcn)
             elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
 
-                if (MFC_Unified)
+                if (FIGR_Unified)
                     target_compile_options(${ARGS_TARGET}
                         PRIVATE -DFRONTIER_UNIFIED)
                 endif()
@@ -626,8 +626,8 @@ function(MFC_SETUP_TARGET)
 endfunction()
 
 
-if (MFC_PRE_PROCESS)
-    MFC_SETUP_TARGET(TARGET  pre_process
+if (FIGR_PRE_PROCESS)
+    FIGR_SETUP_TARGET(TARGET  pre_process
                      SOURCES "${pre_process_SRCs}"
                      MPI)
     if(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
@@ -635,14 +635,14 @@ if (MFC_PRE_PROCESS)
     endif()
 endif()
 
-if (MFC_SIMULATION)
-    MFC_SETUP_TARGET(TARGET  simulation
+if (FIGR_SIMULATION)
+    FIGR_SETUP_TARGET(TARGET  simulation
                      SOURCES "${simulation_SRCs}"
                      MPI OpenACC OpenMP)
 endif()
 
-if (MFC_POST_PROCESS)
-    MFC_SETUP_TARGET(TARGET  post_process
+if (FIGR_POST_PROCESS)
+    FIGR_SETUP_TARGET(TARGET  post_process
                      SOURCES "${post_process_SRCs}"
                      MPI SILO HDF5)
 
@@ -650,8 +650,8 @@ if (MFC_POST_PROCESS)
     target_compile_options(post_process PRIVATE -O0)
 endif()
 
-if (MFC_SYSCHECK)
-    MFC_SETUP_TARGET(TARGET  syscheck
+if (FIGR_SYSCHECK)
+    FIGR_SETUP_TARGET(TARGET  syscheck
                      SOURCES "${syscheck_SRCs}"
                      MPI OpenACC OpenMP)
 endif()

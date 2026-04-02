@@ -50,14 +50,14 @@ module m_global_parameters
     integer :: t_step_print  !< Number of time-steps between printouts
     ! Simulation Algorithm Parameters
     integer :: model_eqns  !< Multicomponent flow model
-    #:if MFC_CASE_OPTIMIZATION
+    #:if FIGR_CASE_OPTIMIZATION
         integer, parameter :: num_dims = ${num_dims}$  !< Number of spatial dimensions
     #:else
         integer :: num_dims  !< Number of spatial dimensions
     #:endif
     ! num_vels removed: always equals num_dims in IGR-only build. Use num_dims directly. Legacy alias kept for compatibility with
     ! GPU routines that declare dimension(num_vels):
-    #:if MFC_CASE_OPTIMIZATION
+    #:if FIGR_CASE_OPTIMIZATION
         integer, parameter :: num_vels = num_dims
     #:else
         integer :: num_vels
@@ -65,7 +65,7 @@ module m_global_parameters
     integer :: time_stepper  !< Time-stepper algorithm
     logical :: prim_vars_wrt
 
-    #:if MFC_CASE_OPTIMIZATION
+    #:if FIGR_CASE_OPTIMIZATION
         integer, parameter :: recon_type = ${recon_type}$    !< Reconstruction type
         integer, parameter :: weno_polyn = ${weno_polyn}$    !< Degree of the WENO polynomials (polyn)
         integer, parameter :: weno_order = ${weno_order}$    !< Order of the WENO reconstruction
@@ -100,7 +100,7 @@ module m_global_parameters
     real(wp) :: alf_factor                !< alpha factor for IGR
     integer  :: cpu_start, cpu_end, cpu_rate
 
-    #:if not MFC_CASE_OPTIMIZATION
+    #:if not FIGR_CASE_OPTIMIZATION
         $:GPU_DECLARE(create='[num_dims, weno_polyn, weno_order]')
         $:GPU_DECLARE(create='[weno_num_stencils, num_fluids]')
         $:GPU_DECLARE()
@@ -115,11 +115,11 @@ module m_global_parameters
     integer :: num_bc_patches
     logical :: bc_io
     type(int_bounds_info) :: bc_x, bc_y, bc_z
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:GPU_DECLARE(create='[bc_x%vb1, bc_x%vb2, bc_x%vb3, bc_x%ve1, bc_x%ve2, bc_x%ve3]')
     $:GPU_DECLARE(create='[bc_y%vb1, bc_y%vb2, bc_y%vb3, bc_y%ve1, bc_y%ve2, bc_y%ve3]')
     $:GPU_DECLARE(create='[bc_z%vb1, bc_z%vb2, bc_z%vb3, bc_z%ve1, bc_z%ve2, bc_z%ve3]')
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:GPU_DECLARE(create='[bc_x, bc_y, bc_z]')
 #endif
     type(bounds_info) :: x_domain, y_domain, z_domain
@@ -251,7 +251,7 @@ contains
         num_igr_warm_start_iters = dflt_num_igr_warm_start_iters
         alf_factor = dflt_alf_factor
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             igr_order = dflt_int
             igr_pres_lim = .false.
             viscous = .false.
@@ -290,7 +290,7 @@ contains
         rhoref = dflt_real
         pref = dflt_real
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             recon_type = WENO_TYPE
             weno_order = dflt_int
             num_fluids = dflt_int
@@ -306,7 +306,7 @@ contains
         integer :: i, j, k
         integer :: fac
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             ! Determining the degree of the WENO polynomials
 
             if (recon_type == WENO_TYPE) then
@@ -396,7 +396,7 @@ contains
 
         $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx, model_eqns, mixture_err, mp_weno, weno_eps, teno_CT]')
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             $:GPU_UPDATE()
             $:GPU_UPDATE(device='[igr_order]')
             $:GPU_UPDATE(device='[num_fluids, num_dims, viscous]')
@@ -435,7 +435,7 @@ contains
 
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             num_dims = 1 + min(1, n) + min(1, p)
             num_vels = num_dims
         #:endif

@@ -40,11 +40,11 @@ contains
         if (bc_io) then
             @:ALLOCATE(bc_buffers(1, 1)%sf(1:sys_size, 0:n, 0:p))
             @:ALLOCATE(bc_buffers(1, 2)%sf(1:sys_size, 0:n, 0:p))
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                 if (n > 0) then
                     @:ALLOCATE(bc_buffers(2,1)%sf(-buff_size:m+buff_size,1:sys_size,0:p))
                     @:ALLOCATE(bc_buffers(2,2)%sf(-buff_size:m+buff_size,1:sys_size,0:p))
-                    #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                    #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                         if (p > 0) then
                             @:ALLOCATE(bc_buffers(3,1)%sf(-buff_size:m+buff_size,-buff_size:n+buff_size,1:sys_size))
                             @:ALLOCATE(bc_buffers(3,2)%sf(-buff_size:m+buff_size,-buff_size:n+buff_size,1:sys_size))
@@ -124,7 +124,7 @@ contains
 
         if (n == 0) return
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (bc_y%beg >= 0) then
                 call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, -1, sys_size)
             else
@@ -180,7 +180,7 @@ contains
 
         if (p == 0) return
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
             if (bc_z%beg >= 0) then
                 call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, -1, sys_size)
             else
@@ -627,7 +627,7 @@ contains
         integer, intent(in)                                    :: k, l
         integer                                                :: j, i
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         if (bc_dir == 1) then  !< x-direction
             if (bc_loc == -1) then  ! bc_x%beg
                 do i = 1, sys_size
@@ -643,7 +643,7 @@ contains
                 end do
             end if
         else if (bc_dir == 2) then  !< y-direction
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                 if (bc_loc == -1) then  !< bc_y%beg
                     do i = 1, sys_size
                         do j = 1, buff_size
@@ -659,7 +659,7 @@ contains
                 end if
             #:endif
         else if (bc_dir == 3) then  !< z-direction
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                 if (bc_loc == -1) then  !< bc_z%beg
                     do i = 1, sys_size
                         do j = 1, buff_size
@@ -738,7 +738,7 @@ contains
             $:END_GPU_PARALLEL_LOOP()
         end if
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n == 0) then
                 return
             else if (bc_y%beg >= 0) then
@@ -792,7 +792,7 @@ contains
             end if
         #:endif
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
             if (p == 0) then
                 return
             else if (bc_z%beg >= 0) then
@@ -961,7 +961,7 @@ contains
         ! Write bc_types
         do dir = 1, num_dims
             do loc = 1, 2
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
                 nelements = sizeof(bc_type(dir, loc)%sf)
                 call MPI_File_write_all(file_id, bc_type(dir, loc)%sf, nelements, MPI_BYTE, MPI_STATUS_IGNORE, ierr)
 #else
@@ -1067,7 +1067,7 @@ contains
         ! Read bc_types
         do dir = 1, num_dims
             do loc = 1, 2
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
                 nelements = sizeof(bc_type(dir, loc)%sf)
                 call MPI_File_read_all(file_id, bc_type(dir, loc)%sf, nelements, MPI_BYTE, MPI_STATUS_IGNORE, ierr)
 #else
@@ -1106,7 +1106,7 @@ contains
             end do
         end do
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n > 0) then
                 do k = 0, p
                     do j = 1, sys_size
@@ -1117,7 +1117,7 @@ contains
                     end do
                 end do
 
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     if (p > 0) then
                         do k = 1, sys_size
                             do j = 0, n
@@ -1143,12 +1143,12 @@ contains
         bc_type(1, 2)%sf(:,:,:) = int(min(bc_x%end, 0), kind=1)
         $:GPU_UPDATE(device='[bc_type(1, 1)%sf, bc_type(1, 2)%sf]')
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n > 0) then
                 bc_type(2, 1)%sf(:,:,:) = int(min(bc_y%beg, 0), kind=1)
                 bc_type(2, 2)%sf(:,:,:) = int(min(bc_y%end, 0), kind=1)
                 $:GPU_UPDATE(device='[bc_type(2, 1)%sf, bc_type(2, 2)%sf]')
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     if (p > 0) then
                         bc_type(3, 1)%sf(:,:,:) = int(min(bc_z%beg, 0), kind=1)
                         bc_type(3, 2)%sf(:,:,:) = int(min(bc_z%end, 0), kind=1)
@@ -1166,7 +1166,7 @@ contains
 
         integer :: i
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         ! Required for compatibility between codes
         type(int_bounds_info) :: offset_x, offset_y, offset_z
 
@@ -1175,7 +1175,7 @@ contains
         offset_z%beg = buff_size; offset_z%end = buff_size
 #endif
 
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
         ! Population of Buffers in x-direction
 
         ! Populating cell-width distribution buffer at bc_x%beg
@@ -1351,11 +1351,11 @@ contains
         if (bc_io) then
             deallocate (bc_buffers(1, 1)%sf)
             deallocate (bc_buffers(1, 2)%sf)
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                 if (n > 0) then
                     deallocate (bc_buffers(2, 1)%sf)
                     deallocate (bc_buffers(2, 2)%sf)
-                    #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                    #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                         if (p > 0) then
                             deallocate (bc_buffers(3, 1)%sf)
                             deallocate (bc_buffers(3, 2)%sf)

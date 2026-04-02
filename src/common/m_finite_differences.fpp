@@ -30,7 +30,7 @@ contains
             lE = q
         end if
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         if (allocated(fd_coeff_s)) deallocate (fd_coeff_s)
         allocate (fd_coeff_s(-fd_number_in:fd_number_in,lb:lE))
 #endif

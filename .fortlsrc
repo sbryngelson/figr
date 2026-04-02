@@ -26,9 +26,9 @@
     "pp_suffixes": [".fpp"],
     "pp_defs": {
         "figr": 1,
-        "MFC_SINGLE_PRECISION": 1,
-        "MFC_OPENACC": 1,
-        "MFC_MPI": 1
+        "FIGR_SINGLE_PRECISION": 1,
+        "FIGR_OPENACC": 1,
+        "FIGR_MPI": 1
     },
     "lowercase_intrinsics": true,
     "debug_log": false,

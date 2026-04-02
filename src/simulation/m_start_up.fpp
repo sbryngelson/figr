@@ -71,7 +71,7 @@ contains
             t_step_old, &
             precision, parallel_io, &
             rhoref, pref, &
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             num_fluids, igr_order, viscous, &
             igr_iter_solver, igr_pres_lim, &
         #:endif
@@ -665,29 +665,29 @@ contains
 
         integer :: ierr
 
-#ifdef MFC_GPU
+#ifdef FIGR_GPU
         real(wp) :: starttime, endtime
         integer  :: num_devices, local_size, num_nodes, ppn, my_device_num
         integer  :: dev, devNum, local_rank
         integer :: local_comm
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
         integer(acc_device_kind) :: devtype
 #endif
 #endif
 
         call s_mpi_initialize()
 
-#ifdef MFC_GPU
+#ifdef FIGR_GPU
         call MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, local_comm, ierr)
         call MPI_Comm_size(local_comm, local_size, ierr)
         call MPI_Comm_rank(local_comm, local_rank, ierr)
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
         devtype = acc_get_device_type()
         devNum = acc_get_num_devices(devtype)
         dev = mod(local_rank, devNum)
 
         call acc_set_device_num(dev, devtype)
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
         devNum = omp_get_num_devices()
         dev = mod(local_rank, devNum)
         call omp_set_default_device(dev)
@@ -700,15 +700,15 @@ contains
             call s_check_input_file()
 
             print '(" Simulating a ", A, " ", I0, "x", I0, "x", I0, " case on ", I0, " rank(s) ", A, ".")', &
-            #:if not MFC_CASE_OPTIMIZATION
+            #:if not FIGR_CASE_OPTIMIZATION
                 "regular", &
             #:else
                 "case-optimized", &
             #:endif
             m, n, p, num_procs, &
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
             "with OpenACC offloading"
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
             "with OpenMP offloading"
 #else
             "on CPUs"
@@ -739,7 +739,7 @@ contains
         $:GPU_UPDATE(device='[bc_y%vb1, bc_y%vb2, bc_y%vb3, bc_y%ve1, bc_y%ve2, bc_y%ve3]')
         $:GPU_UPDATE(device='[bc_z%vb1, bc_z%vb2, bc_z%vb3, bc_z%ve1, bc_z%ve2, bc_z%ve3]')
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             $:GPU_UPDATE(device='[igr_order]')
         #:endif
 

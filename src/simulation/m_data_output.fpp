@@ -102,7 +102,7 @@ contains
         integer, intent(in)                                 :: t_step
         real(wp)                                            :: rho  !< Cell-avg. density
 
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3) :: alpha  !< Cell-avg. volume fraction
             real(wp), dimension(3) :: vel    !< Cell-avg. velocity
         #:else

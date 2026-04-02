@@ -17,7 +17,7 @@ module m_initial_condition
     type(scalar_field), allocatable, dimension(:)    :: q_prim_vf  !< primitive variables
     type(scalar_field), allocatable, dimension(:)    :: q_cons_vf  !< conservative variables
     type(integer_field), dimension(:,:), allocatable :: bc_type    !< bc_type fields
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
     integer(kind=1), allocatable, dimension(:,:,:) :: patch_id_fp
 #else
     integer, allocatable, dimension(:,:,:) :: patch_id_fp

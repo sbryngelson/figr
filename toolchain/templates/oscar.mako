@@ -30,7 +30,7 @@
 ${helpers.template_prologue()}
 
 ok ":) Loading modules:\n"
-cd "${MFC_ROOT_DIR}"
+cd "${FIGR_ROOT_DIR}"
 . ./figr.sh load -c o -m ${'g' if gpu_enabled else 'c'}
 cd - > /dev/null
 echo

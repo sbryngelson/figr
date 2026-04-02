@@ -134,7 +134,7 @@ class TestCase(case.Case):
         return trace_to_uuid(self.trace)
 
     def get_dirpath(self):
-        return os.path.join(common.MFC_TEST_DIR, self.get_uuid())
+        return os.path.join(common.FIGR_TEST_DIR, self.get_uuid())
 
     def get_filepath(self):
         filepath = os.path.join(self.get_dirpath(), "case.py")
@@ -342,7 +342,7 @@ def create_input_lagrange(path_test):
 def copy_input_lagrange(path_example_input, path_test):
     folder_path_dest = path_test + "/input/"
     fite_path_dest = folder_path_dest + "lag_bubbles.dat"
-    file_path_src = common.MFC_EXAMPLE_DIRPATH + path_example_input + "/input/lag_bubbles.dat"
+    file_path_src = common.FIGR_EXAMPLE_DIRPATH + path_example_input + "/input/lag_bubbles.dat"
     if not os.path.exists(folder_path_dest):
         os.mkdir(folder_path_dest)
 

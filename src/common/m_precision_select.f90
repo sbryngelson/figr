@@ -16,14 +16,14 @@ module m_precision_select
     integer, parameter :: dp = double_precision
 
     ! Set the working precision (wp) to single or double
-#ifdef MFC_SINGLE_PRECISION
+#ifdef FIGR_SINGLE_PRECISION
     integer, parameter :: wp = single_precision  !< Change to single_precision if needed
 #else
     integer, parameter :: wp = double_precision
 #endif
 
     ! Set the storage precision (stp) to half if mixed precision is requested
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
     integer, parameter :: stp = half_precision
 #else
     integer, parameter :: stp = wp

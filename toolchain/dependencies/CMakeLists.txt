@@ -18,15 +18,15 @@ include(ExternalProject)
 
 
 # Options
-option(MFC_FFTW    "Build the FFTW3 dependency" OFF)
-option(MFC_HDF5    "Build the HDF5  dependency" OFF)
-option(MFC_SILO    "Build the SILO  dependency" OFF)
-option(MFC_LAPACK  "Build the LAPACK  dependency" OFF)
-option(MFC_HIPFORT "Build the HIPFORT dependency" OFF)
+option(FIGR_FFTW    "Build the FFTW3 dependency" OFF)
+option(FIGR_HDF5    "Build the HDF5  dependency" OFF)
+option(FIGR_SILO    "Build the SILO  dependency" OFF)
+option(FIGR_LAPACK  "Build the LAPACK  dependency" OFF)
+option(FIGR_HIPFORT "Build the HIPFORT dependency" OFF)
 
 
 # FFTW3
-if (MFC_FFTW)
+if (FIGR_FFTW)
     find_package(FFTW QUIET)
     if (FFTW_FOUND)
         message(STATUS "FFTW found.")
@@ -48,7 +48,7 @@ endif()
 
 
 # HDF5
-if (MFC_HDF5)
+if (FIGR_HDF5)
     find_package(HDF5)
     if (HDF5_FOUND)
         message(STATUS "HDF5 found.")
@@ -74,7 +74,7 @@ endif()
 
 
 # SILO
-if (MFC_SILO)
+if (FIGR_SILO)
     find_package(SILO)
     if (SILO_FOUND)
         message(STATUS "SILO found.")
@@ -104,7 +104,7 @@ if (MFC_SILO)
 endif()
 
 # LAPACK
- if (MFC_LAPACK)
+ if (FIGR_LAPACK)
      find_package(LAPACK QUIET)
      if (LAPACK_FOUND)
          message(STATUS "LAPACK found.")
@@ -130,7 +130,7 @@ endif()
  endif()
 
 # HIPFORT
-if (MFC_HIPFORT)
+if (FIGR_HIPFORT)
     if (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
         ExternalProject_Add(hipfort
             GIT_REPOSITORY "https://github.com/ROCmSoftwarePlatform/hipfort"

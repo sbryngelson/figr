@@ -6,7 +6,7 @@
     #> The figr prologue prints a summary of the running job and starts a timer.
     #>
 
-    . "${MFC_ROOT_DIR}/toolchain/util.sh"
+    . "${FIGR_ROOT_DIR}/toolchain/util.sh"
 
     TABLE_FORMAT_LINE="| * %-14s $MAGENTA%-35s$COLOR_RESET * %-14s $MAGENTA%-35s$COLOR_RESET |\\n"
     TABLE_HEADER="+-----------------------------------------------------------------------------------------------------------+ \\n"
@@ -101,7 +101,7 @@ END
 
     % if output_summary:
 
-        cd '${MFC_ROOT_DIR}'
+        cd '${FIGR_ROOT_DIR}'
 
         cat >>'${output_summary}' <<EOL
 ${target.name}:

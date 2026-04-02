@@ -36,7 +36,7 @@ module m_igr
     real(wp) :: alf_igr
     $:GPU_DECLARE(create='[alf_igr]')
 
-    #:if not MFC_CASE_OPTIMIZATION
+    #:if not FIGR_CASE_OPTIMIZATION
         integer :: vidxb, vidxe
         $:GPU_DECLARE(create='[vidxb, vidxe]')
 
@@ -47,7 +47,7 @@ module m_igr
             integer, parameter :: vidxb = -2
             integer, parameter :: vidxe = 3
 
-#if defined(MFC_OpenMP)
+#if defined(FIGR_OpenMP)
             real(wp) :: coeff_L(-1:3) = [-3._wp/60._wp, 27._wp/60._wp, 47._wp/60._wp, -13._wp/60._wp, 2._wp/60._wp]
             real(wp) :: coeff_R(-2:2) = [2._wp/60._wp, -13._wp/60._wp, 47._wp/60._wp, 27._wp/60._wp, -3._wp/60._wp]
 #else
@@ -58,7 +58,7 @@ module m_igr
             integer, parameter :: vidxb = -1
             integer, parameter :: vidxe = 2
 
-#if defined(MFC_OpenMP)
+#if defined(FIGR_OpenMP)
             real(wp) :: coeff_L(0:2) = [2._wp/6._wp, 5._wp/6._wp, -1._wp/6._wp]
             real(wp) :: coeff_R(-1:1) = [-1._wp/6._wp, 5._wp/6._wp, 2._wp/6._wp]
 #else
@@ -67,7 +67,7 @@ module m_igr
 #endif
         #:endif
 
-#if defined(MFC_OpenMP)
+#if defined(FIGR_OpenMP)
         $:GPU_DECLARE(create='[coeff_L, coeff_R]')
 #endif
     #:endif
@@ -151,7 +151,7 @@ contains
         end if
         $:GPU_UPDATE(device='[alf_igr]')
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             if (igr_order == 3) then
                 vidxb = -1; vidxe = 2
                 $:GPU_UPDATE(device='[vidxb, vidxe]')
@@ -187,7 +187,7 @@ contains
             $:GPU_UPDATE(device='[coeff_L]')
             $:GPU_UPDATE(device='[coeff_R]')
         #:else
-#if defined(MFC_OpenMP)
+#if defined(FIGR_OpenMP)
             $:GPU_UPDATE(device='[coeff_L]')
             $:GPU_UPDATE(device='[coeff_R]')
 #endif
@@ -308,7 +308,7 @@ contains
         type(scalar_field), dimension(sys_size), intent(inout) :: rhs_vf
         type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
         real(wp)                                               :: F_L, vel_L, rho_L, F_R, vel_R, rho_R
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             real(wp), dimension(num_fluids_max) :: alpha_rho_L, alpha_rho_R
         #:else
             real(wp), dimension(num_fluids) :: alpha_rho_L, alpha_rho_R
@@ -393,7 +393,7 @@ contains
         real(wp)                                               :: rho_R, gamma_R, pi_inf_R, E_R, mu_R, F_R, pres_R
         real(wp), dimension(3)                                 :: vflux_L_arr, vflux_R_arr
         real(wp), dimension(-1:1)                              :: rho_sf_small
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             real(wp), dimension(num_fluids_max) :: alpha_rho_L, alpha_L, alpha_R, alpha_rho_R
             real(wp), dimension(3)              :: vel_L, vel_R
             real(wp), dimension(3, 3)           :: dvel
@@ -407,7 +407,7 @@ contains
 
         if (idir == 1) then
             if (p == 0) then
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                     $:GPU_PARALLEL_LOOP(collapse=3, private='[j, k, l, rho_L, rho_R, gamma_L, gamma_R, pi_inf_L, pi_inf_R, mu_L, &
                                         & mu_R, vel_L, vel_R, pres_L, pres_R, alpha_L, alpha_R, alpha_rho_L, alpha_rho_R, F_L, &
                                         & F_R, E_L, E_R, cfl, dvel, dvel_small, rho_sf_small, vflux_L_arr, vflux_R_arr]')
@@ -417,7 +417,7 @@ contains
                                 vflux_L_arr = 0._wp
                                 vflux_R_arr = 0._wp
 
-                                #:if MFC_CASE_OPTIMIZATION
+                                #:if FIGR_CASE_OPTIMIZATION
                                     #:if igr_order == 5
                                         ! DIR$ unroll 6
                                     #:elif igr_order == 3
@@ -805,7 +805,7 @@ contains
                     $:END_GPU_PARALLEL_LOOP()
                 #:endif
             else
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     $:GPU_PARALLEL_LOOP(collapse=3, private='[j, k, l, rho_L, rho_R, gamma_L, gamma_R, pi_inf_L, pi_inf_R, mu_L, &
                                         & mu_R, vel_L, vel_R, pres_L, pres_R, alpha_L, alpha_R, alpha_rho_L, alpha_rho_R, F_L, &
                                         & F_R, E_L, E_R, cfl, dvel, dvel_small, rho_sf_small, vflux_L_arr, vflux_R_arr]')
@@ -815,7 +815,7 @@ contains
                                 vflux_L_arr = 0._wp
                                 vflux_R_arr = 0._wp
 
-                                #:if MFC_CASE_OPTIMIZATION
+                                #:if FIGR_CASE_OPTIMIZATION
                                     #:if igr_order == 5
                                         ! DIR$ unroll 6
                                     #:elif igr_order == 3
@@ -1294,7 +1294,7 @@ contains
             end if
         else if (idir == 2) then
             if (p == 0) then
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                     $:GPU_PARALLEL_LOOP(collapse=3, private='[j, k, l, rho_L, rho_R, gamma_L, gamma_R, pi_inf_L, pi_inf_R, mu_L, &
                                         & mu_R, vel_L, vel_R, pres_L, pres_R, alpha_L, alpha_R, alpha_rho_L, alpha_rho_R, F_L, &
                                         & F_R, E_L, E_R, cfl, dvel_small, rho_sf_small, vflux_L_arr, vflux_R_arr]')
@@ -1305,7 +1305,7 @@ contains
                                     vflux_L_arr = 0._wp
                                     vflux_R_arr = 0._wp
 
-                                    #:if MFC_CASE_OPTIMIZATION
+                                    #:if FIGR_CASE_OPTIMIZATION
                                         #:if igr_order == 5
                                             ! DIR$ unroll 6
                                         #:elif igr_order == 3
@@ -1673,7 +1673,7 @@ contains
                     $:END_GPU_PARALLEL_LOOP()
                 #:endif
             else
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     $:GPU_PARALLEL_LOOP(collapse=3, private='[j, k, l, rho_L, rho_R, gamma_L, gamma_R, pi_inf_L, pi_inf_R, mu_L, &
                                         & mu_R, vel_L, vel_R, pres_L, pres_R, alpha_L, alpha_R, alpha_rho_L, alpha_rho_R, F_L, &
                                         & F_R, E_L, E_R, cfl, dvel_small, rho_sf_small, vflux_L_arr, vflux_R_arr]')
@@ -1684,7 +1684,7 @@ contains
                                     vflux_L_arr = 0._wp
                                     vflux_R_arr = 0._wp
 
-                                    #:if MFC_CASE_OPTIMIZATION
+                                    #:if FIGR_CASE_OPTIMIZATION
                                         #:if igr_order == 5
                                             ! DIR$ unroll 6
                                         #:elif igr_order == 3
@@ -2138,7 +2138,7 @@ contains
                 #:endif
             end if
         else if (idir == 3) then
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                 $:GPU_PARALLEL_LOOP(collapse=3, private='[j, k, l, rho_L, rho_R, gamma_L, gamma_R, pi_inf_L, pi_inf_R, mu_L, &
                                     & mu_R, vel_L, vel_R, pres_L, pres_R, alpha_L, alpha_R, alpha_rho_L, alpha_rho_R, F_L, F_R, &
                                     & E_L, E_R, cfl, dvel_small, rho_sf_small, vflux_L_arr, vflux_R_arr]')
@@ -2149,7 +2149,7 @@ contains
                                 vflux_L_arr = 0._wp
                                 vflux_R_arr = 0._wp
 
-                                #:if MFC_CASE_OPTIMIZATION
+                                #:if FIGR_CASE_OPTIMIZATION
                                     #:if igr_order == 5
                                         ! DIR$ unroll 6
                                     #:elif igr_order == 3
@@ -2630,7 +2630,7 @@ contains
 
             cfl = max(sqrt(vel_L(1)**2._wp + vel_L(2)**2._wp), sqrt(vel_R(1)**2._wp + vel_R(2)**2._wp)) + max(a_L, a_R)
         else if (num_dims == 3) then
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                 pres_L = (E_L - pi_inf_L - 0.5_wp*rho_L*(vel_L(1)**2._wp + vel_L(2)**2._wp + vel_L(3)**2._wp))/gamma_L
                 pres_R = (E_R - pi_inf_R - 0.5_wp*rho_R*(vel_R(1)**2._wp + vel_R(2)**2._wp + vel_R(3)**2._wp))/gamma_R
 
@@ -2735,7 +2735,7 @@ contains
         end if
 #endif
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             @:DEALLOCATE(coeff_L, coeff_R)
         #:endif
 

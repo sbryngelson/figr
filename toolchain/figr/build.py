@@ -400,8 +400,8 @@ class MFCTarget:
             # Location prefix to install bin/, lib/, include/, etc.
             # See: https://cmake.org/cmake/help/latest/command/install.html.
             f"-DCMAKE_INSTALL_PREFIX={install_dirpath}",
-            f"-DMFC_SINGLE_PRECISION={'ON' if (ARG('single') or ARG('mixed')) else 'OFF'}",
-            f"-DMFC_MIXED_PRECISION={'ON' if ARG('mixed') else 'OFF'}",
+            f"-DFIGR_SINGLE_PRECISION={'ON' if (ARG('single') or ARG('mixed')) else 'OFF'}",
+            f"-DFIGR_MIXED_PRECISION={'ON' if ARG('mixed') else 'OFF'}",
         ]
 
         # Verbosity level 3 (-vvv): add cmake debug flags
@@ -409,10 +409,10 @@ class MFCTarget:
             flags.append("--debug-find")
 
         if not self.isDependency:
-            flags.append("-DMFC_MPI=ON")
-            flags.append(f"-DMFC_OpenACC={'ON' if (ARG('gpu') == gpuConfigOptions.ACC.value) else 'OFF'}")
-            flags.append(f"-DMFC_OpenMP={'ON' if (ARG('gpu') == gpuConfigOptions.MP.value) else 'OFF'}")
-            flags.append(f"-DMFC_Unified={'ON' if ARG('unified') else 'OFF'}")
+            flags.append("-DFIGR_MPI=ON")
+            flags.append(f"-DFIGR_OpenACC={'ON' if (ARG('gpu') == gpuConfigOptions.ACC.value) else 'OFF'}")
+            flags.append(f"-DFIGR_OpenMP={'ON' if (ARG('gpu') == gpuConfigOptions.MP.value) else 'OFF'}")
+            flags.append(f"-DFIGR_Unified={'ON' if ARG('unified') else 'OFF'}")
 
         command = ["cmake"] + flags + ["-S", cmake_dirpath, "-B", build_dirpath]
 
@@ -513,13 +513,13 @@ class MFCTarget:
 
 
 #                         name             flags                       isDep  isDef  isReq  dependencies                        run order
-HDF5 = MFCTarget("hdf5", ["-DMFC_HDF5=ON"], True, False, False, MFCTarget.Dependencies([], [], []), -1)
-SILO = MFCTarget("silo", ["-DMFC_SILO=ON"], True, False, False, MFCTarget.Dependencies([HDF5], [], []), -1)
-HIPFORT = MFCTarget("hipfort", ["-DMFC_HIPFORT=ON"], True, False, False, MFCTarget.Dependencies([], [], []), -1)
-PRE_PROCESS = MFCTarget("pre_process", ["-DMFC_PRE_PROCESS=ON"], False, True, False, MFCTarget.Dependencies([], [], []), 0)
-SIMULATION = MFCTarget("simulation", ["-DMFC_SIMULATION=ON"], False, True, False, MFCTarget.Dependencies([], [], [HIPFORT]), 1)
-POST_PROCESS = MFCTarget("post_process", ["-DMFC_POST_PROCESS=ON"], False, True, False, MFCTarget.Dependencies([HDF5, SILO], [], []), 2)
-SYSCHECK = MFCTarget("syscheck", ["-DMFC_SYSCHECK=ON"], False, False, True, MFCTarget.Dependencies([], [], [HIPFORT]), -1)
+HDF5 = MFCTarget("hdf5", ["-DFIGR_HDF5=ON"], True, False, False, MFCTarget.Dependencies([], [], []), -1)
+SILO = MFCTarget("silo", ["-DFIGR_SILO=ON"], True, False, False, MFCTarget.Dependencies([HDF5], [], []), -1)
+HIPFORT = MFCTarget("hipfort", ["-DFIGR_HIPFORT=ON"], True, False, False, MFCTarget.Dependencies([], [], []), -1)
+PRE_PROCESS = MFCTarget("pre_process", ["-DFIGR_PRE_PROCESS=ON"], False, True, False, MFCTarget.Dependencies([], [], []), 0)
+SIMULATION = MFCTarget("simulation", ["-DFIGR_SIMULATION=ON"], False, True, False, MFCTarget.Dependencies([], [], [HIPFORT]), 1)
+POST_PROCESS = MFCTarget("post_process", ["-DFIGR_POST_PROCESS=ON"], False, True, False, MFCTarget.Dependencies([HDF5, SILO], [], []), 2)
+SYSCHECK = MFCTarget("syscheck", ["-DFIGR_SYSCHECK=ON"], False, False, True, MFCTarget.Dependencies([], [], [HIPFORT]), -1)
 
 TARGETS = {HDF5, SILO, HIPFORT, PRE_PROCESS, SIMULATION, POST_PROCESS, SYSCHECK}
 

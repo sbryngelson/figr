@@ -29,7 +29,7 @@ module m_assign_variables
             real(wp), intent(in)                                     :: eta
             type(scalar_field), dimension(1:sys_size), intent(inout) :: q_prim_vf
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
             integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
             integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -62,7 +62,7 @@ contains
         integer, intent(in)  :: patch_id
         integer, intent(in)  :: j, k, l
         real(wp), intent(in) :: eta
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
