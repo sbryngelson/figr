@@ -37,9 +37,8 @@ module m_variables_conversion
     $:GPU_DECLARE(create='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
 #endif
 
-    real(wp), allocatable, dimension(:)   :: Gs_vc
     real(wp), allocatable, dimension(:,:) :: Res_vc
-    $:GPU_DECLARE(create='[Gs_vc, Res_vc]')
+    $:GPU_DECLARE(create='[Res_vc]')
 
     integer :: is1b, is2b, is3b, is1e, is2e, is3e
     $:GPU_DECLARE(create='[is1b, is2b, is3b, is1e, is2e, is3e]')
@@ -52,21 +51,19 @@ module m_variables_conversion
 contains
 
     !> Dispatch to s_convert_species_to_mixture_variables.
-    subroutine s_convert_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K, G_K, G)
+    subroutine s_convert_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K)
 
-        type(scalar_field), dimension(sys_size), intent(in)   :: q_vf
-        integer, intent(in)                                   :: i, j, k
-        real(wp), intent(out), target                         :: rho, gamma, pi_inf, qv
-        real(wp), optional, dimension(2), intent(out)         :: Re_K
-        real(wp), optional, intent(out)                       :: G_K
-        real(wp), optional, dimension(num_fluids), intent(in) :: G
+        type(scalar_field), dimension(sys_size), intent(in) :: q_vf
+        integer, intent(in)                                 :: i, j, k
+        real(wp), intent(out), target                       :: rho, gamma, pi_inf, qv
+        real(wp), optional, dimension(2), intent(out)       :: Re_K
 
-        call s_convert_species_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K, G_K, G)
+        call s_convert_species_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K)
 
     end subroutine s_convert_to_mixture_variables
 
     !> Compute the pressure from the appropriate equation of state
-    subroutine s_compute_pressure(energy, alf, dyn_p, pi_inf, gamma, rho, qv, pres, stress, mom, G, pres_mag)
+    subroutine s_compute_pressure(energy, alf, dyn_p, pi_inf, gamma, rho, qv, pres, stress, mom, pres_mag)
 
         $:GPU_ROUTINE(function_name='s_compute_pressure',parallelism='[seq]', cray_noinline=True)
 
@@ -75,7 +72,7 @@ contains
         real(wp), intent(in)            :: pi_inf, gamma, rho, qv
         real(wp), intent(out)           :: pres
         real(stp), intent(in), optional :: stress, mom
-        real(wp), intent(in), optional  :: G, pres_mag
+        real(wp), intent(in), optional  :: pres_mag
 
         pres = (energy - dyn_p - pi_inf - qv)/gamma
 
@@ -85,19 +82,17 @@ contains
     !> Convert species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv. Given conservative or
     !! primitive variables, computes the density, the specific heat ratio function and the liquid stiffness function from q_vf and
     !! stores the results into rho, gamma and pi_inf.
-    subroutine s_convert_species_to_mixture_variables(q_vf, k, l, r, rho, gamma, pi_inf, qv, Re_K, G_K, G)
+    subroutine s_convert_species_to_mixture_variables(q_vf, k, l, r, rho, gamma, pi_inf, qv, Re_K)
 
-        type(scalar_field), dimension(sys_size), intent(in)   :: q_vf
-        integer, intent(in)                                   :: k, l, r
-        real(wp), intent(out), target                         :: rho
-        real(wp), intent(out), target                         :: gamma
-        real(wp), intent(out), target                         :: pi_inf
-        real(wp), intent(out), target                         :: qv
-        real(wp), optional, dimension(2), intent(out)         :: Re_K
-        real(wp), optional, intent(out)                       :: G_K
-        real(wp), dimension(num_fluids)                       :: alpha_rho_K, alpha_K
-        real(wp), optional, dimension(num_fluids), intent(in) :: G
-        integer                                               :: i, j  !< Generic loop iterator
+        type(scalar_field), dimension(sys_size), intent(in) :: q_vf
+        integer, intent(in)                                 :: k, l, r
+        real(wp), intent(out), target                       :: rho
+        real(wp), intent(out), target                       :: gamma
+        real(wp), intent(out), target                       :: pi_inf
+        real(wp), intent(out), target                       :: qv
+        real(wp), optional, dimension(2), intent(out)       :: Re_K
+        real(wp), dimension(num_fluids)                     :: alpha_rho_K, alpha_K
+        integer                                             :: i, j  !< Generic loop iterator
         ! Computing the density, the specific heat ratio function and the liquid stiffness function, respectively
 
         call s_compute_species_fraction(q_vf, k, l, r, alpha_rho_K, alpha_K)
@@ -127,14 +122,6 @@ contains
         end if
 #endif
 
-        if (present(G_K)) then
-            G_K = 0._wp
-            do i = 1, num_fluids
-                G_K = G_K + alpha_K(i)*G(i)
-            end do
-            G_K = max(0._wp, G_K)
-        end if
-
         ! Post process requires rho_sf/gamma_sf/pi_inf_sf/qv_sf to also be updated
 #ifdef MFC_POST_PROCESS
         rho_sf(k, l, r) = rho
@@ -146,20 +133,17 @@ contains
     end subroutine s_convert_species_to_mixture_variables
 
     !> GPU-accelerated conversion of species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv.
-    subroutine s_convert_species_to_mixture_variables_acc(rho_K, gamma_K, pi_inf_K, qv_K, alpha_K, alpha_rho_K, Re_K, G_K, G)
+    subroutine s_convert_species_to_mixture_variables_acc(rho_K, gamma_K, pi_inf_K, qv_K, alpha_K, alpha_rho_K, Re_K)
 
         $:GPU_ROUTINE(function_name='s_convert_species_to_mixture_variables_acc', parallelism='[seq]', cray_noinline=True)
 
         real(wp), intent(out) :: rho_K, gamma_K, pi_inf_K, qv_K
         #:if not MFC_CASE_OPTIMIZATION and USING_AMD
-            real(wp), dimension(3), intent(inout)        :: alpha_rho_K, alpha_K
-            real(wp), optional, dimension(3), intent(in) :: G
+            real(wp), dimension(3), intent(inout) :: alpha_rho_K, alpha_K
         #:else
-            real(wp), dimension(num_fluids), intent(inout)        :: alpha_rho_K, alpha_K
-            real(wp), optional, dimension(num_fluids), intent(in) :: G
+            real(wp), dimension(num_fluids), intent(inout) :: alpha_rho_K, alpha_K
         #:endif
         real(wp), dimension(2), intent(out) :: Re_K
-        real(wp), optional, intent(out)     :: G_K
         real(wp)                            :: alpha_K_sum
         integer                             :: i, j  !< Generic loop iterators
         rho_K = 0._wp; gamma_K = 0._wp; pi_inf_K = 0._wp; qv_K = 0._wp
@@ -169,15 +153,6 @@ contains
             pi_inf_K = pi_inf_K + alpha_K(i)*pi_infs(i)
             qv_K = qv_K + alpha_rho_K(i)*qvs(i)
         end do
-
-        if (present(G_K)) then
-            G_K = 0._wp
-            do i = 1, num_fluids
-                ! TODO: change to use Gs_vc directly here? TODO: Make this change as well for GPUs
-                G_K = G_K + alpha_K(i)*G(i)
-            end do
-            G_K = max(0._wp, G_K)
-        end if
 
         if (viscous) then
             do i = 1, 2
@@ -209,19 +184,17 @@ contains
         @:ALLOCATE(cvs    (1:num_fluids))
         @:ALLOCATE(qvs    (1:num_fluids))
         @:ALLOCATE(qvps    (1:num_fluids))
-        @:ALLOCATE(Gs_vc     (1:num_fluids))
 
         do i = 1, num_fluids
             gammas(i) = fluid_pp(i)%gamma
             gs_min(i) = 1.0_wp/gammas(i) + 1.0_wp
             pi_infs(i) = fluid_pp(i)%pi_inf
-            Gs_vc(i) = fluid_pp(i)%G
             ps_inf(i) = pi_infs(i)/(1.0_wp + gammas(i))
             cvs(i) = fluid_pp(i)%cv
             qvs(i) = fluid_pp(i)%qv
             qvps(i) = fluid_pp(i)%qvp
         end do
-        $:GPU_UPDATE(device='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps, Gs_vc]')
+        $:GPU_UPDATE(device='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
 
 #ifdef MFC_SIMULATION
         if (viscous) then
@@ -284,14 +257,13 @@ contains
         #:endif
         real(wp), dimension(2) :: Re_K
         real(wp)               :: rho_K, gamma_K, pi_inf_K, qv_K, dyn_pres_K
-        real(wp)               :: G_K
         real(wp)               :: pres
         integer                :: i, j, k, l  !< Generic loop iterators
         real(wp)               :: T
         real(wp)               :: pres_mag
 
         $:GPU_PARALLEL_LOOP(collapse=3, private='[alpha_K, alpha_rho_K, Re_K, rho_K, gamma_K, pi_inf_K, qv_K, dyn_pres_K, rhoYks, &
-                            & pres, G_K, T, pres_mag]')
+                            & pres, T, pres_mag]')
         do l = ibounds(3)%beg, ibounds(3)%end
             do k = ibounds(2)%beg, ibounds(2)%end
                 do j = ibounds(1)%beg, ibounds(1)%end
@@ -355,13 +327,10 @@ contains
         real(wp)                         :: pi_inf
         real(wp)                         :: qv
         real(wp)                         :: dyn_pres
-        real(wp)                         :: G
         real(wp), dimension(2)           :: Re_K
         integer                          :: i, j, k, l  !< Generic loop iterators
         real(wp), dimension(1) :: Ys
         real(wp)                         :: e_mix, mix_mol_weight, T
-
-        G = 0._wp
 
 #ifndef MFC_SIMULATION
         ! Converting the primitive variables to the conservative variables
@@ -369,7 +338,7 @@ contains
             do k = 0, n
                 do j = 0, m
                     ! Obtaining the density, specific heat ratio function and the liquid stiffness function, respectively
-                    call s_convert_to_mixture_variables(q_prim_vf, j, k, l, rho, gamma, pi_inf, qv, Re_K, G, fluid_pp(:)%G)
+                    call s_convert_to_mixture_variables(q_prim_vf, j, k, l, rho, gamma, pi_inf, qv, Re_K)
 
                     if (num_fluids > 1) then
                         ! Transferring the advection equation(s) variable(s)
@@ -436,7 +405,6 @@ contains
         real(wp)               :: pi_inf_K
         real(wp)               :: qv_K
         real(wp), dimension(2) :: Re_K
-        real(wp)               :: G_K
         real(wp)               :: T_K, mix_mol_weight, R_gas
         integer                :: i, j, k, l  !< Generic loop iterators
 
@@ -450,7 +418,7 @@ contains
         ! capillarity
 #ifdef MFC_SIMULATION
         $:GPU_PARALLEL_LOOP(collapse=3, private='[alpha_rho_K, vel_K, alpha_K, Re_K, Y_K, rho_K, vel_K_sum, pres_K, E_K, gamma_K, &
-                            & pi_inf_K, qv_K, G_K, T_K, mix_mol_weight, R_gas]')
+                            & pi_inf_K, qv_K, T_K, mix_mol_weight, R_gas]')
         do l = is3b, is3e
             do k = is2b, is2e
                 do j = is1b, is1e
@@ -550,7 +518,7 @@ contains
         deallocate (rho_sf, gamma_sf, pi_inf_sf, qv_sf)
 #endif
 
-        @:DEALLOCATE(gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps, Gs_vc)
+        @:DEALLOCATE(gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps)
 
     end subroutine s_finalize_variables_conversion_module
 

@@ -100,11 +100,6 @@ module m_derived_types
         real(wp), dimension(2:9) :: a  !< Used by hardcoded IC and as temporary variables.
         logical :: non_axis_sym
 
-        ! Geometry 13 (2D modal Fourier): fourier_cos(n), fourier_sin(n) for mode n
-        real(wp), dimension(1:max_2d_fourier_modes) :: fourier_cos, fourier_sin
-        logical :: modal_clip_r_to_min  !< When true, clip boundary radius: R(theta) = max(R(theta), modal_r_min) (Non-exp form only)
-        real(wp) :: modal_r_min  !< Minimum boundary radius when modal_clip_r_to_min is true (Non-exp form only)
-        logical :: modal_use_exp_form  !< When true, boundary = radius*exp(Fourier series)
         ! Geometry 14 (3D spherical harmonic): sph_har_coeff(l,m) for real Y_lm
         real(wp), dimension(0:max_sph_harm_degree,-max_sph_harm_degree:max_sph_harm_degree) :: sph_har_coeff
         real(wp), dimension(3) :: normal  !< Patch orientation normal vector (x, y, z)
@@ -137,7 +132,6 @@ module m_derived_types
         real(wp)               :: cv      !< heat capacity
         real(wp)               :: qv      !< reference energy per unit mass for SGEOS, q (see Le Metayer (2004))
         real(wp)               :: qvp     !< reference entropy per unit mass for SGEOS, q' (see Le Metayer (2004))
-        real(wp)               :: G
     end type physical_parameters
 
 
@@ -152,14 +146,4 @@ module m_derived_types
         integer :: mn_min, np_min, mp_min, mnp_min
     end type cell_num_bounds
 
-    type simplex_noise_params
-        logical, dimension(3)                   :: perturb_vel
-        real(wp), dimension(3)                  :: perturb_vel_freq
-        real(wp), dimension(3)                  :: perturb_vel_scale
-        real(wp), dimension(3, 3)               :: perturb_vel_offset
-        logical, dimension(1:num_fluids_max)    :: perturb_dens
-        real(wp), dimension(1:num_fluids_max)   :: perturb_dens_freq
-        real(wp), dimension(1:num_fluids_max)   :: perturb_dens_scale
-        real(wp), dimension(1:num_fluids_max,3) :: perturb_dens_offset
-    end type simplex_noise_params
 end module m_derived_types

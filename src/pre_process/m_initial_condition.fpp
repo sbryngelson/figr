@@ -12,7 +12,6 @@ module m_initial_condition
     use m_variables_conversion
     use m_icpp_patches
     use m_assign_variables
-    use m_perturbation
     ! m_chemistry removed (IGR-only build)
     use m_boundary_conditions
 
@@ -111,12 +110,6 @@ contains
         call s_apply_icpp_patches(patch_id_fp, q_prim_vf)
 
         if (num_bc_patches > 0) call s_apply_boundary_patches(q_prim_vf, bc_type)
-
-        if (perturb_flow) call s_perturb_surrounding_flow(q_prim_vf)
-        if (perturb_sph) call s_perturb_sphere(q_prim_vf)
-        if (mixlayer_perturb) call s_perturb_mixlayer(q_prim_vf)
-        if (simplex_perturb) call s_perturb_simplex(q_prim_vf)
-        if (elliptic_smoothing) call s_elliptic_smoothing(q_prim_vf, bc_type)
 
         call s_convert_primitive_to_conservative_variables(q_prim_vf, q_cons_vf)
 

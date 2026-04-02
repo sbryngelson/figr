@@ -14,7 +14,7 @@ module m_icpp_patches
 
     use m_derived_types  ! Definitions of the derived types
     use m_global_parameters
-    use m_constants, only: max_2d_fourier_modes, max_sph_harm_degree, small_radius
+    use m_constants, only: max_sph_harm_degree, small_radius
     use m_helper_basic
     use m_helper
     use m_mpi_common
@@ -110,9 +110,6 @@ contains
                 else if (patch_icpp(i)%geometry == 6) then
                     call s_mpi_abort('This used to be the isentropic vortex patch, ' &
                                      & // 'which no longer exists. See Examples. Exiting.')
-                    ! 2D modal (Fourier) patch
-                else if (patch_icpp(i)%geometry == 13) then
-                    call s_icpp_2d_modal(i, patch_id_fp, q_prim_vf)
                     ! Spiral patch
                 else if (patch_icpp(i)%geometry == 17) then
                     call s_icpp_spiral(i, patch_id_fp, q_prim_vf)
@@ -755,63 +752,6 @@ contains
         @:HardcodedDellacation()
 
     end subroutine s_icpp_2D_TaylorGreen_Vortex
-
-    !> 2D modal (Fourier) patch. theta = atan2(y - y_centroid, x - x_centroid). Additive (modal_use_exp_form false): R = radius +
-    !! sum_n [fourier_cos*cos(n*theta)+fourier_sin*sin(n*theta)]; coefficients are absolute (same units as radius). R is clipped to
-    !! max(R,0). If modal_clip_r_to_min, R = max(R, modal_r_min). Exponential (modal_use_exp_form true): R = radius*exp(sum);
-    !! coefficients are relative (dimensionless).
-    subroutine s_icpp_2d_modal(patch_id, patch_id_fp, q_prim_vf)
-
-        integer, intent(in) :: patch_id
-
-#ifdef MFC_MIXED_PRECISION
-        integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
-#else
-        integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
-#endif
-        type(scalar_field), dimension(1:sys_size), intent(inout) :: q_prim_vf
-        real(wp)                                                 :: r, theta, R_boundary, sum_series
-        integer                                                  :: i, j, nn
-
-        x_centroid = patch_icpp(patch_id)%x_centroid
-        y_centroid = patch_icpp(patch_id)%y_centroid
-        smooth_patch_id = patch_icpp(patch_id)%smooth_patch_id
-        smooth_coeff = patch_icpp(patch_id)%smooth_coeff
-        eta = 1._wp
-
-        do j = 0, n
-            do i = 0, m
-                r = sqrt((x_cc(i) - x_centroid)**2 + (y_cc(j) - y_centroid)**2)
-                if (r < small_radius) then
-                    theta = 0._wp
-                else
-                    theta = atan2(y_cc(j) - y_centroid, x_cc(i) - x_centroid)
-                end if
-                sum_series = 0._wp
-                do nn = 1, max_2d_fourier_modes
-                    sum_series = sum_series + patch_icpp(patch_id)%fourier_cos(nn)*cos(real(nn, &
-                                                         & wp)*theta) + patch_icpp(patch_id)%fourier_sin(nn)*sin(real(nn, wp)*theta)
-                end do
-                if (patch_icpp(patch_id)%modal_use_exp_form) then
-                    R_boundary = patch_icpp(patch_id)%radius*exp(sum_series)
-                else
-                    R_boundary = patch_icpp(patch_id)%radius + sum_series
-                    R_boundary = max(R_boundary, 0._wp)
-                    if (patch_icpp(patch_id)%modal_clip_r_to_min) then
-                        R_boundary = max(R_boundary, patch_icpp(patch_id)%modal_r_min)
-                    end if
-                end if
-                if (patch_icpp(patch_id)%smoothen) then
-                    eta = 0.5_wp + 0.5_wp*tanh(smooth_coeff/min(dx, dy)*(R_boundary - r))
-                end if
-                if ((r <= R_boundary .and. patch_icpp(patch_id)%alter_patch(patch_id_fp(i, j, 0))) .or. patch_id_fp(i, j, &
-                    & 0) == smooth_patch_id) then
-                    call s_assign_patch_primitive_variables(patch_id, i, j, 0, eta, q_prim_vf, patch_id_fp)
-                end if
-            end do
-        end do
-
-    end subroutine s_icpp_2d_modal
 
     !> 3D spherical harmonic patch. Surface r = radius + sum_lm sph_har_coeff(l,m)*Y_lm(theta,phi). theta = acos(z/r), phi =
     !! atan2(y,x) relative to centroid.

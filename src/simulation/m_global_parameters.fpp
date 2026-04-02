@@ -377,7 +377,6 @@ contains
             fluid_pp(i)%qv = 0._wp
             fluid_pp(i)%qvp = 0._wp
             fluid_pp(i)%Re(:) = dflt_real
-            fluid_pp(i)%G = 0._wp
         end do
 
         ! Tait EOS

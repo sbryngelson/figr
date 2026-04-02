@@ -20,11 +20,9 @@ module m_constants
     integer, parameter  :: path_len = 400  !< Maximum path length
     integer, parameter  :: name_len = 50  !< Maximum name length
     integer, parameter  :: dflt_int = -100  !< Default integer value
-    integer, parameter  :: fourier_rings = 5  !< Fourier filter ring limit
     integer, parameter  :: num_fluids_max = 10  !< Maximum number of fluids in the simulation
     integer, parameter  :: num_patches_max = 1000  !< Maximum number of IC patches
     integer, parameter  :: num_bc_patches_max = 10  !< Maximum number of boundary condition patches
-    integer, parameter  :: max_2d_fourier_modes = 10  !< Max Fourier mode index for 2D modal patch (geometry 13)
     integer, parameter  :: max_sph_harm_degree = 5  !< Max degree L for 3D spherical harmonic patch (geometry 14)
     integer, parameter  :: pathlen_max = 400  !< Maximum path length
     integer, parameter  :: dflt_num_igr_iters = 2  !< number of iterations for IGR elliptic solve
@@ -51,13 +49,6 @@ module m_constants
     ! Relativity
     !> Max Newton-Raphson iterations for relativistic primitive recovery
     integer, parameter :: relativity_cons_to_prim_max_iter = 100
-
-    ! Linear congruential pseudo-random number generator parameters
-    integer, parameter  :: modulus = 2**30 - 1     !< PRNG modulus
-    integer, parameter  :: multiplier = 1664525    !< PRNG multiplier
-    integer, parameter  :: increment = 1013904223  !< PRNG increment
-    integer, parameter  :: amplifier = 3**13       !< PRNG amplifier for mixing
-    real(wp), parameter :: decimal_trim = 1.e5_wp  !< PRNG decimal truncation factor
 
     ! System constants
     integer, parameter :: CASE_FILE_ERROR_CODE = 22  !< Exit code for case file validation errors

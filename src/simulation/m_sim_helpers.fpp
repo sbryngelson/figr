@@ -18,17 +18,6 @@ module m_sim_helpers
 
 contains
 
-    !> Computes the modified dtheta for Fourier filtering in azimuthal direction (unused in IGR-only build)
-    function f_compute_filtered_dtheta(k, l) result(fltr_dtheta)
-
-        $:GPU_ROUTINE(parallelism='[seq]')
-        integer, intent(in) :: k, l
-        real(wp)            :: fltr_dtheta
-
-        fltr_dtheta = 0._wp
-
-    end function f_compute_filtered_dtheta
-
     !> Computes inviscid CFL terms for multi-dimensional cases (2D/3D only)
     function f_compute_multidim_cfl_terms(vel, c, j, k, l) result(cfl_terms)
 

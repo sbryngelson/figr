@@ -77,25 +77,8 @@ module m_global_parameters
     logical                    :: parallel_io           !< Format of the data files
     logical                    :: file_per_process      !< type of data output
     integer                    :: precision             !< Precision of output files
-    logical                    :: down_sample           !< Down-sample the output data
-    logical                    :: mixlayer_vel_profile  !< Set hyperbolic tangent streamwise velocity profile
-    real(wp)                   :: mixlayer_vel_coef     !< Coefficient for the hyperbolic tangent streamwise velocity profile
-    logical                    :: mixlayer_perturb      !< Superimpose instability waves to surrounding fluid flow
-    integer                    :: mixlayer_perturb_nk   !< Number of Fourier modes for perturbation with mixlayer_perturb flag
-    real(wp)                   :: mixlayer_perturb_k0   !< Peak wavenumber for mixlayer perturbation (default: most unstable mode)
-    logical                    :: simplex_perturb
-    type(simplex_noise_params) :: simplex_params
+    logical                    :: down_sample  !< Down-sample the output data
     logical                    :: viscous
-
-    ! Perturb density of surrounding air so as to break symmetry of grid
-    logical                             :: perturb_flow
-    integer                             :: perturb_flow_fluid  !< Fluid to be perturbed with perturb_flow flag
-    real(wp)                            :: perturb_flow_mag    !< Magnitude of perturbation with perturb_flow flag
-    logical                             :: perturb_sph
-    integer                             :: perturb_sph_fluid   !< Fluid to be perturbed with perturb_sph flag
-    real(wp), dimension(num_fluids_max) :: fluid_rho
-    logical                             :: elliptic_smoothing
-    integer                             :: elliptic_smoothing_iters
     integer, allocatable, dimension(:)  :: proc_coords         !< Processor coordinates in MPI_CART_COMM
     integer, allocatable, dimension(:)  :: start_idx           !< Starting cell-center index of local processor in global grid
 #ifdef MFC_MPI
@@ -201,31 +184,8 @@ contains
         precision = 2
         down_sample = .false.
         viscous = .false.
-        mixlayer_vel_profile = .false.
-        mixlayer_vel_coef = 1._wp
-        mixlayer_perturb = .false.
-        mixlayer_perturb_nk = 100
-        mixlayer_perturb_k0 = 0.4446_wp
-        perturb_flow = .false.
-        perturb_flow_fluid = dflt_int
-        perturb_flow_mag = dflt_real
-        perturb_sph = .false.
-        perturb_sph_fluid = dflt_int
-        fluid_rho = dflt_real
-        elliptic_smoothing_iters = dflt_int
-        elliptic_smoothing = .false.
 
         dummy = .false.
-
-        simplex_perturb = .false.
-        simplex_params%perturb_vel(:) = .false.
-        simplex_params%perturb_vel_freq(:) = dflt_real
-        simplex_params%perturb_vel_scale(:) = dflt_real
-        simplex_params%perturb_vel_offset(:,:) = dflt_real
-        simplex_params%perturb_dens(:) = .false.
-        simplex_params%perturb_dens_freq(:) = dflt_real
-        simplex_params%perturb_dens_scale(:) = dflt_real
-        simplex_params%perturb_dens_offset(:,:) = dflt_real
 
         ! Initial condition parameters
         num_patches = dflt_int
@@ -267,11 +227,6 @@ contains
             patch_icpp(i)%a(8) = dflt_real
             patch_icpp(i)%a(9) = dflt_real
             patch_icpp(i)%non_axis_sym = .false.
-            patch_icpp(i)%fourier_cos(:) = 0._wp
-            patch_icpp(i)%fourier_sin(:) = 0._wp
-            patch_icpp(i)%modal_clip_r_to_min = .false.
-            patch_icpp(i)%modal_r_min = 1.e-12_wp
-            patch_icpp(i)%modal_use_exp_form = .false.
             patch_icpp(i)%sph_har_coeff(:,:) = 0._wp
 
             patch_icpp(i)%hcid = dflt_int
@@ -301,7 +256,6 @@ contains
             fluid_pp(i)%cv = 0._wp
             fluid_pp(i)%qv = 0._wp
             fluid_pp(i)%qvp = 0._wp
-            fluid_pp(i)%G = 0._wp
         end do
 
     end subroutine s_assign_default_values_to_user_inputs

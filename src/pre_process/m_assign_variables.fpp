@@ -142,13 +142,6 @@ contains
                       & l) = (eta*patch_icpp(patch_id)%vel(i) + (1._wp - eta)*orig_prim_vf(i + cont_idx%end))
         end do
 
-        ! Set streamwise velocity to hyperbolic tangent function of y
-        if (mixlayer_vel_profile) then
-            q_prim_vf(1 + cont_idx%end)%sf(j, k, &
-                      & l) = (eta*patch_icpp(patch_id)%vel(1)*tanh(y_cc(k)*mixlayer_vel_coef) + (1._wp - eta)*orig_prim_vf(1 &
-                      & + cont_idx%end))
-        end if
-
         if (1._wp - eta < 1.e-16_wp) patch_id_fp(j, k, l) = patch_id
 
     end subroutine s_assign_patch_species_primitive_variables
