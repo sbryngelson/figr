@@ -61,10 +61,7 @@ contains
         integer                                                     :: t_step
         real(wp)                                                    :: gamma, lit_gamma, pi_inf, qv
         real(wp)                                                    :: rho
-        real(wp)                                                    :: pres, T
-        real(wp)                                                    :: rhoYks(1:1)
-
-        T = dflt_T_guess
+        real(wp)                                                    :: pres
 
         t_step = 0
 

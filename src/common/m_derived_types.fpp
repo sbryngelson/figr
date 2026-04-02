@@ -12,20 +12,10 @@ module m_derived_types
 
     implicit none
 
-    !> Derived type adding the field position (fp) as an attribute
-    type field_position
-        real(stp), allocatable, dimension(:,:,:) :: fp  !< Field position
-    end type field_position
-
     !> Derived type annexing a scalar field (SF)
     type scalar_field
         real(stp), pointer, dimension(:,:,:) :: sf => null()
     end type scalar_field
-
-    !> Derived type for pressure/mass-velocity fields (bubbles)
-    type pres_field
-        real(stp), pointer, dimension(:,:,:,:,:) :: sf => null()
-    end type pres_field
 
     !> Derived type annexing an integer scalar field (SF)
     type integer_field
@@ -119,7 +109,6 @@ module m_derived_types
         real(wp) :: qvp  !< Reference entropy per unit mass (SGEOS)
         integer :: hcid  !< Hardcoded initial condition ID
         real(wp) :: cf_val  !< Color function value
-        real(wp) :: Y(1:1)  !< Species mass fractions
     end type ic_patch_parameters
 
     !> Derived type annexing the physical parameters (PP) of the fluids. These include the specific heat ratio function and liquid
@@ -132,11 +121,6 @@ module m_derived_types
         real(wp)               :: qv      !< reference energy per unit mass for SGEOS, q (see Le Metayer (2004))
         real(wp)               :: qvp     !< reference entropy per unit mass for SGEOS, q' (see Le Metayer (2004))
     end type physical_parameters
-
-    !> Species parameters
-    type species_parameters
-        character(LEN=name_len) :: name  !< Name of species
-    end type species_parameters
 
     !> Max and min number of cells in a direction of each combination of x-,y-, and z-
     type cell_num_bounds

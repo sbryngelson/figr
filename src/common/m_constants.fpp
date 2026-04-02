@@ -10,7 +10,6 @@ module m_constants
     character, parameter :: dflt_char = ' '             !< Default string value
     real(wp), parameter  :: dflt_real = -1.e6_wp        !< Default real value
     real(wp), parameter  :: sgm_eps = 1.e-16_wp         !< Segmentation tolerance
-    real(wp), parameter  :: Chem_Tolerance = 1.e-16_wp  !< Speed of Sound Tolerance in Chemistry
     real(wp), parameter  :: small_alf = 1.e-11_wp       !< Small alf tolerance
     real(wp), parameter  :: pi = 3.141592653589793_wp   !< Pi
     real(wp), parameter  :: verysmall = 1.e-12_wp       !< Very small number
@@ -32,24 +31,6 @@ module m_constants
     ! Reconstruction Types
     integer, parameter :: WENO_TYPE = 1   !< Using WENO for reconstruction type
     integer, parameter :: MUSCL_TYPE = 2  !< Using MUSCL for reconstruction type
-    ! Chemistry
-    real(wp), parameter :: dflt_T_guess = 1200._wp  !< Default guess for temperature (when a previous value is not available)
-
-    ! Strang Splitting constants
-    real(wp), parameter :: dflt_adap_dt_tol = 1.e-4_wp   !< Default tolerance for adaptive step size
-    integer, parameter  :: dflt_adap_dt_max_iters = 100  !< Default max iteration for adaptive step size
-    ! Constants of the algorithm described by Heirer, E. Hairer, S. P.Norsett, G. Wanner, Solving Ordinary Differential Equations I,
-    ! Chapter II.4 to choose the initial time step size for the adaptive time stepping routine
-    real(wp), parameter :: threshold_first_guess = 1.e-5_wp    !< Threshold for initial step size estimate
-    real(wp), parameter :: threshold_second_guess = 1.e-15_wp  !< Threshold for refined step size estimate
-    real(wp), parameter :: scale_first_guess = 1.e-3_wp        !< Scale factor for initial step size
-    real(wp), parameter :: scale_guess = 1.e-2_wp              !< Scale factor for step size adjustment
-    real(wp), parameter :: small_guess = 1.e-6_wp              !< Minimum initial step size
-
-    ! Relativity
-    !> Max Newton-Raphson iterations for relativistic primitive recovery
-    integer, parameter :: relativity_cons_to_prim_max_iter = 100
-
     ! System constants
     integer, parameter :: CASE_FILE_ERROR_CODE = 22  !< Exit code for case file validation errors
 

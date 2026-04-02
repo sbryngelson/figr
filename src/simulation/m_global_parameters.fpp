@@ -271,10 +271,7 @@ module m_global_parameters
 
     real(wp)                                    :: mytime     !< Current simulation time
     real(wp)                                    :: finaltime  !< Final simulation time
-    logical                                     :: rdma_mpi
-    type(pres_field), allocatable, dimension(:) :: pb_ts
-    type(pres_field), allocatable, dimension(:) :: mv_ts
-    $:GPU_DECLARE(create='[pb_ts, mv_ts]')
+    logical :: rdma_mpi
 
     logical :: dummy  !< AMDFlang workaround for case-optimization + GPU-kernel bug
 

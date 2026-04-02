@@ -27,15 +27,13 @@ module m_time_steppers
     type(integer_field), allocatable, dimension(:,:) :: bc_type    !< Boundary condition identifiers
     !> Cell-average primitive variables at consecutive TIMESTEPS
     type(vector_field), allocatable, dimension(:) :: q_prim_ts1, q_prim_ts2
-    real(wp), allocatable, dimension(:,:,:,:,:)   :: rhs_pb
     ! q_T_sf removed (chemistry not supported in IGR-only build)
-    real(wp), allocatable, dimension(:,:,:,:,:) :: rhs_mv
     real(wp), allocatable, dimension(:,:,:)     :: max_dt
     integer, private                            :: num_ts  !< Number of time stages in the time-stepping scheme
     integer                                     :: stor    !< storage index
     real(wp), allocatable, dimension(:,:)       :: rk_coef
 
-    $:GPU_DECLARE(create='[q_cons_ts, q_prim_vf, rhs_vf, q_prim_ts1, q_prim_ts2, rhs_mv, rhs_pb, max_dt, rk_coef, stor, bc_type]')
+    $:GPU_DECLARE(create='[q_cons_ts, q_prim_vf, rhs_vf, q_prim_ts1, q_prim_ts2, max_dt, rk_coef, stor, bc_type]')
 
     !> @cond
 #if defined(__NVCOMPILER_GPU_UNIFIED_MEM)
@@ -178,20 +176,6 @@ contains
         ! Allocating the cell-average primitive variables
         @:ALLOCATE(q_prim_vf(1:sys_size))
 
-        @:ALLOCATE(pb_ts(1:2))
-        @:ALLOCATE(pb_ts(1)%sf(0,0,0,0,0))
-        @:ACC_SETUP_SFs(pb_ts(1))
-        @:ALLOCATE(pb_ts(2)%sf(0,0,0,0,0))
-        @:ACC_SETUP_SFs(pb_ts(2))
-        @:ALLOCATE(rhs_pb(0,0,0,0,0))
-
-        @:ALLOCATE(mv_ts(1:2))
-        @:ALLOCATE(mv_ts(1)%sf(0,0,0,0,0))
-        @:ACC_SETUP_SFs(mv_ts(1))
-        @:ALLOCATE(mv_ts(2)%sf(0,0,0,0,0))
-        @:ACC_SETUP_SFs(mv_ts(2))
-        @:ALLOCATE(rhs_mv(0,0,0,0,0))
-
         ! Allocating the cell-average RHS variables
         @:ALLOCATE(rhs_vf(1:sys_size))
         @:PREFER_GPU(rhs_vf)
@@ -277,8 +261,7 @@ contains
         call nvtxStartRange("TIMESTEP")
 
         do s = 1, nstage
-            call s_compute_rhs(q_cons_ts(1)%vf, q_prim_vf, bc_type, rhs_vf, pb_ts(1)%sf, rhs_pb, mv_ts(1)%sf, rhs_mv, t_step, &
-                               & time_avg, s)
+            call s_compute_rhs(q_cons_ts(1)%vf, q_prim_vf, bc_type, rhs_vf, t_step, time_avg, s)
 
             if (s == 1) then
                 if (run_time_info) then

@@ -66,17 +66,16 @@ contains
     end subroutine s_initialize_boundary_common_module
 
     !> Populate the buffers of the primitive variables based on the selected boundary conditions.
-    impure subroutine s_populate_variables_buffers(bc_type, q_prim_vf, pb_in, mv_in)
+    impure subroutine s_populate_variables_buffers(bc_type, q_prim_vf)
 
         type(scalar_field), dimension(sys_size), intent(inout)                                               :: q_prim_vf
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         type(integer_field), dimension(1:num_dims,1:2), intent(in)                                           :: bc_type
         integer                                                                                              :: k, l
 
         ! BC type codes defined in m_constants.fpp; non-negative values are MPI boundaries
 
         if (bc_x%beg >= 0) then
-            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, -1, sys_size, pb_in, mv_in)
+            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, -1, sys_size)
         else
             $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
             do l = 0, p
@@ -85,9 +84,9 @@ contains
                     case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                         call s_ghost_cell_extrapolation(q_prim_vf, 1, -1, k, l)
                     case (BC_REFLECTIVE)
-                        call s_symmetry(q_prim_vf, 1, -1, k, l, pb_in, mv_in)
+                        call s_symmetry(q_prim_vf, 1, -1, k, l)
                     case (BC_PERIODIC)
-                        call s_periodic(q_prim_vf, 1, -1, k, l, pb_in, mv_in)
+                        call s_periodic(q_prim_vf, 1, -1, k, l)
                     case (BC_SLIP_WALL)
                         call s_slip_wall(q_prim_vf, 1, -1, k, l)
                     case (BC_NO_SLIP_WALL)
@@ -101,7 +100,7 @@ contains
         end if
 
         if (bc_x%end >= 0) then
-            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, 1, sys_size, pb_in, mv_in)
+            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, 1, sys_size)
         else
             $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
             do l = 0, p
@@ -110,9 +109,9 @@ contains
                     case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)  ! Ghost-cell extrap. BC at end
                         call s_ghost_cell_extrapolation(q_prim_vf, 1, 1, k, l)
                     case (BC_REFLECTIVE)
-                        call s_symmetry(q_prim_vf, 1, 1, k, l, pb_in, mv_in)
+                        call s_symmetry(q_prim_vf, 1, 1, k, l)
                     case (BC_PERIODIC)
-                        call s_periodic(q_prim_vf, 1, 1, k, l, pb_in, mv_in)
+                        call s_periodic(q_prim_vf, 1, 1, k, l)
                     case (BC_SLIP_WALL)
                         call s_slip_wall(q_prim_vf, 1, 1, k, l)
                     case (BC_NO_SLIP_WALL)
@@ -131,7 +130,7 @@ contains
 
         #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
             if (bc_y%beg >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, -1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, -1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = 0, p
@@ -140,9 +139,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 2, -1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 2, -1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 2, -1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 2, -1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 2, -1, k, l)
                         case (BC_SLIP_WALL)
                             call s_slip_wall(q_prim_vf, 2, -1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -156,7 +155,7 @@ contains
             end if
 
             if (bc_y%end >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, 1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, 1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = 0, p
@@ -165,9 +164,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 2, 1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 2, 1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 2, 1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 2, 1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 2, 1, k, l)
                         case (BC_SLIP_WALL)
                             call s_slip_wall(q_prim_vf, 2, 1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -187,7 +186,7 @@ contains
 
         #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
             if (bc_z%beg >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, -1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, -1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = -buff_size, n + buff_size
@@ -196,9 +195,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 3, -1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 3, -1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 3, -1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 3, -1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 3, -1, k, l)
                         case (BC_SLIP_WALL)
                             call s_slip_wall(q_prim_vf, 3, -1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -212,7 +211,7 @@ contains
             end if
 
             if (bc_z%end >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, 1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, 1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = -buff_size, n + buff_size
@@ -221,9 +220,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 3, 1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 3, 1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 3, 1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 3, 1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 3, 1, k, l)
                         case (BC_SlIP_WALL)
                             call s_slip_wall(q_prim_vf, 3, 1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -295,11 +294,10 @@ contains
     end subroutine s_ghost_cell_extrapolation
 
     !> Apply reflective (symmetry) boundary conditions by mirroring primitive variables and flipping the normal velocity component.
-    subroutine s_symmetry(q_prim_vf, bc_dir, bc_loc, k, l, pb_in, mv_in)
+    subroutine s_symmetry(q_prim_vf, bc_dir, bc_loc, k, l)
 
         $:GPU_ROUTINE(parallelism='[seq]')
         type(scalar_field), dimension(sys_size), intent(inout)                                               :: q_prim_vf
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         integer, intent(in)                                                                                  :: bc_dir, bc_loc
         integer, intent(in)                                                                                  :: k, l
         integer                                                                                              :: j, q, i
@@ -387,11 +385,10 @@ contains
     end subroutine s_symmetry
 
     !> Apply periodic boundary conditions by copying values from the opposite domain boundary.
-    subroutine s_periodic(q_prim_vf, bc_dir, bc_loc, k, l, pb_in, mv_in)
+    subroutine s_periodic(q_prim_vf, bc_dir, bc_loc, k, l)
 
         $:GPU_ROUTINE(parallelism='[seq]')
         type(scalar_field), dimension(sys_size), intent(inout)                                               :: q_prim_vf
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         integer, intent(in)                                                                                  :: bc_dir, bc_loc
         integer, intent(in)                                                                                  :: k, l
         integer                                                                                              :: j, q, i

@@ -391,10 +391,9 @@ contains
 
     !> The goal of this procedure is to populate the buffers of the cell-average conservative variables by communicating with the
     !! neighboring processors.
-    subroutine s_mpi_sendrecv_variables_buffers(q_comm, mpi_dir, pbc_loc, nVar, pb_in, mv_in)
+    subroutine s_mpi_sendrecv_variables_buffers(q_comm, mpi_dir, pbc_loc, nVar)
 
         type(scalar_field), dimension(1:), intent(inout) :: q_comm
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         integer, intent(in) :: mpi_dir, pbc_loc, nVar
         integer :: i, j, k, l, r, q  !< Generic loop iterators
         integer :: buffer_counts(1:3), buffer_count

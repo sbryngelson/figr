@@ -32,21 +32,14 @@ contains
     end subroutine s_initialize_rhs_module
 
     !> Compute the right-hand side of the semi-discrete governing equations for a single time stage
-    impure subroutine s_compute_rhs(q_cons_vf, q_prim_vf, bc_type, rhs_vf, pb_in, rhs_pb, mv_in, rhs_mv, t_step, &
+    impure subroutine s_compute_rhs(q_cons_vf, q_prim_vf, bc_type, rhs_vf, t_step, &
 
         & time_avg, stage)
 
-        type(scalar_field), dimension(sys_size), intent(inout)                                     :: q_cons_vf
-        type(scalar_field), dimension(sys_size), intent(inout)                                     :: q_prim_vf
-        type(integer_field), dimension(1:num_dims,1:2), intent(in)                                 :: bc_type
-        type(scalar_field), dimension(sys_size), intent(inout)                                     :: rhs_vf
-        real(stp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in
-
-        real(wp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), &
-             & intent(inout) &
-             & :: rhs_pb  ! TODO :: I think these other two variables need to be stp as well, but it doesn't compile like that right now
-        real(stp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: mv_in
-        real(wp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: rhs_mv
+        type(scalar_field), dimension(sys_size), intent(inout)     :: q_cons_vf
+        type(scalar_field), dimension(sys_size), intent(inout)     :: q_prim_vf
+        type(integer_field), dimension(1:num_dims,1:2), intent(in) :: bc_type
+        type(scalar_field), dimension(sys_size), intent(inout)     :: rhs_vf
         integer, intent(in) :: t_step
         real(wp), intent(inout) :: time_avg
         integer, intent(in) :: stage
@@ -61,7 +54,7 @@ contains
         call cpu_time(t_start)
 
         call nvtxStartRange("RHS-COMMUNICATION")
-        call s_populate_variables_buffers(bc_type, q_cons_vf, pb_in, mv_in)
+        call s_populate_variables_buffers(bc_type, q_cons_vf)
         call nvtxEndRange
 
         if (cfl_dt) then
