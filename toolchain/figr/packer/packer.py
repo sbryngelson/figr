@@ -2,7 +2,8 @@
 
 import math
 import os
-import struct
+import re
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
@@ -12,6 +13,9 @@ class PackEntry:
     def __init__(self, filepath: str, doubles: List[float]):
         self.filepath = filepath
         self.doubles = doubles
+
+    def __repr__(self) -> str:
+        return f"{self.filepath} {' '.join([str(d) for d in self.doubles])}"
 
 
 class Pack:
@@ -29,10 +33,8 @@ class Pack:
 
     def save(self, filepath: str) -> None:
         with open(filepath, "w") as f:
-            for path in sorted(self.entries):
-                entry = self.entries[path]
-                vals = " ".join(repr(v) for v in entry.doubles)
-                f.write(f"{entry.filepath} {vals}\n")
+            for entry in sorted(self.entries.values(), key=lambda x: x.filepath):
+                f.write(f"{entry}\n")
 
     def find(self, filepath: str) -> Optional[PackEntry]:
         return self.entries.get(filepath)
@@ -44,58 +46,44 @@ class Pack:
         self.entries.pop(entry.filepath, None)
 
 
-def _read_dat(filepath: str) -> List[float]:
-    """Read a Fortran unformatted sequential binary file and return its values as doubles."""
-    with open(filepath, "rb") as f:
-        data = f.read()
-
-    if len(data) == 0:
-        return []
-
-    # Try Fortran unformatted sequential: 4-byte record marker, data, 4-byte record marker
-    if len(data) >= 8:
-        (header,) = struct.unpack("i", data[:4])
-        if 0 < header <= len(data) - 8:
-            (footer,) = struct.unpack("i", data[4 + header : 4 + header + 4])
-            if header == footer:
-                payload = data[4 : 4 + header]
-                # Detect precision from record length
-                if header % 8 == 0:
-                    count = header // 8
-                    return list(struct.unpack(f"{count}d", payload))
-                elif header % 4 == 0:
-                    count = header // 4
-                    return [float(v) for v in struct.unpack(f"{count}f", payload)]
-
-    # Fallback: raw binary (MPI-IO parallel output, no record markers)
-    if len(data) % 8 == 0:
-        count = len(data) // 8
-        return list(struct.unpack(f"{count}d", data))
-    elif len(data) % 4 == 0:
-        count = len(data) // 4
-        return [float(v) for v in struct.unpack(f"{count}f", data)]
-
-    return []
+def _extract_doubles(s: str) -> List[float]:
+    """Parse a string of whitespace-separated numbers into a list of floats."""
+    return [float(e) for e in re.sub(r"[\n\t\s]+", " ", s).strip().split(" ")]
 
 
-def pack(dirpath: str) -> Tuple[Pack, Optional[str]]:
-    """Scan dirpath for .dat files in D/ subdirectory and load them."""
-    d_dir = os.path.join(dirpath, "D")
+def pack(casepath: str) -> Tuple[Pack, Optional[str]]:
+    """Scan casepath/D/ for text .dat files and extract values.
+
+    Each .dat file has lines of the form: x [y [z]] value
+    We discard coordinate columns and keep only the value column.
+    """
+    case_dir = os.path.dirname(casepath) if os.path.isfile(casepath) else casepath
+    d_dir = os.path.join(case_dir, "D")
+
     if not os.path.isdir(d_dir):
         return Pack(), f"Directory {d_dir} does not exist."
 
     result = Pack()
-    for root, _, files in os.walk(d_dir):
-        for fname in sorted(files):
-            if not fname.endswith(".dat"):
-                continue
-            full = os.path.join(root, fname)
-            rel = os.path.relpath(full, dirpath)
-            try:
-                doubles = _read_dat(full)
-            except Exception as e:
-                return Pack(), f"Failed to read {rel}: {e}"
-            result.set(PackEntry(rel, doubles))
+
+    for filepath in sorted(Path(d_dir).rglob("*.dat")):
+        short_filepath = str(filepath).replace(f"{case_dir}", "")[1:].replace("\\", "/")
+
+        try:
+            with open(filepath) as f:
+                content = f.read()
+        except Exception as e:
+            return Pack(), f"Failed to read {short_filepath}: {e}"
+
+        try:
+            # Each line is: x [y [z]] value
+            # Determine dimensionality from the first line
+            ndims = len(_extract_doubles(content.split("\n", 1)[0])) - 1
+            # Extract only the value column (every ndims+1'th element, starting at ndims)
+            doubles = _extract_doubles(content)[ndims::ndims + 1]
+        except (ValueError, IndexError) as e:
+            return Pack(), f"Failed to parse {short_filepath}: {e}"
+
+        result.set(PackEntry(short_filepath, doubles))
 
     if not result.entries:
         return result, f"No .dat files found in {d_dir}"
@@ -104,14 +92,14 @@ def pack(dirpath: str) -> Tuple[Pack, Optional[str]]:
 
 
 def load(filepath: str) -> Pack:
-    """Load a golden.txt file into a Pack."""
+    """Load a golden/pack .txt file into a Pack."""
     result = Pack()
     with open(filepath) as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
-            parts = line.split()
+            parts = line.split(" ")
             path = parts[0]
             doubles = [float(v) for v in parts[1:]]
             result.set(PackEntry(path, doubles))
