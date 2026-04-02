@@ -1,0 +1,144 @@
+!>
+!! @file
+!! @brief Contains module m_rhs
+
+#:include 'case.fpp'
+#:include 'macros.fpp'
+
+!> @brief Assembles the right-hand side of the governing equations using IGR Riemann solvers and physical source terms
+module m_rhs
+
+    use m_derived_types
+    use m_global_parameters
+    use m_mpi_proxy
+    use m_variables_conversion
+    use m_nvtx
+    use m_boundary_common
+    use m_helper
+    use m_igr
+
+    implicit none
+
+    private; public :: s_initialize_rhs_module, s_compute_rhs, s_finalize_rhs_module
+
+    type(vector_field) :: q_cons_qp  !< Conservative variables at quadrature points
+    $:GPU_DECLARE(create='[q_cons_qp]')
+
+    type(vector_field) :: q_prim_qp  !< Primitive variables at cell-interior quadrature points
+    $:GPU_DECLARE(create='[q_prim_qp]')
+
+contains
+
+    !> Initialize the RHS module
+    impure subroutine s_initialize_rhs_module
+
+        integer :: i, j, k, l, id  !< Generic loop iterators
+
+        $:GPU_ENTER_DATA(copyin='[idwbuff]')
+        $:GPU_UPDATE(device='[idwbuff]')
+
+        @:ALLOCATE(q_cons_qp%vf(1:sys_size))
+        @:ALLOCATE(q_prim_qp%vf(1:sys_size))
+
+        do l = adv_idx%end + 1, sys_size
+            @:ALLOCATE(q_prim_qp%vf(l)%sf(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, &
+                       & idwbuff(3)%beg:idwbuff(3)%end))
+        end do
+
+    end subroutine s_initialize_rhs_module
+
+    !> Compute the right-hand side of the semi-discrete governing equations for a single time stage
+    impure subroutine s_compute_rhs(q_cons_vf, q_prim_vf, bc_type, rhs_vf, pb_in, rhs_pb, mv_in, rhs_mv, t_step, &
+
+        & time_avg, stage)
+
+        type(scalar_field), dimension(sys_size), intent(inout)                                     :: q_cons_vf
+        type(scalar_field), dimension(sys_size), intent(inout)                                     :: q_prim_vf
+        type(integer_field), dimension(1:num_dims,1:2), intent(in)                                 :: bc_type
+        type(scalar_field), dimension(sys_size), intent(inout)                                     :: rhs_vf
+        real(stp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in
+
+        real(wp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), &
+             & intent(inout) &
+             & :: rhs_pb  ! TODO :: I think these other two variables need to be stp as well, but it doesn't compile like that right now
+        real(stp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: mv_in
+        real(wp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: rhs_mv
+        integer, intent(in) :: t_step
+        real(wp), intent(inout) :: time_avg
+        integer, intent(in) :: stage
+        real(wp) :: t_start, t_finish
+        integer :: id
+        integer(kind=8) :: i, j, k, l, q  !< Generic loop iterators
+
+        ! RHS: halo exchange -> IGR Riemann solve -> source terms
+
+        call nvtxStartRange("COMPUTE-RHS")
+
+        call cpu_time(t_start)
+
+        call nvtxStartRange("RHS-COMMUNICATION")
+        call s_populate_variables_buffers(bc_type, q_cons_vf, pb_in, mv_in)
+        call nvtxEndRange
+
+        if (cfl_dt) then
+            if (mytime >= t_stop) return
+        else
+            if (t_step == t_step_stop) return
+        end if
+
+        ! Loop over coordinate directions for dimensional splitting
+        do id = 1, num_dims
+            if (id == 1) then
+                $:GPU_PARALLEL_LOOP(private='[i, j, k, l]', collapse=4)
+                do l = -1, p + 1
+                    do k = -1, n + 1
+                        do j = -1, m + 1
+                            do i = 1, sys_size
+                                rhs_vf(i)%sf(j, k, l) = 0._stp
+                            end do
+                        end do
+                    end do
+                end do
+                $:END_GPU_PARALLEL_LOOP()
+            end if
+
+            call nvtxStartRange("IGR_RIEMANN")
+            call s_igr_riemann_solver(q_cons_vf, rhs_vf, id)
+            call nvtxEndRange
+
+            if (id == 1) then
+                call nvtxStartRange("IGR_Jacobi")
+                call s_igr_iterative_solve(q_cons_vf, bc_type, t_step)
+                call nvtxEndRange
+
+                call nvtxStartRange("IGR_SIGMA")
+                call s_igr_sigma_x(q_cons_vf, rhs_vf)
+                call nvtxEndRange
+            end if
+        end do
+        ! END: Dimensional Splitting Loop
+
+        ! END: Additional physics and source terms
+
+        call cpu_time(t_finish)
+
+        if (t_step >= 2) then
+            time_avg = (abs(t_finish - t_start) + (t_step - 2)*time_avg)/(t_step - 1)
+        else
+            time_avg = 0._wp
+        end if
+
+        call nvtxEndRange
+
+    end subroutine s_compute_rhs
+
+    !> Module deallocation and/or disassociation procedures
+    impure subroutine s_finalize_rhs_module
+
+        integer :: i, j, l
+
+        @:DEALLOCATE(q_cons_qp%vf, q_prim_qp%vf)
+
+    end subroutine s_finalize_rhs_module
+
+end module m_rhs

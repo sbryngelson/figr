@@ -1,0 +1,34 @@
+[default]
+extend-ignore-identifiers-re = [
+    "AttributeID.*Supress.*",
+]
+
+[default.extend-identifiers]
+AttributeIDSupressMenu = "AttributeIDSupressMenu"
+
+[default.extend-words]
+INOUT = "INOUT"
+WRONLY = "WRONLY"
+nd = "nd"
+iy = "iy"
+iz = "iz"
+HPE = "HPE"
+alph = "alph"
+gam = "gam"
+Gam = "Gam"
+strang = "strang"
+Strang = "Strang"
+TKE = "TKE"
+HSA = "HSA"
+infp = "infp"
+Sur = "Sur"
+chioces = "chioces"   # typo for "choices" - tests constraint key validation
+reqires = "reqires"   # typo for "requires" - tests dependency key validation
+choises = "choises"   # appears in comment explaining validation purpose
+ordr = "ordr"         # typo for "order" in "weno_ordr" - tests param suggestions
+unknwn = "unknwn"     # typo for "unknown" - tests unknown param detection
+tru = "tru"           # typo for "true" in "when_tru" - tests dependency keys
+PNGs = "PNGs"
+
+[files]
+extend-exclude = ["docs/documentation/references*", "docs/references.bib", "tests/", "toolchain/cce_simulation_workgroup_256.sh", "build-docs/", "build/", "build_test/"]
