@@ -10,15 +10,6 @@ fi
 # Load utility script
 . "$(pwd)/toolchain/util.sh"
 
-# Auto-install git pre-commit hook (once, silently)
-if [ -d "$(pwd)/.git" ] && [ ! -e "$(pwd)/.git/hooks/pre-commit" ] && [ -f "$(pwd)/.githooks/pre-commit" ]; then
-    ln -sf "$(pwd)/.githooks/pre-commit" "$(pwd)/.git/hooks/pre-commit"
-    log "Installed git pre-commit hook (runs$MAGENTA ./figr.sh precheck$COLOR_RESET before commits)."
-fi
-
-# Shell completions auto-install/update
-. "$(pwd)/toolchain/bootstrap/completions.sh" "$(pwd)"
-
 # Print startup message immediately for user feedback
 log "Starting..."
 
@@ -49,10 +40,6 @@ if [ "$1" '==' 'load' ] && [ "$2" != "--help" ] && [ "$2" != "-h" ]; then
         exit 1
     fi
     shift; . "$(pwd)/toolchain/bootstrap/modules.sh" "$@"; return
-elif [ "$1" '==' "lint" ] && [ "$2" != "--help" ] && [ "$2" != "-h" ]; then
-    . "$(pwd)/toolchain/bootstrap/python.sh" "$@"
-
-    shift; . "$(pwd)/toolchain/bootstrap/lint.sh" "$@"; exit 0
 elif [ "$1" '==' "format" ] && [ "$2" != "--help" ] && [ "$2" != "-h" ]; then
     . "$(pwd)/toolchain/bootstrap/python.sh" "$@"
 
@@ -61,14 +48,6 @@ elif [ "$1" '==' "venv" ]; then
     shift; . "$(pwd)/toolchain/bootstrap/python.sh" "$@"; return
 elif [ "$1" '==' "clean" ] && [ "$2" != "--help" ] && [ "$2" != "-h" ]; then
     rm -rf "$(pwd)/build"; exit 0
-elif [ "$1" '==' "spelling" ] && [ "$2" != "--help" ] && [ "$2" != "-h" ]; then
-    . "$(pwd)/toolchain/bootstrap/python.sh" "$@"
-
-    shift; . "$(pwd)/toolchain/bootstrap/spelling.sh" "$@"; exit 0
-elif [ "$1" '==' "precheck" ]; then
-    . "$(pwd)/toolchain/bootstrap/python.sh" "$@"
-
-    shift; . "$(pwd)/toolchain/bootstrap/precheck.sh" "$@"; exit 0
 fi
 
 mkdir -p "$(pwd)/build"
