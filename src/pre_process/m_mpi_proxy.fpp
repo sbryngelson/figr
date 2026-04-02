@@ -5,9 +5,7 @@
 !> @brief Broadcasts user inputs and decomposes the domain across MPI ranks for pre-processing
 module m_mpi_proxy
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_helper
     use m_derived_types
@@ -21,7 +19,6 @@ contains
     !! not available to the remaining processors. This subroutine is then in charge of broadcasting the required information.
     impure subroutine s_mpi_bcast_user_inputs
 
-#ifdef MFC_MPI
         integer :: i, j
         integer :: ierr
 
@@ -94,7 +91,6 @@ contains
                 call MPI_BCAST(fluid_pp(i)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             #:endfor
         end do
-#endif
 
     end subroutine s_mpi_bcast_user_inputs
 

@@ -20,10 +20,8 @@ module m_boundary_common
     type(scalar_field), dimension(:,:), allocatable :: bc_buffers
     $:GPU_DECLARE(create='[bc_buffers]')
 
-#ifdef MFC_MPI
     integer, dimension(1:3,1:2) :: MPI_BC_TYPE_TYPE
     integer, dimension(1:3,1:2) :: MPI_BC_BUFFER_TYPE
-#endif
 
     private; public :: s_initialize_boundary_common_module, s_populate_variables_buffers, s_create_mpi_types, &
         & s_populate_F_igr_buffers, s_write_serial_boundary_condition_files, s_write_parallel_boundary_condition_files, &
@@ -32,9 +30,7 @@ module m_boundary_common
 
     public :: bc_buffers
 
-#ifdef MFC_MPI
     public :: MPI_BC_TYPE_TYPE, MPI_BC_BUFFER_TYPE
-#endif
 
 contains
 
@@ -864,7 +860,6 @@ contains
 
         type(integer_field), dimension(1:num_dims,1:2), intent(in) :: bc_type
 
-#ifdef MFC_MPI
         integer               :: dir, loc
         integer, dimension(3) :: sf_start_idx, sf_extents_loc
         integer               :: ierr
@@ -890,7 +885,6 @@ contains
                 call MPI_TYPE_COMMIT(MPI_BC_BUFFER_TYPE(dir, loc), ierr)
             end do
         end do
-#endif
 
     end subroutine s_create_mpi_types
 
@@ -942,7 +936,6 @@ contains
         character(len=path_len)                                    :: file_loc, file_path
         character(len=10)                                          :: status
 
-#ifdef MFC_MPI
         integer          :: ierr
         integer          :: file_id
         integer          :: offset
@@ -994,7 +987,6 @@ contains
         end do
 
         call MPI_File_close(file_id, ierr)
-#endif
 
     end subroutine s_write_parallel_boundary_condition_files
 
@@ -1051,7 +1043,6 @@ contains
         character(len=path_len)                                       :: file_loc, file_path
         character(len=10)                                             :: status
 
-#ifdef MFC_MPI
         integer          :: ierr
         integer          :: file_id
         integer          :: offset
@@ -1104,7 +1095,6 @@ contains
         end do
 
         call MPI_File_close(file_id, ierr)
-#endif
 
     end subroutine s_read_parallel_boundary_condition_files
 

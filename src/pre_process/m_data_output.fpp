@@ -9,9 +9,7 @@ module m_data_output
     use m_global_parameters
     use m_helper
     use m_mpi_proxy
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_compile_specific
     use m_variables_conversion
@@ -213,7 +211,6 @@ contains
         type(scalar_field), dimension(sys_size), intent(inout)      :: q_cons_vf, q_prim_vf
         type(integer_field), dimension(1:num_dims,-1:1), intent(in) :: bc_type
 
-#ifdef MFC_MPI
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
         integer(KIND=MPI_OFFSET_KIND)        :: disp
@@ -349,7 +346,6 @@ contains
 
             call MPI_FILE_CLOSE(ifile, ierr)
         end if
-#endif
 
         if (bc_io) then
             call s_write_parallel_boundary_condition_files(q_cons_vf, bc_type)

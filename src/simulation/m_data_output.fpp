@@ -350,7 +350,6 @@ contains
         type(scalar_field), intent(inout), optional                 :: beta
         type(integer_field), dimension(1:num_dims,-1:1), intent(in) :: bc_type
 
-#ifdef MFC_MPI
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
         integer(kind=MPI_OFFSET_kind)        :: disp
@@ -475,7 +474,6 @@ contains
 
             call MPI_FILE_CLOSE(ifile, ierr)
         end if
-#endif
 
     end subroutine s_write_parallel_data_files
 

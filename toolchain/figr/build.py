@@ -409,7 +409,7 @@ class MFCTarget:
             flags.append("--debug-find")
 
         if not self.isDependency:
-            flags.append(f"-DMFC_MPI={'ON' if ARG('mpi') else 'OFF'}")
+            flags.append("-DMFC_MPI=ON")
             # flags.append(f"-DMFC_OpenACC={'ON' if ARG('acc') else 'OFF'}")
             # flags.append(f"-DMFC_OpenMP={'ON' if ARG('mp') else 'OFF'}")
             flags.append(f"-DMFC_OpenACC={'ON' if (ARG('gpu') == gpuConfigOptions.ACC.value) else 'OFF'}")

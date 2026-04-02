@@ -24,9 +24,7 @@ module m_start_up
     use m_finite_differences
     ! m_chemistry removed (IGR-only build)
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     implicit none
 

@@ -17,7 +17,6 @@ project(figr LANGUAGES C CXX Fortran)
 
 # Build options exposed to users and their default values.
 
-option(MFC_MPI           "Build with MPI"                                     ON)
 option(MFC_OpenACC       "Build with OpenACC"                                OFF)
 option(MFC_OpenMP        "Build with OpenMP"                                 OFF)
 option(MFC_GCov          "Build with GCov"                                   OFF)
@@ -525,16 +524,14 @@ function(MFC_SETUP_TARGET)
                                 MFC_${${ARGS_TARGET}_UPPER}
         )
 
-        if (MFC_MPI AND ARGS_MPI)
-            find_package(MPI COMPONENTS Fortran REQUIRED)
-	    
-            target_compile_definitions(${a_target} PRIVATE MFC_MPI)
-            if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
-                target_compile_options(${a_target} PRIVATE "$ENV{CRAY_MPICH_INC}")
-                target_link_libraries(${a_target} PRIVATE $ENV{CRAY_MPICH_LIB})
-            else() 
-                target_link_libraries(${a_target} PRIVATE MPI::MPI_Fortran)
-            endif()
+        # MPI is always required
+        find_package(MPI COMPONENTS Fortran REQUIRED)
+        target_compile_definitions(${a_target} PRIVATE MFC_MPI)
+        if(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
+            target_compile_options(${a_target} PRIVATE "$ENV{CRAY_MPICH_INC}")
+            target_link_libraries(${a_target} PRIVATE $ENV{CRAY_MPICH_LIB})
+        else()
+            target_link_libraries(${a_target} PRIVATE MPI::MPI_Fortran)
         endif()
 
         if (ARGS_SILO)

@@ -8,9 +8,7 @@
 !> @brief MPI communication layer: domain decomposition, halo exchange, reductions, and parallel I/O setup
 module m_mpi_common
 
-#ifdef MFC_MPI
     use mpi  !< Message passing interface (MPI) module
-#endif
 
     use m_derived_types
     use m_global_parameters
@@ -37,7 +35,6 @@ contains
     !> Initialize the module.
     impure subroutine s_initialize_mpi_common_module
 
-#ifdef MFC_MPI
         ! Allocating buff_send/recv and. Please note that for the sake of simplicity, both variables are provided sufficient storage
         ! to hold the largest buffer in the computational domain.
 
@@ -63,14 +60,12 @@ contains
         $:GPU_ENTER_DATA(create='[capture:buff_send]')
         $:GPU_ENTER_DATA(create='[capture:buff_recv]')
 #endif
-#endif
 
     end subroutine s_initialize_mpi_common_module
 
     !> Initialize the MPI execution environment and query the number of processors and local rank.
     impure subroutine s_mpi_initialize
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_INIT(ierr)
@@ -83,10 +78,6 @@ contains
         call MPI_COMM_SIZE(MPI_COMM_WORLD, num_procs, ierr)
 
         call MPI_COMM_RANK(MPI_COMM_WORLD, proc_rank, ierr)
-#else
-        num_procs = 1
-        proc_rank = 0
-#endif
 
     end subroutine s_mpi_initialize
 
@@ -98,7 +89,6 @@ contains
         integer, dimension(num_dims)                        :: sizes_glb, sizes_loc
         integer, dimension(1)                               :: airfoil_glb, airfoil_loc, airfoil_start
 
-#ifdef MFC_MPI
         integer :: i, j
         integer :: ierr  !< Generic flag used to identify and report MPI errors
         integer :: alt_sys
@@ -132,7 +122,6 @@ contains
                                           & MPI_IO_DATA%view(i), ierr)
             call MPI_TYPE_COMMIT(MPI_IO_DATA%view(i), ierr)
         end do
-#endif
 
     end subroutine s_initialize_mpi_data
 
@@ -143,7 +132,6 @@ contains
         integer, dimension(num_dims)                        :: sizes_glb, sizes_loc
         integer, dimension(3)                               :: sf_start_idx
 
-#ifdef MFC_MPI
         integer :: i, j, q, k, l, m_ds, n_ds, p_ds, ierr
 
         sf_start_idx = (/0, 0, 0/)
@@ -178,7 +166,6 @@ contains
                                           & MPI_IO_DATA%view(i), ierr)
             call MPI_TYPE_COMMIT(MPI_IO_DATA%view(i), ierr)
         end do
-#endif
 
     end subroutine s_initialize_mpi_data_ds
 
@@ -193,7 +180,6 @@ contains
         integer                                 :: ierr                !< Generic flag used to identify and report MPI errors
         integer, allocatable                    :: recounts(:), displs(:)
 
-#ifdef MFC_MPI
         allocate (recounts(num_procs))
 
         call MPI_GATHER(counts, 1, MPI_INTEGER, recounts, 1, MPI_INTEGER, root, MPI_COMM_WORLD, ierr)
@@ -208,7 +194,6 @@ contains
 
         allocate (gathered_vector(sum(recounts)))
         call MPI_GATHERV(my_vector, counts, mpi_p, gathered_vector, recounts, displs, mpi_p, root, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_gather_data
 
@@ -218,11 +203,9 @@ contains
         real(wp), dimension(0:num_procs - 1), intent(inout) :: proc_time
         real(wp), intent(inout)                             :: time_avg
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_GATHER(time_avg, 1, mpi_p, proc_time(0), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine mpi_bcast_time_step_values
 
@@ -258,7 +241,6 @@ contains
         real(wp), intent(out) :: Rc_min_glb
 
 #ifdef MFC_SIMULATION
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_REDUCE(icfl_max_loc, icfl_max_glb, 1, mpi_p, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
@@ -267,14 +249,6 @@ contains
             call MPI_REDUCE(vcfl_max_loc, vcfl_max_glb, 1, mpi_p, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
             call MPI_REDUCE(Rc_min_loc, Rc_min_glb, 1, mpi_p, MPI_MIN, 0, MPI_COMM_WORLD, ierr)
         end if
-#else
-        icfl_max_glb = icfl_max_loc
-
-        if (viscous) then
-            vcfl_max_glb = vcfl_max_loc
-            Rc_min_glb = Rc_min_loc
-        end if
-#endif
 #endif
 
     end subroutine s_mpi_reduce_stability_criteria_extrema
@@ -285,11 +259,9 @@ contains
         real(wp), intent(in)  :: var_loc
         real(wp), intent(out) :: var_glb
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_ALLREDUCE(var_loc, var_glb, 1, mpi_p, MPI_SUM, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_allreduce_sum
 
@@ -300,7 +272,6 @@ contains
         real(wp), dimension(:,:), intent(in)  :: var_loc
         real(wp), dimension(:,:), intent(out) :: var_glb
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         if (loc(var_loc) == loc(var_glb)) then
@@ -308,9 +279,6 @@ contains
         else
             call MPI_Allreduce(var_loc, var_glb, num_vectors*vector_length, mpi_p, MPI_SUM, MPI_COMM_WORLD, ierr)
         end if
-#else
-        var_glb(1:num_vectors,1:vector_length) = var_loc(1:num_vectors,1:vector_length)
-#endif
 
     end subroutine s_mpi_allreduce_vectors_sum
 
@@ -320,13 +288,9 @@ contains
         integer, intent(in)  :: var_loc
         integer, intent(out) :: var_glb
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_ALLREDUCE(var_loc, var_glb, 1, MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr)
-#else
-        var_glb = var_loc
-#endif
 
     end subroutine s_mpi_allreduce_integer_sum
 
@@ -336,11 +300,9 @@ contains
         real(wp), intent(in)  :: var_loc
         real(wp), intent(out) :: var_glb
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_ALLREDUCE(var_loc, var_glb, 1, mpi_p, MPI_MIN, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_allreduce_min
 
@@ -350,11 +312,9 @@ contains
         real(wp), intent(in)  :: var_loc
         real(wp), intent(out) :: var_glb
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_ALLREDUCE(var_loc, var_glb, 1, mpi_p, MPI_MAX, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_allreduce_max
 
@@ -363,7 +323,6 @@ contains
 
         real(wp), intent(inout) :: var_loc
 
-#ifdef MFC_MPI
         integer  :: ierr  !< Generic flag used to identify and report MPI errors
         real(wp) :: var_glb
 
@@ -372,7 +331,6 @@ contains
         call MPI_BCAST(var_glb, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
 
         var_loc = var_glb
-#endif
 
     end subroutine s_mpi_reduce_min
 
@@ -382,7 +340,6 @@ contains
 
         real(wp), dimension(2), intent(inout) :: var_loc
 
-#ifdef MFC_MPI
         integer                :: ierr     !< Generic flag used to identify and report MPI errors
         real(wp), dimension(2) :: var_glb  !< Reduced (max value, rank) pair
         call MPI_REDUCE(var_loc, var_glb, 1, mpi_2p, MPI_MAXLOC, 0, MPI_COMM_WORLD, ierr)
@@ -390,7 +347,6 @@ contains
         call MPI_BCAST(var_glb, 1, mpi_2p, 0, MPI_COMM_WORLD, ierr)
 
         var_loc = var_glb
-#endif
 
     end subroutine s_mpi_reduce_maxloc
 
@@ -400,50 +356,36 @@ contains
         character(len=*), intent(in), optional :: prnt
         integer, intent(in), optional          :: code
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
-#endif
 
         if (present(prnt)) then
             print *, prnt
             call flush (6)
         end if
 
-#ifndef MFC_MPI
-        if (present(code)) then
-            stop code
-        else
-            stop 1
-        end if
-#else
         if (present(code)) then
             call MPI_ABORT(MPI_COMM_WORLD, code, ierr)
         else
             call MPI_ABORT(MPI_COMM_WORLD, 1, ierr)
         end if
-#endif
 
     end subroutine s_mpi_abort
 
     !> Halts all processes until all have reached barrier.
     impure subroutine s_mpi_barrier
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_barrier
 
     !> The subroutine finalizes the MPI execution environment.
     impure subroutine s_mpi_finalize
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_FINALIZE(ierr)
-#endif
 
     end subroutine s_mpi_finalize
 
@@ -462,7 +404,6 @@ contains
         logical :: beg_end_geq_0
         integer :: pack_offset, unpack_offset
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call nvtxStartRange("RHS-COMM-PACKBUF")
@@ -650,14 +591,12 @@ contains
             end if
         #:endfor
         call nvtxEndRange
-#endif
 
     end subroutine s_mpi_sendrecv_variables_buffers
 
     !> Decompose the computational domain among processors by balancing cells per rank in each coordinate direction.
     subroutine s_mpi_decompose_computational_domain
 
-#ifdef MFC_MPI
         integer :: num_procs_x, num_procs_y, num_procs_z  !< Optimal number of processors in the x-, y- and z-directions
         !> Non-optimal number of processors in the x-, y- and z-directions
         real(wp) :: tmp_num_procs_x, tmp_num_procs_y, tmp_num_procs_z
@@ -995,7 +934,6 @@ contains
             end if
 #endif
         end if
-#endif
 
     end subroutine s_mpi_decompose_computational_domain
 
@@ -1008,7 +946,6 @@ contains
         integer, intent(in) :: mpi_dir
         integer, intent(in) :: pbc_loc
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         if (mpi_dir == 1) then
@@ -1069,7 +1006,6 @@ contains
                 end if
             end if
         end if
-#endif
 
     end subroutine s_mpi_sendrecv_grid_variables_buffers
 #endif
@@ -1077,9 +1013,7 @@ contains
     !> Module deallocation and/or disassociation procedures
     impure subroutine s_finalize_mpi_common_module
 
-#ifdef MFC_MPI
         deallocate (buff_send, buff_recv)
-#endif
 
     end subroutine s_finalize_mpi_common_module
 

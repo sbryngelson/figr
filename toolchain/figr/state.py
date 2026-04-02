@@ -12,7 +12,6 @@ class gpuConfigOptions(Enum):
 
 @dataclasses.dataclass
 class MFCConfig:
-    mpi: bool = True
     gpu: str = gpuConfigOptions.NONE.value
     debug: bool = False
     reldebug: bool = False
@@ -41,7 +40,7 @@ class MFCConfig:
 
     def make_options(self) -> typing.List[str]:
         """Returns a list of options that could be passed to figr.sh again.
-        Example: --no-debug --mpi --no-gpu --no-gcov --no-unified"""
+        Example: --no-debug --no-gpu --no-gcov --no-unified"""
         options = []
         for k, v in self.items():
             cli_k = k.replace("_", "-")

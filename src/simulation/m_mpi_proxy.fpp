@@ -8,9 +8,7 @@
 !> @brief MPI halo exchange, domain decomposition, and buffer packing/unpacking for the simulation solver
 module m_mpi_proxy
 
-#ifdef MFC_MPI
     use mpi  !< Message passing interface (MPI) module
-#endif
 
     use m_helper_basic
     use m_helper
@@ -39,7 +37,6 @@ contains
     !! the communicator.
     impure subroutine s_mpi_bcast_user_inputs()
 
-#ifdef MFC_MPI
         integer :: i, j  !< Generic loop iterator
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
@@ -120,7 +117,6 @@ contains
         call MPI_BCAST(nv_uvm_out_of_core, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         call MPI_BCAST(nv_uvm_igr_temps_on_gpu, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
         call MPI_BCAST(nv_uvm_pref_gpu, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_bcast_user_inputs
 
@@ -130,11 +126,9 @@ contains
         integer, intent(in)                            :: num_freq
         real(wp), intent(inout), dimension(1:num_freq) :: phi_rn
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_BCAST(phi_rn, num_freq, mpi_p, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_send_random_number
 

@@ -7,9 +7,7 @@
 !> @brief Global parameters for the post-process: domain geometry, equation of state, and output database settings
 module m_global_parameters
 
-#ifdef MFC_MPI
     use mpi  !< Message passing interface (MPI) module
-#endif
 
     use m_derived_types
     use m_helper_basic
@@ -112,9 +110,7 @@ module m_global_parameters
     logical                            :: file_per_process  !< output format
     integer, allocatable, dimension(:) :: proc_coords       !< Processor coordinates in MPI_CART_COMM
     integer, allocatable, dimension(:) :: start_idx         !< Starting cell-center index of local processor in global grid
-#ifdef MFC_MPI
     type(mpi_io_var), public :: MPI_IO_DATA
-#endif
 
     !> @name MPI info for parallel IO with Lustre file systems
     !> @{
@@ -335,7 +331,6 @@ contains
         contxb = cont_idx%beg
         contxe = cont_idx%end
 
-#ifdef MFC_MPI
         allocate (MPI_IO_DATA%view(1:sys_size))
         allocate (MPI_IO_DATA%var(1:sys_size))
 
@@ -347,7 +342,6 @@ contains
             end if
             MPI_IO_DATA%var(i)%sf => null()
         end do
-#endif
 
         ! Size of the ghost zone layer is non-zero only when post-processing the raw simulation data of a parallel multidimensional
         ! computation in the Silo-HDF5 format. If this is the case, one must also verify whether the raw simulation data is 2D or
@@ -431,9 +425,7 @@ contains
     !> Subroutine to initialize parallel infrastructure
     impure subroutine s_initialize_parallel_io
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
-#endif
 
         num_dims = 1 + min(1, n) + min(1, p)
 
@@ -443,7 +435,6 @@ contains
 
         if (parallel_io .neqv. .true.) return
 
-#ifdef MFC_MPI
         ! Option for Lustre file system (Darter/Comet/Stampede)
         write (mpiiofs, '(A)') '/lustre_'
         mpiiofs = trim(mpiiofs)
@@ -454,7 +445,6 @@ contains
         ! MPI_INFO_NULL
 
         allocate (start_idx(1:num_dims))
-#endif
 
     end subroutine s_initialize_parallel_io
 
@@ -483,7 +473,6 @@ contains
 
         deallocate (adv)
 
-#ifdef MFC_MPI
         if (parallel_io) then
             deallocate (start_idx)
             do i = 1, sys_size
@@ -493,7 +482,6 @@ contains
             deallocate (MPI_IO_DATA%var)
             deallocate (MPI_IO_DATA%view)
         end if
-#endif
 
     end subroutine s_finalize_global_parameters_module
 

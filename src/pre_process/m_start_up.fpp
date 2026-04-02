@@ -21,9 +21,7 @@ module m_start_up
     use m_helper_basic
     use m_helper
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_check_patches
     use m_helper
@@ -285,7 +283,6 @@ contains
     !! coordinate directions and making sure that all of the cell-widths are positively valued
     impure subroutine s_read_parallel_grid_data_files
 
-#ifdef MFC_MPI
         real(wp), allocatable, dimension(:)  :: x_cb_glb, y_cb_glb, z_cb_glb
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
@@ -358,7 +355,6 @@ contains
         end if
 
         deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
-#endif
 
     end subroutine s_read_parallel_grid_data_files
 
@@ -368,7 +364,6 @@ contains
 
         type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf_in
 
-#ifdef MFC_MPI
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
         integer(KIND=MPI_OFFSET_KIND)        :: disp
@@ -422,7 +417,6 @@ contains
         end if
 
         call s_mpi_barrier()
-#endif
 
     end subroutine s_read_parallel_ic_data_files
 

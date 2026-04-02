@@ -9,9 +9,7 @@ module m_grid
     use m_global_parameters  ! Global parameters for the code
     use m_mpi_proxy  ! Message passing interface (MPI) module proxy
     use m_helper_basic
-#ifdef MFC_MPI
     use mpi  ! Message passing interface (MPI) module
-#endif
 
     implicit none
 
@@ -155,7 +153,6 @@ contains
     !> Generate a uniform or stretched rectilinear grid in parallel from user parameters.
     impure subroutine s_generate_parallel_grid
 
-#ifdef MFC_MPI
         real(wp) :: length  !< domain lengths
         ! Locations of cell boundaries
         real(wp), allocatable, dimension(:) :: x_cb_glb, y_cb_glb, z_cb_glb  !< Locations of cell boundaries
@@ -277,7 +274,6 @@ contains
         end if
 
         deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
-#endif
 
     end subroutine s_generate_parallel_grid
 

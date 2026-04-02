@@ -225,7 +225,6 @@ contains
 
         type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
 
-#ifdef MFC_MPI
         real(wp), allocatable, dimension(:)  :: x_cb_glb, y_cb_glb, z_cb_glb
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
@@ -418,7 +417,6 @@ contains
         else
             call s_assign_default_bc_type(bc_type)
         end if
-#endif
 
     end subroutine s_read_parallel_data_files
 
@@ -675,9 +673,7 @@ contains
         real(wp) :: starttime, endtime
         integer  :: num_devices, local_size, num_nodes, ppn, my_device_num
         integer  :: dev, devNum, local_rank
-#ifdef MFC_MPI
         integer :: local_comm
-#endif
 #if defined(MFC_OpenACC)
         integer(acc_device_kind) :: devtype
 #endif
@@ -686,14 +682,9 @@ contains
         call s_mpi_initialize()
 
 #ifdef MFC_GPU
-#ifndef MFC_MPI
-        local_size = 1
-        local_rank = 0
-#else
         call MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, local_comm, ierr)
         call MPI_Comm_size(local_comm, local_size, ierr)
         call MPI_Comm_rank(local_comm, local_rank, ierr)
-#endif
 #if defined(MFC_OpenACC)
         devtype = acc_get_device_type()
         devNum = acc_get_num_devices(devtype)

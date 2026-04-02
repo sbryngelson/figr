@@ -31,12 +31,6 @@ jobs:
             intel: true
 
         include:
-          - os:    ubuntu
-            mpi:   no-mpi
-            precision: single
-            debug: no-debug
-            intel: false
-
           # NVHPC compiler matrix: cpu (build+test), gpu (build-only, acc then omp)
           # Every release from 23.11 through 26.3 (current)
           - { nvhpc: '23.11', target: cpu }

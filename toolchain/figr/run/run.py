@@ -17,9 +17,6 @@ from . import input, queues
 
 
 def __validate_job_options() -> None:
-    if not ARG("mpi") and any({ARG("nodes") > 1, ARG("tasks_per_node") > 1}):
-        raise FigrException("RUN: Cannot run on more than one rank with --no-mpi.")
-
     if ARG("nodes") <= 0:
         raise FigrException("RUN: At least one node must be requested.")
 

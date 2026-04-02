@@ -94,7 +94,7 @@ They are NOT the same as raw `!$acc`/`!$omp` pragmas (which are forbidden).
 Use `#ifdef` for feature, target, compiler, and library gating:
 
 ### Feature gating
-- `MFC_MPI` — MPI-enabled build (`--mpi` flag, default ON)
+- `MFC_MPI` — MPI (always enabled, no `--no-mpi` option)
 - `MFC_OpenACC` — OpenACC GPU backend (`--gpu acc`)
 - `MFC_OpenMP` — OpenMP target offload backend (`--gpu mp`)
 - `MFC_GPU` — Any GPU build (either OpenACC or OpenMP)

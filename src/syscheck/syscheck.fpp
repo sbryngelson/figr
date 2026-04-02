@@ -1,24 +1,16 @@
 #:def LOG(*args)
-#ifdef MFC_MPI
     if (rank == 0) then
-#endif
         print *, ${','.join(args)}$
-#ifdef MFC_MPI
     end if
-#endif
 #:enddef LOG
 
 #:def MPIC(*args)
-#ifdef MFC_MPI
     @:LOG("[TEST] MPI: ${','.join([ x.replace("'", '') for x in args ])}$")
     ${','.join([ x.replace("'", '') for x in args ])}$
     if (ierr /= MPI_SUCCESS) then
         print *, " -> Error: ", ierr
         stop ierr
     end if
-#else
-    @:LOG("[SKIP] MPI: ${','.join([ x.replace("'", '') for x in args ])}$")
-#endif
 #:enddef MPIC
 
 #:def ACCC(*args)
@@ -40,9 +32,7 @@
 #:enddef OMPC
 
 #:def MPI(*args)
-#ifdef MFC_MPI
     ${','.join([ x.replace("'", '') for x in args ])}$
-#endif
 #:enddef MPI
 
 #:def ACC(*args)

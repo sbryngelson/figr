@@ -8,9 +8,7 @@
 !> @brief Global parameters for the computational domain, fluid properties, and simulation algorithm configuration
 module m_global_parameters
 
-#ifdef MFC_MPI
     use mpi  !< Message passing interface (MPI) module
-#endif
 
     use m_derived_types
     use m_helper_basic
@@ -549,9 +547,7 @@ contains
     !> Initializes parallel infrastructure
     impure subroutine s_initialize_parallel_io
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
-#endif
 
         #:if not MFC_CASE_OPTIMIZATION
             num_dims = 1 + min(1, n) + min(1, p)
@@ -562,7 +558,6 @@ contains
 
         if (parallel_io .neqv. .true.) return
 
-#ifdef MFC_MPI
         ! Option for Lustre file system (Darter/Comet/Stampede)
         write (mpiiofs, '(A)') '/lustre_'
         mpiiofs = trim(mpiiofs)
@@ -574,7 +569,6 @@ contains
         ! MPI_INFO_NULL
 
         allocate (start_idx(1:num_dims))
-#endif
 
     end subroutine s_initialize_parallel_io
 

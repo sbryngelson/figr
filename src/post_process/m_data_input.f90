@@ -5,9 +5,7 @@
 !> @brief Reads raw simulation grid and conservative-variable data for a given time-step and fills buffer regions
 module m_data_input
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_derived_types
     use m_global_parameters
@@ -72,7 +70,6 @@ contains
 
     end subroutine s_read_grid_data_direction
 
-#ifdef MFC_MPI
     !> Helper subroutine to setup MPI data I/O parameters
     impure subroutine s_setup_mpi_io_params(data_size, m_MOK, n_MOK, p_MOK, WP_MOK, MOK, str_MOK, NVARS_MOK)
 
@@ -93,7 +90,6 @@ contains
         NVARS_MOK = int(sys_size, MPI_OFFSET_KIND)
 
     end subroutine s_setup_mpi_io_params
-#endif
 
     !> Helper subroutine to allocate field arrays for given dimensionality
     impure subroutine s_allocate_field_arrays(local_start_idx, end_x, end_y, end_z)
@@ -168,7 +164,6 @@ contains
 
         integer, intent(in) :: t_step
 
-#ifdef MFC_MPI
         real(wp), allocatable, dimension(:)  :: x_cb_glb, y_cb_glb, z_cb_glb
         integer                              :: ifile, ierr, data_size, filetype, stride
         integer, dimension(MPI_STATUS_SIZE)  :: status
@@ -276,11 +271,9 @@ contains
         else
             call s_assign_default_bc_type(bc_type)
         end if
-#endif
 
     end subroutine s_read_parallel_data_files
 
-#ifdef MFC_MPI
     !> Helper subroutine to read parallel conservative variable data
     impure subroutine s_read_parallel_conservative_data(t_step, m_MOK, n_MOK, p_MOK, WP_MOK, MOK, str_MOK, NVARS_MOK)
 
@@ -371,7 +364,6 @@ contains
         end if
 
     end subroutine s_read_parallel_conservative_data
-#endif
 
     !> Computation of parameters, allocation procedures, and/or any other tasks needed to properly setup the module
     impure subroutine s_initialize_data_input_module
