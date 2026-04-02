@@ -3,7 +3,7 @@
 import math
 from typing import Optional, Tuple
 
-from .pack import Pack
+from .packer import Pack
 
 
 class Tolerance:
