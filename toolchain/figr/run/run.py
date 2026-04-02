@@ -100,7 +100,7 @@ def __generate_job_script(targets, case: input.MFCInputFile):
     gpu_mp = gpu_mode == gpuConfigOptions.MP.value
 
     content = __get_template().render(
-        **{**ARGS(), "targets": targets},
+        **{**ARGS(), "targets": targets, "mpi": True},
         ARG=ARG,
         env=env,
         case=case,
