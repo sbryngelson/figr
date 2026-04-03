@@ -387,7 +387,6 @@ contains
         $:GPU_UPDATE(device='[dt, sys_size, buff_size, pref, rhoref, E_idx, alf_idx]')
 
         #:if not FIGR_CASE_OPTIMIZATION
-            $:GPU_UPDATE()
             $:GPU_UPDATE(device='[igr_order]')
             $:GPU_UPDATE(device='[num_fluids, num_dims, viscous]')
         #:endif
