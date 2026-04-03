@@ -104,8 +104,8 @@ COMMON_GPUS = CommonArgumentSet(
 # FigrConfig flags are handled specially in argparse_gen.py
 # This marker tells the generator to add --mpi/--no-mpi, --gpu/--no-gpu, etc.
 COMMON_FIGR_CONFIG = CommonArgumentSet(
-    name="mfc_config",
-    mfc_config_flags=True,
+    name="figr_config",
+    figr_config_flags=True,
     arguments=[],  # Generated dynamically
 )
 
@@ -117,7 +117,7 @@ BUILD_COMMAND = Command(
     aliases=["b"],
     help="Build figr and its dependencies.",
     description="Build figr targets with optional GPU support and case optimization.",
-    include_common=["targets", "mfc_config", "jobs", "verbose", "debug_log"],
+    include_common=["targets", "figr_config", "jobs", "verbose", "debug_log"],
     arguments=[
         Argument(
             name="input",
@@ -162,7 +162,7 @@ RUN_COMMAND = Command(
     aliases=["r"],
     help="Run a case with figr.",
     description="Run a figr simulation case interactively or submit as a batch job.",
-    include_common=["targets", "mfc_config", "jobs", "verbose", "debug_log", "gpus"],
+    include_common=["targets", "figr_config", "jobs", "verbose", "debug_log", "gpus"],
     positionals=[
         Positional(
             name="input",
@@ -349,7 +349,7 @@ TEST_COMMAND = Command(
     aliases=["t"],
     help="Run figr's test suite.",
     description="Run figr's test suite with various filtering and generation options.",
-    include_common=["mfc_config", "jobs", "verbose", "debug_log", "gpus"],
+    include_common=["figr_config", "jobs", "verbose", "debug_log", "gpus"],
     # Note: does NOT include "targets" - test uses different target handling
     arguments=[
         Argument(
@@ -517,7 +517,7 @@ CLEAN_COMMAND = Command(
     aliases=["c"],
     help="Clean build artifacts.",
     description="Remove build artifacts and cache files.",
-    include_common=["targets", "mfc_config", "jobs", "verbose", "debug_log"],
+    include_common=["targets", "figr_config", "jobs", "verbose", "debug_log"],
     examples=[
         Example("./figr.sh clean", "Clean all build files"),
     ],

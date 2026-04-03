@@ -159,7 +159,7 @@ class CommonArgumentSet:
     name: str  # Identifier for include_common
     arguments: List[Argument] = field(default_factory=list)
     # For FigrConfig flags that need --X and --no-X pairs
-    mfc_config_flags: bool = False
+    figr_config_flags: bool = False
 
 
 @dataclass

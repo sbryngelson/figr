@@ -33,7 +33,7 @@ def parse_namelist_from_file(filepath: Path) -> Set[str]:
     return found_params
 
 
-def get_mfc_root() -> Path:
+def get_figr_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent.parent
 
 
@@ -42,7 +42,7 @@ _TARGET_PARAMS_CACHE: Dict[str, Set[str]] = {}
 
 def get_target_params() -> Dict[str, Set[str]]:
     if not _TARGET_PARAMS_CACHE:
-        root = get_mfc_root()
+        root = get_figr_root()
         targets = {
             "pre_process": root / "src" / "pre_process" / "m_start_up.fpp",
             "simulation":  root / "src" / "simulation"  / "m_start_up.fpp",

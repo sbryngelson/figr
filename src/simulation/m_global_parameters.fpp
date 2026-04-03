@@ -99,7 +99,7 @@ module m_global_parameters
     integer  :: cpu_start, cpu_end, cpu_rate
 
     #:if not FIGR_CASE_OPTIMIZATION
-        $:GPU_DECLARE(create='[num_dims, weno_polyn, weno_order]')
+        $:GPU_DECLARE(create='[num_dims, num_vels, weno_polyn, weno_order]')
         $:GPU_DECLARE(create='[weno_num_stencils, num_fluids]')
         $:GPU_DECLARE(create='[igr_iter_solver, igr_order, viscous, igr_pres_lim]')
         $:GPU_DECLARE(create='[recon_type]')

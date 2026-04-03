@@ -70,7 +70,7 @@ def _add_positional(parser: argparse.ArgumentParser, pos: Positional):
     parser.add_argument(pos.name, **kwargs)
 
 
-def _add_mfc_config_arguments(parser: argparse.ArgumentParser, config):
+def _add_figr_config_arguments(parser: argparse.ArgumentParser, config):
     """
     Add FigrConfig boolean pair arguments dynamically.
 
@@ -108,8 +108,8 @@ def _add_common_arguments(parser: argparse.ArgumentParser, command: Command, com
             continue
 
         # Handle figr config flags specially
-        if common_set.mfc_config_flags and config is not None:
-            _add_mfc_config_arguments(parser, config)
+        if common_set.figr_config_flags and config is not None:
+            _add_figr_config_arguments(parser, config)
         else:
             for arg in common_set.arguments:
                 _add_argument(parser, arg)

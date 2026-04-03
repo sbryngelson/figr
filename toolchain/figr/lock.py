@@ -42,7 +42,7 @@ def load():
     if d["version"] < FIGR_LOCK_CURRENT_VERSION:
         raise common.FigrException(f"""\
 There has been a breaking change to the figr build system. Please delete your \
-build/ directory and run MFC again. (v{d["version"]} -> v{FIGR_LOCK_CURRENT_VERSION}).\
+build/ directory and run figr again. (v{d["version"]} -> v{FIGR_LOCK_CURRENT_VERSION}).\
 """)
 
     config = FigrConfig.from_dict(d["config"])
