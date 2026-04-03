@@ -10,7 +10,7 @@ b     PSC Bridges2
 b-all python/3.8.6 hdf5 anaconda3
 b-cpu allocations/1.0 gcc/10.2.0 openmpi/4.0.5-gcc10.2.0
 b-gpu nvhpc/22.9 cuda/11.7 openmpi/4.0.5-nvhpc22.9
-b-gpu MFC_CUDA_CC=70,75,80 NVHPC_CUDA_HOME=$CUDA_HOME CC=nvc CXX=nvc++ FC=nvfortran
+b-gpu FIGR_CUDA_CC=70,75,80 NVHPC_CUDA_HOME=$CUDA_HOME CC=nvc CXX=nvc++ FC=nvfortran
 
 a     OLCF Ascent
 a-all python cmake/3.22.2
@@ -38,7 +38,7 @@ p     GT Phoenix
 p-all python/3.12.5
 p-cpu gcc/12.3.0 openmpi/4.1.5
 p-gpu python/3.12.5 nvhpc/24.5 hpcx/2.19-cuda cuda/12.1.1
-p-gpu MFC_CUDA_CC=70,75,80,89,90 NVHPC_CUDA_HOME=$CUDA_HOME CC=nvc CXX=nvc++ FC=nvfortran
+p-gpu FIGR_CUDA_CC=70,75,80,89,90 NVHPC_CUDA_HOME=$CUDA_HOME CC=nvc CXX=nvc++ FC=nvfortran
 
 f     OLCF Frontier
 f-all cpe/25.03 rocm/6.3.1
@@ -61,7 +61,7 @@ d-all python
 d-cpu gcc/11.4.0 openmpi
 d-gpu PrgEnv-nvidia/8.6.0
 d-gpu CC=nvc CXX=nvc++ FC=nvfortran
-d-gpu MFC_CUDA_CC=80,86
+d-gpu FIGR_CUDA_CC=80,86
 
 o     Brown Oscar
 o-all python
@@ -72,7 +72,7 @@ o-gpu CC=nvc CXX=nvc++ FC=nvfortran
 dai     NCSA DeltaAI
 dai-all python cmake nvidia/25.5
 dai-all CC=nvc CXX=nvc++ FC=nvfortran
-dai-gpu MFC_CUDA_CC=89,90
+dai-gpu FIGR_CUDA_CC=89,90
 
 c     DoD Carpenter (GNU)
 c-all python/3.12.1
