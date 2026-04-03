@@ -81,7 +81,7 @@ def __get_template() -> Template:
     raise FigrException(f"Failed to find a template for --computer '{computer}'. Baked-in templates are: {format_list_to_string(list(baked.keys()), 'magenta')}.")
 
 
-def __generate_job_script(targets, case: input.MFCInputFile):
+def __generate_job_script(targets, case: input.FigrInputFile):
     env = {}
     if ARG("gpus") is not None:
         gpu_ids = ",".join([str(_) for _ in ARG("gpus")])
@@ -116,7 +116,7 @@ def __generate_job_script(targets, case: input.MFCInputFile):
     file_write(__job_script_filepath(), content)
 
 
-def __generate_input_files(targets, case: input.MFCInputFile):
+def __generate_input_files(targets, case: input.FigrInputFile):
     for target in targets:
         cons.print(f"Generating input files for [magenta]{target.name}[/magenta]...")
         cons.indent()

@@ -13,7 +13,7 @@ compiles to either OpenACC or OpenMP target offload depending on the build flag:
 
 ### Macro Layers (in src/common/include/)
 - `parallel_macros.fpp` — **Use these.** Generic `GPU_*` macros that dispatch to the
-  correct backend based on `MFC_OpenACC` / `MFC_OpenMP` compile definitions.
+  correct backend based on `FIGR_OpenACC` / `FIGR_OpenMP` compile definitions.
 - `acc_macros.fpp` — OpenACC-specific `ACC_*` implementations (do not call directly)
 - `omp_macros.fpp` — OpenMP target offload `OMP_*` implementations (do not call directly)
   - OMP macros generate **compiler-specific** directives: NVIDIA uses `target teams loop`,
@@ -94,18 +94,18 @@ They are NOT the same as raw `!$acc`/`!$omp` pragmas (which are forbidden).
 Use `#ifdef` for feature, target, compiler, and library gating:
 
 ### Feature gating
-- `MFC_MPI` — MPI (always enabled, no `--no-mpi` option)
-- `MFC_OpenACC` — OpenACC GPU backend (`--gpu acc`)
-- `MFC_OpenMP` — OpenMP target offload backend (`--gpu mp`)
-- `MFC_GPU` — Any GPU build (either OpenACC or OpenMP)
-- `MFC_DEBUG` — Debug build (`--debug`)
-- `MFC_SINGLE_PRECISION` — Single-precision mode (`--single`)
-- `MFC_MIXED_PRECISION` — Mixed-precision mode (`--mixed`)
+- `FIGR_MPI` — MPI (always enabled, no `--no-mpi` option)
+- `FIGR_OpenACC` — OpenACC GPU backend (`--gpu acc`)
+- `FIGR_OpenMP` — OpenMP target offload backend (`--gpu mp`)
+- `FIGR_GPU` — Any GPU build (either OpenACC or OpenMP)
+- `FIGR_DEBUG` — Debug build (`--debug`)
+- `FIGR_SINGLE_PRECISION` — Single-precision mode (`--single`)
+- `FIGR_MIXED_PRECISION` — Mixed-precision mode (`--mixed`)
 
 ### Target gating (for code in `src/common/` shared across executables)
-- `MFC_PRE_PROCESS` — Only in pre_process builds
-- `MFC_SIMULATION` — Only in simulation builds
-- `MFC_POST_PROCESS` — Only in post_process builds
+- `FIGR_PRE_PROCESS` — Only in pre_process builds
+- `FIGR_SIMULATION` — Only in simulation builds
+- `FIGR_POST_PROCESS` — Only in post_process builds
 
 ### Compiler gating (for compiler-specific workarounds)
 - `_CRAYFTN` — Cray Fortran compiler
@@ -115,7 +115,7 @@ Use `#ifdef` for feature, target, compiler, and library gating:
 - `FRONTIER_UNIFIED` — Frontier HPC unified memory
 
 ### Library-specific code
-- FFTW (`m_fftw.fpp`) uses heavy `#ifdef` gating for `MFC_GPU` and `__PGI`
+- FFTW (`m_fftw.fpp`) uses heavy `#ifdef` gating for `FIGR_GPU` and `__PGI`
 - CUDA Fortran (`cudafor` module) is gated behind `__NVCOMPILER_GPU_UNIFIED_MEM`
 - SILO/HDF5 interfaces may have conditional paths
 

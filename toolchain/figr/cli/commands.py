@@ -101,7 +101,7 @@ COMMON_GPUS = CommonArgumentSet(
     ],
 )
 
-# MFCConfig flags are handled specially in argparse_gen.py
+# FigrConfig flags are handled specially in argparse_gen.py
 # This marker tells the generator to add --mpi/--no-mpi, --gpu/--no-gpu, etc.
 COMMON_FIGR_CONFIG = CommonArgumentSet(
     name="mfc_config",

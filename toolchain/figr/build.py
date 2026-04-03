@@ -273,7 +273,7 @@ def _show_build_error(result: subprocess.CompletedProcess, stage: str):
 
 
 @dataclasses.dataclass
-class MFCTarget:
+class FigrTarget:
     @dataclasses.dataclass
     class Dependencies:
         all: typing.List
@@ -287,7 +287,7 @@ class MFCTarget:
             return r
 
     name: str  # Name of the target
-    flags: typing.List[str]  # Extra flags to pass to CMakeMFCTarget
+    flags: typing.List[str]  # Extra flags to pass to CMakeFigrTarget
     isDependency: bool  # Is it a dependency of an figr target?
     isDefault: bool  # Should it be built by default? (unspecified -t | --targets)
     isRequired: bool  # Should it always be built? (no matter what -t | --targets is)
@@ -448,7 +448,7 @@ class MFCTarget:
         cons.print(f"  [bold green]✓[/bold green] Configured [magenta]{self.name}[/magenta]")
         cons.print(no_indent=True)
 
-    def build(self, case: input.MFCInputFile):
+    def build(self, case: input.FigrInputFile):
         case.generate_fpp(self)
 
         command = [
@@ -495,7 +495,7 @@ class MFCTarget:
         cons.print(f"  [bold green]✓[/bold green] Built [magenta]{self.name}[/magenta]")
         cons.print(no_indent=True)
 
-    def install(self, case: input.MFCInputFile):
+    def install(self, case: input.FigrInputFile):
         command = ["cmake", "--install", self.get_staging_dirpath(case)]
 
         # Show progress indicator during install
@@ -513,13 +513,13 @@ class MFCTarget:
 
 
 #                         name             flags                       isDep  isDef  isReq  dependencies                        run order
-HDF5 = MFCTarget("hdf5", ["-DFIGR_HDF5=ON"], True, False, False, MFCTarget.Dependencies([], [], []), -1)
-SILO = MFCTarget("silo", ["-DFIGR_SILO=ON"], True, False, False, MFCTarget.Dependencies([HDF5], [], []), -1)
-HIPFORT = MFCTarget("hipfort", ["-DFIGR_HIPFORT=ON"], True, False, False, MFCTarget.Dependencies([], [], []), -1)
-PRE_PROCESS = MFCTarget("pre_process", ["-DFIGR_PRE_PROCESS=ON"], False, True, False, MFCTarget.Dependencies([], [], []), 0)
-SIMULATION = MFCTarget("simulation", ["-DFIGR_SIMULATION=ON"], False, True, False, MFCTarget.Dependencies([], [], [HIPFORT]), 1)
-POST_PROCESS = MFCTarget("post_process", ["-DFIGR_POST_PROCESS=ON"], False, True, False, MFCTarget.Dependencies([HDF5, SILO], [], []), 2)
-SYSCHECK = MFCTarget("syscheck", ["-DFIGR_SYSCHECK=ON"], False, False, True, MFCTarget.Dependencies([], [], [HIPFORT]), -1)
+HDF5 = FigrTarget("hdf5", ["-DFIGR_HDF5=ON"], True, False, False, FigrTarget.Dependencies([], [], []), -1)
+SILO = FigrTarget("silo", ["-DFIGR_SILO=ON"], True, False, False, FigrTarget.Dependencies([HDF5], [], []), -1)
+HIPFORT = FigrTarget("hipfort", ["-DFIGR_HIPFORT=ON"], True, False, False, FigrTarget.Dependencies([], [], []), -1)
+PRE_PROCESS = FigrTarget("pre_process", ["-DFIGR_PRE_PROCESS=ON"], False, True, False, FigrTarget.Dependencies([], [], []), 0)
+SIMULATION = FigrTarget("simulation", ["-DFIGR_SIMULATION=ON"], False, True, False, FigrTarget.Dependencies([], [], [HIPFORT]), 1)
+POST_PROCESS = FigrTarget("post_process", ["-DFIGR_POST_PROCESS=ON"], False, True, False, FigrTarget.Dependencies([HDF5, SILO], [], []), 2)
+SYSCHECK = FigrTarget("syscheck", ["-DFIGR_SYSCHECK=ON"], False, False, True, FigrTarget.Dependencies([], [], [HIPFORT]), -1)
 
 TARGETS = {HDF5, SILO, HIPFORT, PRE_PROCESS, SIMULATION, POST_PROCESS, SYSCHECK}
 
@@ -530,8 +530,8 @@ DEPENDENCY_TARGETS = {target for target in TARGETS if target.isDependency}
 TARGET_MAP = {target.name: target for target in TARGETS}
 
 
-def get_target(target: typing.Union[str, MFCTarget]) -> MFCTarget:
-    if isinstance(target, MFCTarget):
+def get_target(target: typing.Union[str, FigrTarget]) -> FigrTarget:
+    if isinstance(target, FigrTarget):
         return target
 
     if target in TARGET_MAP:
@@ -540,11 +540,11 @@ def get_target(target: typing.Union[str, MFCTarget]) -> MFCTarget:
     raise FigrException(f"Target '{target}' does not exist.")
 
 
-def get_targets(targets: typing.List[typing.Union[str, MFCTarget]]) -> typing.List[MFCTarget]:
+def get_targets(targets: typing.List[typing.Union[str, FigrTarget]]) -> typing.List[FigrTarget]:
     return [get_target(t) for t in targets]
 
 
-def __build_target(target: typing.Union[MFCTarget, str], case: input.MFCInputFile, history: typing.Set[str] = None):
+def __build_target(target: typing.Union[FigrTarget, str], case: input.FigrInputFile, history: typing.Set[str] = None):
     if history is None:
         history = set()
 
@@ -577,11 +577,11 @@ def __build_target(target: typing.Union[MFCTarget, str], case: input.MFCInputFil
     target.install(case)
 
 
-def get_configured_targets(case: input.MFCInputFile) -> typing.List[MFCTarget]:
+def get_configured_targets(case: input.FigrInputFile) -> typing.List[FigrTarget]:
     return [target for target in TARGETS if target.is_configured(case)]
 
 
-def __generate_header(case: input.MFCInputFile, targets: typing.List):
+def __generate_header(case: input.FigrInputFile, targets: typing.List):
     feature_flags = ["Build", format_list_to_string([t.name for t in get_targets(targets)], "magenta")]
     if ARG("case_optimization"):
         feature_flags.append(f"Case Optimized: [magenta]{ARG('input')}[/magenta]")
@@ -589,10 +589,10 @@ def __generate_header(case: input.MFCInputFile, targets: typing.List):
     return f"[bold]{' | '.join(feature_flags or ['Generic'])}[/bold]"
 
 
-def build(targets=None, case: input.MFCInputFile = None, history: typing.Set[str] = None):
+def build(targets=None, case: input.FigrInputFile = None, history: typing.Set[str] = None):
     if history is None:
         history = set()
-    if isinstance(targets, (MFCTarget, str)):
+    if isinstance(targets, (FigrTarget, str)):
         targets = [targets]
     if targets is None:
         targets = ARG("targets")

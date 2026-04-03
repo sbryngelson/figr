@@ -158,7 +158,7 @@ class CommonArgumentSet:
 
     name: str  # Identifier for include_common
     arguments: List[Argument] = field(default_factory=list)
-    # For MFCConfig flags that need --X and --no-X pairs
+    # For FigrConfig flags that need --X and --no-X pairs
     mfc_config_flags: bool = False
 
 

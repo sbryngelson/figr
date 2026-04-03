@@ -5,16 +5,16 @@ CMake Configuration:
     C       : ${CMAKE_C_COMPILER_ID} v${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})
     Fortran : ${CMAKE_Fortran_COMPILER_ID} v${CMAKE_Fortran_COMPILER_VERSION} (${CMAKE_Fortran_COMPILER})
 
-    PRE_PROCESS   : ${MFC_PRE_PROCESS}
-    SIMULATION    : ${MFC_SIMULATION}
-    POST_PROCESS  : ${MFC_POST_PROCESS}
-    SYSCHECK      : ${MFC_SYSCHECK}
-    DOCUMENTATION : ${MFC_DOCUMENTATION}
-    ALL           : ${MFC_ALL}
+    PRE_PROCESS   : ${FIGR_PRE_PROCESS}
+    SIMULATION    : ${FIGR_SIMULATION}
+    POST_PROCESS  : ${FIGR_POST_PROCESS}
+    SYSCHECK      : ${FIGR_SYSCHECK}
+    DOCUMENTATION : ${FIGR_DOCUMENTATION}
+    ALL           : ${FIGR_ALL}
 
-    MPI     : ${MFC_MPI}
-    OpenACC : ${MFC_OpenACC}
-    OpenMP  : ${MFC_OpenMP}
+    MPI     : ${FIGR_MPI}
+    OpenACC : ${FIGR_OpenACC}
+    OpenMP  : ${FIGR_OpenMP}
 
     Fypp    : ${FYPP_EXE}
     Doxygen : ${DOXYGEN_EXECUTABLE}

@@ -11,7 +11,7 @@ class gpuConfigOptions(Enum):
 
 
 @dataclasses.dataclass
-class MFCConfig:
+class FigrConfig:
     gpu: str = gpuConfigOptions.NONE.value
     debug: bool = False
     reldebug: bool = False
@@ -24,11 +24,11 @@ class MFCConfig:
 
     @staticmethod
     def from_dict(d: dict):
-        """Create a MFCConfig object from a dictionary with the same keys
-        as the fields of MFCConfig"""
-        r = MFCConfig()
+        """Create a FigrConfig object from a dictionary with the same keys
+        as the fields of FigrConfig"""
+        r = FigrConfig()
 
-        for field in dataclasses.fields(MFCConfig):
+        for field in dataclasses.fields(FigrConfig):
             setattr(r, field.name, d[field.name])
 
         return r
@@ -61,8 +61,8 @@ class MFCConfig:
         return "_".join(options)
 
     def __eq__(self, other) -> bool:
-        """Check if two MFCConfig objects are equal, field by field."""
-        if not isinstance(other, MFCConfig):
+        """Check if two FigrConfig objects are equal, field by field."""
+        if not isinstance(other, FigrConfig):
             return NotImplemented
         for field in dataclasses.fields(self):
             if getattr(self, field.name) != getattr(other, field.name):
@@ -86,7 +86,7 @@ class MFCConfig:
         return " & ".join(strings)
 
 
-gCFG: MFCConfig = MFCConfig()
+gCFG: FigrConfig = FigrConfig()
 gARG: dict = {"rdma_mpi": False}
 
 
@@ -105,6 +105,6 @@ def ARGS() -> dict:
     return gARG
 
 
-def CFG() -> MFCConfig:
+def CFG() -> FigrConfig:
     global gCFG  # noqa: PLW0603
     return gCFG

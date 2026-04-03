@@ -12,7 +12,7 @@ import sys
 from .cli.argparse_gen import generate_parser
 from .cli.commands import COMMAND_ALIASES, FIGR_CLI_SCHEMA
 from .common import FigrException
-from .state import MFCConfig
+from .state import FigrConfig
 
 
 def is_first_time_user():
@@ -71,7 +71,7 @@ def _handle_enhanced_help(args_list):
     return None
 
 
-def parse(config: MFCConfig):
+def parse(config: FigrConfig):
     """Parse command line arguments using the CLI schema."""
     # Handle enhanced help before argparse
     help_command = _handle_enhanced_help(sys.argv)

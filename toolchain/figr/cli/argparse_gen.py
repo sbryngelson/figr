@@ -72,9 +72,9 @@ def _add_positional(parser: argparse.ArgumentParser, pos: Positional):
 
 def _add_mfc_config_arguments(parser: argparse.ArgumentParser, config):
     """
-    Add MFCConfig boolean pair arguments dynamically.
+    Add FigrConfig boolean pair arguments dynamically.
 
-    This handles --mpi/--no-mpi, --gpu/--no-gpu, etc. from MFCConfig dataclass.
+    This handles --mpi/--no-mpi, --gpu/--no-gpu, etc. from FigrConfig dataclass.
     """
     # Import here to avoid circular dependency
     from ..state import gpuConfigOptions
@@ -160,14 +160,14 @@ def _add_command_subparser(subparsers, cmd: Command, common_sets: Dict[str, Comm
 
 def generate_parser(
     schema: CLISchema,
-    config=None,  # MFCConfig instance
+    config=None,  # FigrConfig instance
 ) -> Tuple[argparse.ArgumentParser, Dict[str, argparse.ArgumentParser]]:
     """
     Generate complete argparse parser from schema.
 
     Args:
         schema: The CLI schema definition
-        config: Optional MFCConfig for dynamic boolean pairs
+        config: Optional FigrConfig for dynamic boolean pairs
 
     Returns:
         Tuple of (main parser, dict mapping command names to subparsers)

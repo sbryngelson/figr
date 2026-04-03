@@ -4,7 +4,7 @@ import rich
 import rich.console
 
 
-class MFCPrinter:
+class FigrPrinter:
     def __init__(self):
         self.stack = []
         self.raw = rich.console.Console()
@@ -42,4 +42,4 @@ class MFCPrinter:
         self.raw.print_exception()
 
 
-cons = MFCPrinter()
+cons = FigrPrinter()

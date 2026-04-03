@@ -13,7 +13,7 @@ from ..state import ARG, ARGS, gpuConfigOptions
 
 
 @dataclasses.dataclass(init=False)
-class MFCInputFile(Case):
+class FigrInputFile(Case):
     filename: str
     dirpath: str
 
@@ -103,12 +103,12 @@ class MFCInputFile(Case):
 
 
 # Load the input file
-def load(filepath: str = None, args: typing.List[str] = None, empty_data: dict = None, do_print: bool = True) -> MFCInputFile:
+def load(filepath: str = None, args: typing.List[str] = None, empty_data: dict = None, do_print: bool = True) -> FigrInputFile:
     if not filepath:
         if empty_data is None:
             raise common.FigrException("Please provide an input file.")
 
-        input_file = MFCInputFile("empty.py", "empty.py", empty_data)
+        input_file = FigrInputFile("empty.py", "empty.py", empty_data)
         input_file.validate_params()
         return input_file
 
@@ -144,9 +144,9 @@ def load(filepath: str = None, args: typing.List[str] = None, empty_data: dict =
     except Exception as exc:
         raise common.FigrException(f"Input file {filename} did not produce valid JSON. It should only print the case dictionary.\n\n{exc}\n")
 
-    input_file = MFCInputFile(filename, dirpath, dictionary)
+    input_file = FigrInputFile(filename, dirpath, dictionary)
     input_file.validate_params(f"Input file {filename}")
     return input_file
 
 
-load.CACHED_MFCInputFile = None
+load.CACHED_FigrInputFile = None

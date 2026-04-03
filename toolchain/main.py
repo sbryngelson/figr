@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 # User just passed --debug; clear persisted --reldebug
                 state.gARG["reldebug"] = False
 
-        lock.switch(state.MFCConfig.from_dict(state.gARG))
+        lock.switch(state.FigrConfig.from_dict(state.gARG))
 
         pass
 

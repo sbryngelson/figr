@@ -3,26 +3,26 @@ import os
 
 from . import common, state
 from .printer import cons
-from .state import MFCConfig
+from .state import FigrConfig
 
 FIGR_LOCK_CURRENT_VERSION: int = 8
 
 
 @dataclasses.dataclass
-class MFCLockData:
-    config: MFCConfig
+class FigrLockData:
+    config: FigrConfig
     version: int
 
 
-data: MFCLockData = None
+data: FigrLockData = None
 
 
 def init():
     global data  # noqa: PLW0603
 
     if not os.path.exists(common.FIGR_LOCK_FILEPATH):
-        config = MFCConfig()
-        data = MFCLockData(config, FIGR_LOCK_CURRENT_VERSION)
+        config = FigrConfig()
+        data = FigrLockData(config, FIGR_LOCK_CURRENT_VERSION)
         state.gCFG = config
 
         common.create_file(common.FIGR_LOCK_FILEPATH)
@@ -45,8 +45,8 @@ There has been a breaking change to the figr build system. Please delete your \
 build/ directory and run MFC again. (v{d["version"]} -> v{FIGR_LOCK_CURRENT_VERSION}).\
 """)
 
-    config = MFCConfig.from_dict(d["config"])
-    data = MFCLockData(config, d["version"])
+    config = FigrConfig.from_dict(d["config"])
+    data = FigrLockData(config, d["version"])
     state.gCFG = config
 
 
@@ -56,7 +56,7 @@ def write():
     common.file_dump_yaml(common.FIGR_LOCK_FILEPATH, dataclasses.asdict(data))
 
 
-def switch(to: MFCConfig):
+def switch(to: FigrConfig):
     global data  # noqa: PLW0603
 
     if to == data.config:

@@ -10,7 +10,7 @@ import subprocess
 from typing import Callable, List, Optional, Set, Union
 
 from .. import case, common
-from ..build import MFCTarget, get_target
+from ..build import FigrTarget, get_target
 from ..run import input
 from ..state import ARG
 
@@ -105,7 +105,7 @@ class TestCase(case.Case):
         self.override_tol = override_tol
         super().__init__({**BASE_CFG.copy(), **mods})
 
-    def run(self, targets: List[Union[str, MFCTarget]], gpus: Set[int]) -> subprocess.CompletedProcess:
+    def run(self, targets: List[Union[str, FigrTarget]], gpus: Set[int]) -> subprocess.CompletedProcess:
         if gpus is not None and len(gpus) != 0:
             gpus_select = ["--gpus"] + [str(_) for _ in gpus]
         else:
@@ -206,8 +206,8 @@ print(json.dumps({{**case, **mods}}))
     def __str__(self) -> str:
         return f"tests/[bold magenta]{self.get_uuid()}[/bold magenta]: {self.trace}"
 
-    def to_input_file(self) -> input.MFCInputFile:
-        return input.MFCInputFile(os.path.basename(self.get_filepath()), self.get_dirpath(), self.get_parameters())
+    def to_input_file(self) -> input.FigrInputFile:
+        return input.FigrInputFile(os.path.basename(self.get_filepath()), self.get_dirpath(), self.get_parameters())
 
     def compute_tolerance(self) -> float:
         if self.override_tol:

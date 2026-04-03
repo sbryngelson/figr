@@ -53,7 +53,7 @@ Enforced by convention/code review (not automated):
 ## Error Checking Macros (from macros.fpp)
 - `@:PROHIBIT(condition, message)` — Runtime constraint check; aborts with file/line info
 - `@:ASSERT(predicate, message)` — Invariant assertion; aborts if predicate is false
-- `@:LOG(expr)` — Debug logging, active only in `MFC_DEBUG` builds
+- `@:LOG(expr)` — Debug logging, active only in `FIGR_DEBUG` builds
 - Fortran-side runtime validation also exists in `m_checker*.fpp` files using `@:PROHIBIT`
 
 ## Precision Types
