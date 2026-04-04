@@ -19,7 +19,6 @@ project(figr LANGUAGES C CXX Fortran)
 
 option(FIGR_OpenACC       "Build with OpenACC"                                OFF)
 option(FIGR_OpenMP        "Build with OpenMP"                                 OFF)
-option(FIGR_Unified       "Build with unified CPU & GPU memory (GH-200 only)" OFF)
 option(FIGR_PRE_PROCESS   "Build pre_process"                                 OFF)
 option(FIGR_SIMULATION    "Build simulation"                                  OFF)
 option(FIGR_POST_PROCESS  "Build post_process"                                OFF)
@@ -263,12 +262,8 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
 
     # Enable LTO/IPO if supported
     if (CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
-        if (FIGR_Unified)
-            message(STATUS "LTO/IPO is not available with NVHPC using Unified Memory")
-        else()
-            message(STATUS "Performing IPO using -Mextract followed by -Minline")
-            set(NVHPC_USE_TWO_PASS_IPO TRUE)
-        endif()
+        message(STATUS "Performing IPO using -Mextract followed by -Minline")
+        set(NVHPC_USE_TWO_PASS_IPO TRUE)
     else()
         CHECK_IPO_SUPPORTED(RESULT SUPPORTS_IPO OUTPUT IPO_ERROR)
         if (SUPPORTS_IPO)
@@ -571,39 +566,15 @@ function(FIGR_SETUP_TARGET)
                 )
 
 
-                # GH-200 Unified Memory Support
-                if (FIGR_Unified)
-                    target_compile_options(${ARGS_TARGET}
-                        PRIVATE -gpu=mem:unified:managedalloc -cuda
-                    )
-                    # "This option must appear in both the compile and link lines" -- NVHPC Docs
-                    target_link_options(${ARGS_TARGET}
-                        PRIVATE -gpu=mem:unified:managedalloc -cuda
-                    )
-                endif()
-
                 if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelDebug")
                     target_compile_options(${a_target}
                         PRIVATE -gpu=debug
                     )
                 endif()
             elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
-                # Frontier Unified Memory Support
-                if (FIGR_Unified)
-                    target_compile_options(${ARGS_TARGET}
-                        PRIVATE -DFRONTIER_UNIFIED)
-                endif()
-
-
                 find_package(hipfort COMPONENTS hip CONFIG REQUIRED)
                 target_link_libraries(${a_target} PRIVATE hipfort::hip hipfort::hipfort-amdgcn)
             elseif(CMAKE_Fortran_COMPILER_ID STREQUAL "LLVMFlang")
-
-                if (FIGR_Unified)
-                    target_compile_options(${ARGS_TARGET}
-                        PRIVATE -DFRONTIER_UNIFIED)
-                endif()
-
                 find_package(hipfort COMPONENTS hip CONFIG REQUIRED)
                 target_link_libraries(${a_target} PRIVATE hipfort::hip hipfort::hipfort-amdgcn flang_rt.hostdevice)
             endif()

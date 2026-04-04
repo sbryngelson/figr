@@ -79,8 +79,6 @@ contains
                 end do
             end do
             $:GPU_UPDATE(device='[Res_igr, Re_idx, Re_size]')
-            @:PREFER_GPU(Res_igr)
-            @:PREFER_GPU(Re_idx)
         end if
 
         @:ALLOCATE(jac(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end))

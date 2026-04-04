@@ -13,8 +13,6 @@
 #:enddef
 
 ! No-op macro (UVM infrastructure removed)
-#:def PREFER_GPU(*args)
-#:enddef
 
 ! Allocate and create GPU device memory
 #:def ALLOCATE(*args)

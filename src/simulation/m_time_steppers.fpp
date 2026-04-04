@@ -31,26 +31,11 @@ module m_time_steppers
 
     $:GPU_DECLARE(create='[q_cons_ts, q_prim_vf, rhs_vf, q_prim_ts1, q_prim_ts2, max_dt, rk_coef, stor, bc_type]')
 
-#if defined(FRONTIER_UNIFIED)
-    real(stp), pointer, contiguous, dimension(:,:,:,:) :: q_cons_ts_pool_host, q_cons_ts_pool_device
-    integer(kind=8)                                    :: pool_dims(4), pool_starts(4)
-    integer(kind=8)                                    :: pool_size
-    type(c_ptr)                                        :: cptr_host, cptr_device
-#endif
-
 contains
 
     !> Initialize the time steppers module
     impure subroutine s_initialize_time_steppers_module
 
-#ifdef FRONTIER_UNIFIED
-        use hipfort
-        use hipfort_hipmalloc
-        use hipfort_check
-#if defined(FIGR_OpenACC)
-        use openacc
-#endif
-#endif
         integer :: i, j  !< Generic loop iterators
         ! Setting number of time-stages for selected time-stepping scheme
 
@@ -62,68 +47,11 @@ contains
 
         ! Allocating the cell-average conservative variables
         @:ALLOCATE(q_cons_ts(1:num_ts))
-        @:PREFER_GPU(q_cons_ts)
 
         do i = 1, num_ts
             @:ALLOCATE(q_cons_ts(i)%vf(1:sys_size))
-            @:PREFER_GPU(q_cons_ts(i)%vf)
         end do
 
-#if defined(FRONTIER_UNIFIED)
-        ! Allocate to memory regions using hip calls that we will attach pointers to
-        do i = 1, 3
-            pool_dims(i) = idwbuff(i)%end - idwbuff(i)%beg + 1
-            pool_starts(i) = idwbuff(i)%beg
-        end do
-        pool_dims(4) = sys_size
-        pool_starts(4) = 1
-#ifdef FIGR_MIXED_PRECISION
-        pool_size = 1_8*(idwbuff(1)%end - idwbuff(1)%beg + 1)*(idwbuff(2)%end - idwbuff(2)%beg + 1)*(idwbuff(3)%end - idwbuff(3) &
-                         & %beg + 1)*sys_size
-        call hipCheck(hipMalloc_(cptr_device, pool_size*2_8))
-        call c_f_pointer(cptr_device, q_cons_ts_pool_device, shape=pool_dims)
-        q_cons_ts_pool_device(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:) => q_cons_ts_pool_device
-
-        call hipCheck(hipMallocManaged_(cptr_host, pool_size*2_8, hipMemAttachGlobal))
-        call c_f_pointer(cptr_host, q_cons_ts_pool_host, shape=pool_dims)
-        q_cons_ts_pool_host(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:) => q_cons_ts_pool_host
-#else
-        ! Doing hipMalloc then mapping should be most performant
-        call hipCheck(hipMalloc(q_cons_ts_pool_device, dims8=pool_dims, lbounds8=pool_starts))
-        ! Without this map CCE will still create a device copy, because it's silly like that
-#if defined(FIGR_OpenACC)
-        call acc_map_data(q_cons_ts_pool_device, c_loc(q_cons_ts_pool_device), c_sizeof(q_cons_ts_pool_device))
-#endif
-        ! CCE see it can access this and will leave it on the host. It will stay on the host so long as HSA_XNACK=1 NOTE: WE CANNOT
-        ! DO ATOMICS INTO THIS MEMORY. We have to change a property to use atomics here Otherwise leaving this as fine-grained will
-        ! actually help performance since it can't be cached in GPU L2
-        if (num_ts == 2) then
-            call hipCheck(hipMallocManaged(q_cons_ts_pool_host, dims8=pool_dims, lbounds8=pool_starts, flags=hipMemAttachGlobal))
-#if defined(FIGR_OpenMP)
-            call hipCheck(hipMemAdvise(c_loc(q_cons_ts_pool_host), c_sizeof(q_cons_ts_pool_host), &
-                          & hipMemAdviseSetPreferredLocation, -1))
-#endif
-        end if
-#endif
-
-        do j = 1, sys_size
-            ! q_cons_ts(1) lives on the device
-            q_cons_ts(1)%vf(j)%sf(idwbuff(1)%beg:idwbuff(1)%end,idwbuff(2)%beg:idwbuff(2)%end, &
-                      & idwbuff(3)%beg:idwbuff(3)%end) => q_cons_ts_pool_device(:,:,:,j)
-            if (num_ts == 2) then
-                ! q_cons_ts(2) lives on the host
-                q_cons_ts(2)%vf(j)%sf(idwbuff(1)%beg:idwbuff(1)%end,idwbuff(2)%beg:idwbuff(2)%end, &
-                          & idwbuff(3)%beg:idwbuff(3)%end) => q_cons_ts_pool_host(:,:,:,j)
-            end if
-        end do
-
-        do i = 1, num_ts
-            @:ACC_SETUP_VFs(q_cons_ts(i))
-            do j = 1, sys_size
-                $:GPU_UPDATE(device='[q_cons_ts(i)%vf(j)]')
-            end do
-        end do
-#else
         do i = 1, num_ts
             do j = 1, sys_size
                 @:ALLOCATE(q_cons_ts(i)%vf(j)%sf(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, &
@@ -131,19 +59,16 @@ contains
             end do
             @:ACC_SETUP_VFs(q_cons_ts(i))
         end do
-#endif
 
         ! Allocating the cell-average primitive variables
         @:ALLOCATE(q_prim_vf(1:sys_size))
 
         ! Allocating the cell-average RHS variables
         @:ALLOCATE(rhs_vf(1:sys_size))
-        @:PREFER_GPU(rhs_vf)
 
         do i = 1, sys_size
             @:ALLOCATE(rhs_vf(i)%sf(-1:m+1,-1:n+1,-1:p+1))
             @:ACC_SETUP_SFs(rhs_vf(i))
-            @:PREFER_GPU(rhs_vf(i)%sf)
         end do
 
         ! Opening and writing the header of the run-time information file
@@ -394,35 +319,13 @@ contains
     !> Module deallocation and/or disassociation procedures
     impure subroutine s_finalize_time_steppers_module
 
-#ifdef FRONTIER_UNIFIED
-        use hipfort
-        use hipfort_hipmalloc
-        use hipfort_check
-#endif
         integer :: i, j  !< Generic loop iterators
         ! Deallocating the cell-average conservative variables
-#if defined(FRONTIER_UNIFIED)
-        do i = 1, num_ts
-            do j = 1, sys_size
-                nullify (q_cons_ts(i)%vf(j)%sf)
-            end do
-        end do
-#ifdef FIGR_MIXED_PRECISION
-        call hipCheck(hipHostFree_(c_loc(q_cons_ts_pool_host)))
-        nullify (q_cons_ts_pool_host)
-        call hipCheck(hipFree_(c_loc(q_cons_ts_pool_device)))
-        nullify (q_cons_ts_pool_device)
-#else
-        call hipCheck(hipHostFree(q_cons_ts_pool_host))
-        call hipCheck(hipFree(q_cons_ts_pool_device))
-#endif
-#else
         do i = 1, num_ts
             do j = 1, sys_size
                 @:DEALLOCATE(q_cons_ts(i)%vf(j)%sf)
             end do
         end do
-#endif
         do i = 1, num_ts
             @:DEALLOCATE(q_cons_ts(i)%vf)
         end do

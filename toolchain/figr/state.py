@@ -15,7 +15,6 @@ class FigrConfig:
     gpu: str = gpuConfigOptions.NONE.value
     debug: bool = False
     reldebug: bool = False
-    unified: bool = False
     single: bool = False
     mixed: bool = False
 
@@ -38,7 +37,7 @@ class FigrConfig:
 
     def make_options(self) -> typing.List[str]:
         """Returns a list of options that could be passed to figr.sh again.
-        Example: --no-debug --no-gpu --no-unified"""
+        Example: --no-debug --no-gpu"""
         options = []
         for k, v in self.items():
             cli_k = k.replace("_", "-")
@@ -71,7 +70,7 @@ class FigrConfig:
         return True
 
     def __str__(self) -> str:
-        """Returns a string like "mpi=No & gpu=No & debug=No & gcov=No & unified=No" """
+        """Returns a string like "mpi=No & gpu=No & debug=No & gcov=No & " """
         strings = []
         for k, v in self.items():
             if isinstance(v, bool):

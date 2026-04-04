@@ -412,7 +412,6 @@ class FigrTarget:
             flags.append("-DFIGR_MPI=ON")
             flags.append(f"-DFIGR_OpenACC={'ON' if (ARG('gpu') == gpuConfigOptions.ACC.value) else 'OFF'}")
             flags.append(f"-DFIGR_OpenMP={'ON' if (ARG('gpu') == gpuConfigOptions.MP.value) else 'OFF'}")
-            flags.append(f"-DFIGR_Unified={'ON' if ARG('unified') else 'OFF'}")
 
         command = ["cmake"] + flags + ["-S", cmake_dirpath, "-B", build_dirpath]
 
