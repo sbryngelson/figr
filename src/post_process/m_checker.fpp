@@ -1,10 +1,8 @@
-!>
 !!@file
 !!@brief Contains module m_checker
 
 #:include 'macros.fpp'
 
-!> @brief Validates post-process input parameters and output format consistency
 module m_checker
 
     use m_global_parameters

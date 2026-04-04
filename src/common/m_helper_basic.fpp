@@ -1,10 +1,6 @@
-!>
-!! @file
-!! @brief Contains module m_helper_basic
 
 #:include 'macros.fpp'
 
-!> @brief Basic floating-point utilities: approximate equality, default detection, and coordinate bounds
 module m_helper_basic
 
     use m_derived_types
@@ -18,7 +14,6 @@ module m_helper_basic
 contains
 
     !> Check if two floating point numbers of wp are within tolerance.
-    !! @param tol_input Relative error (default = 1.e-10_wp).
     logical elemental function f_approx_equal(a, b, tol_input) result(res)
 
         $:GPU_ROUTINE(parallelism='[seq]')
@@ -43,7 +38,6 @@ contains
     end function f_approx_equal
 
     !> Check if a wp value approximately matches any element of an array within tolerance.
-    !! @param tol_input Relative error (default = 1e-10_wp).
     logical function f_approx_in_array(a, b, tol_input) result(res)
 
         $:GPU_ROUTINE(parallelism='[seq]')
@@ -126,7 +120,6 @@ contains
     end subroutine s_configure_coordinate_bounds
 
     !> Updates the min and max number of cells in each set of axes
-    !! @param bounds Min and max values to update
     elemental subroutine s_update_cell_bounds(bounds, m, n, p)
 
         type(cell_num_bounds), intent(out) :: bounds

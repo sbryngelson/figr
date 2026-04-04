@@ -1,11 +1,9 @@
-!>
 !!@file
 !!@brief Contains module m_checker
 
 #:include 'macros.fpp'
 #:include 'case.fpp'
 
-!> @brief Validates simulation input parameters for consistency and supported configurations
 module m_checker
 
     use m_global_parameters
@@ -30,10 +28,6 @@ contains
 
     !> Checks constraints on compiler options
     impure subroutine s_check_inputs_compilers
-
-#if !defined(MFC_OpenACC) && !(defined(__PGI) || defined(_CRAYFTN))
-        @:PROHIBIT(rdma_mpi, "Unsupported value of rdma_mpi for the current compiler")
-#endif
 
     end subroutine s_check_inputs_compilers
 

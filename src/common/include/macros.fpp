@@ -1,7 +1,7 @@
 #:include 'parallel_macros.fpp'
 
 #:def LOG(expr)
-#ifdef MFC_DEBUG
+#ifdef FIGR_DEBUG
     block
         use iso_fortran_env, only: output_unit
 
@@ -16,7 +16,7 @@
 ! rank. That's because for both cudaMemAdvise (preferred location) and cudaMemPrefetchAsync we use location = device_id = 0. For an
 ! example see misc/nvidia_uvm/bind.sh. NVIDIA unified memory page placement hint
 #:def PREFER_GPU(*args)
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
 #ifdef __NVCOMPILER_GPU_UNIFIED_MEM
     block
         ! NVIDIA CUDA Fortran 25.3+: uses submodules (cuda_runtime_api, gpu_reductions, sort) See

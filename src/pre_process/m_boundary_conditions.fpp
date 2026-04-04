@@ -1,15 +1,9 @@
-!>
-!! @file
-!! @brief Contains module m_boundary_conditions
 
-!> @brief Applies spatially varying boundary condition patches along domain edges and faces
 module m_boundary_conditions
 
     use m_derived_types
     use m_global_parameters
-#ifdef MFC_MPI
     use mpi
-#endif
     use m_delay_file_access
     use m_compile_specific
     use m_boundary_common

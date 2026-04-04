@@ -3,10 +3,10 @@
 import signal
 
 # Only import what's needed for startup - other modules are loaded lazily
-from mfc import args, lock, state
-from mfc.common import MFCException, does_command_exist, quit, setup_debug_logging
-from mfc.printer import cons
-from mfc.state import ARG
+from figr import args, lock, state
+from figr.common import FigrException, does_command_exist, quit, setup_debug_logging
+from figr.printer import cons
+from figr.state import ARG
 
 
 def __print_greeting():
@@ -15,7 +15,7 @@ def __print_greeting():
 
 def __checks():
     if not does_command_exist("cmake"):
-        raise MFCException("CMake is required to build MFC but couldn't be located on your system. Please ensure it installed and discoverable (e.g in your system's $PATH).")
+        raise FigrException("CMake is required to build figr but couldn't be located on your system. Please ensure it installed and discoverable (e.g in your system's $PATH).")
 
 
 def __run():
@@ -23,23 +23,23 @@ def __run():
     cmd = ARG("command")
 
     if cmd == "test":
-        from mfc.test import test
+        from figr.test import test
 
         test.test()
     elif cmd == "run":
-        from mfc.run import run
+        from figr.run import run
 
         run.run()
     elif cmd == "build":
-        from mfc import build
+        from figr import build
 
         build.build()
     elif cmd == "clean":
-        from mfc import clean
+        from figr import clean
 
         clean.clean()
     elif cmd == "validate":
-        from mfc import validate
+        from figr import validate
 
         validate.validate()
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
                 # User just passed --debug; clear persisted --reldebug
                 state.gARG["reldebug"] = False
 
-        lock.switch(state.MFCConfig.from_dict(state.gARG))
+        lock.switch(state.FigrConfig.from_dict(state.gARG))
 
         pass
 
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         __checks()
         __run()
 
-    except MFCException as exc:
+    except FigrException as exc:
         cons.reset()
         cons.print(f"""\
 

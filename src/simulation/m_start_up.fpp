@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_start_up
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Reads input files, loads initial conditions and grid data, and orchestrates solver initialization and finalization
 module m_start_up
 
     use m_derived_types
@@ -17,7 +13,6 @@ module m_start_up
     use m_rhs
     use m_data_output
     use m_time_steppers
-    use m_derived_variables
     use ieee_arithmetic
     use m_helper_basic
     use m_helper
@@ -34,8 +29,8 @@ module m_start_up
     implicit none
 
     private; public :: s_read_input_file, s_check_input_file, s_read_data_files, s_read_serial_data_files, &
-        & s_read_parallel_data_files, s_initialize_internal_energy_equations, s_initialize_modules, s_initialize_gpu_vars, &
-        & s_initialize_mpi_domain, s_finalize_modules, s_perform_time_step, s_save_data, s_save_performance_metrics
+        & s_read_parallel_data_files, s_initialize_modules, s_initialize_gpu_vars, s_initialize_mpi_domain, s_finalize_modules, &
+        & s_perform_time_step, s_save_data, s_save_performance_metrics
 
     type(scalar_field), allocatable, dimension(:) :: q_cons_temp
     real(wp)                                      :: dt_init
@@ -73,16 +68,16 @@ contains
             x_a, y_a, z_a, x_b, y_b, z_b, &
             x_domain, y_domain, z_domain, &
             fluid_pp, prim_vars_wrt, &
-            fd_order, probe, num_probes, t_step_old, &
+            t_step_old, &
             precision, parallel_io, &
             rhoref, pref, &
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             num_fluids, igr_order, viscous, &
             igr_iter_solver, igr_pres_lim, &
         #:endif
-        integral, integral_wrt, num_integrals, file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, &
-            & num_bc_patches, alf_factor, num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, &
-            & nv_uvm_pref_gpu, down_sample
+        file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, num_bc_patches, alf_factor, &
+            & num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, nv_uvm_pref_gpu, down_sample, &
+            & double_mach
 
         inquire (FILE=trim(file_path), EXIST=file_exist)
 
@@ -227,7 +222,6 @@ contains
 
         type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
 
-#ifdef MFC_MPI
         real(wp), allocatable, dimension(:)  :: x_cb_glb, y_cb_glb, z_cb_glb
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
@@ -420,47 +414,8 @@ contains
         else
             call s_assign_default_bc_type(bc_type)
         end if
-#endif
 
     end subroutine s_read_parallel_data_files
-
-    !> Initialize internal-energy equations from phase mass, mixture momentum, and total energy
-    subroutine s_initialize_internal_energy_equations(v_vf)
-
-        type(scalar_field), dimension(sys_size), intent(inout) :: v_vf
-        real(wp)                                               :: rho
-        real(wp)                                               :: dyn_pres
-        real(wp)                                               :: gamma
-        real(wp)                                               :: pi_inf
-        real(wp)                                               :: qv
-        real(wp), dimension(2)                                 :: Re
-        real(wp)                                               :: pres, T
-        integer                                                :: i, j, k, l
-        real(wp), dimension(1)                                 :: rhoYks
-
-        T = dflt_T_guess
-
-        do j = 0, m
-            do k = 0, n
-                do l = 0, p
-                    call s_convert_to_mixture_variables(v_vf, j, k, l, rho, gamma, pi_inf, qv, Re)
-
-                    dyn_pres = 0._wp
-                    do i = mom_idx%beg, mom_idx%end
-                        dyn_pres = dyn_pres + 5.e-1_wp*v_vf(i)%sf(j, k, l)*v_vf(i)%sf(j, k, l)/max(rho, sgm_eps)
-                    end do
-
-                    call s_compute_pressure(v_vf(E_idx)%sf(j, k, l), 0._stp, dyn_pres, pi_inf, gamma, rho, qv, pres)
-
-                    do i = 1, num_fluids
-                        v_vf(i + intxb - 1)%sf(j, k, l) = v_vf(i + advxb - 1)%sf(j, k, &
-                             & l)*(gammas(i)*pres + pi_infs(i)) + v_vf(i + contxb - 1)%sf(j, k, l)*qvs(i)
-                    end do
-                end do
-            end do
-        end do
-
-    end subroutine s_initialize_internal_energy_equations
 
     !> Advance the simulation by one time step, handling CFL-based dt and time-stepper dispatch
     impure subroutine s_perform_time_step(t_step, time_avg)
@@ -505,6 +460,11 @@ contains
                     & int(ceiling(100._wp*(real(t_step - t_step_start)/(t_step_stop - t_step_start + 1)))), &
                     & t_step - t_step_start + 1, t_step_stop - t_step_start + 1, t_step, wall_time_avg, wall_time
             end if
+        end if
+
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm) + Mach*mytime/sin(theta_dm)
+            $:GPU_UPDATE(device='[xshock]')
         end if
 
         ! Total-variation-diminishing (TVD) Runge-Kutta (RK) time-steppers
@@ -669,7 +629,6 @@ contains
         call s_initialize_rhs_module()
 
         call s_initialize_data_output_module()
-        call s_initialize_derived_variables_module()
         call s_initialize_time_steppers_module()
 
         call s_initialize_boundary_common_module()
@@ -705,8 +664,6 @@ contains
         ! needed to properly configure the modules. The preparations below DO DEPEND on the grid being complete.
         call s_initialize_igr_module()
 
-        call s_initialize_derived_variables()
-
     end subroutine s_initialize_modules
 
     !> Set up the MPI execution environment, bind GPUs, and decompose the computational domain
@@ -714,36 +671,29 @@ contains
 
         integer :: ierr
 
-#ifdef MFC_GPU
+#ifdef FIGR_GPU
         real(wp) :: starttime, endtime
         integer  :: num_devices, local_size, num_nodes, ppn, my_device_num
         integer  :: dev, devNum, local_rank
-#ifdef MFC_MPI
         integer :: local_comm
-#endif
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
         integer(acc_device_kind) :: devtype
 #endif
 #endif
 
         call s_mpi_initialize()
 
-#ifdef MFC_GPU
-#ifndef MFC_MPI
-        local_size = 1
-        local_rank = 0
-#else
+#ifdef FIGR_GPU
         call MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, local_comm, ierr)
         call MPI_Comm_size(local_comm, local_size, ierr)
         call MPI_Comm_rank(local_comm, local_rank, ierr)
-#endif
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
         devtype = acc_get_device_type()
         devNum = acc_get_num_devices(devtype)
         dev = mod(local_rank, devNum)
 
         call acc_set_device_num(dev, devtype)
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
         devNum = omp_get_num_devices()
         dev = mod(local_rank, devNum)
         call omp_set_default_device(dev)
@@ -756,15 +706,15 @@ contains
             call s_check_input_file()
 
             print '(" Simulating a ", A, " ", I0, "x", I0, "x", I0, " case on ", I0, " rank(s) ", A, ".")', &
-            #:if not MFC_CASE_OPTIMIZATION
+            #:if not FIGR_CASE_OPTIMIZATION
                 "regular", &
             #:else
                 "case-optimized", &
             #:endif
             m, n, p, num_procs, &
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
             "with OpenACC offloading"
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
             "with OpenMP offloading"
 #else
             "on CPUs"
@@ -795,11 +745,7 @@ contains
         $:GPU_UPDATE(device='[bc_y%vb1, bc_y%vb2, bc_y%vb3, bc_y%ve1, bc_y%ve2, bc_y%ve3]')
         $:GPU_UPDATE(device='[bc_z%vb1, bc_z%vb2, bc_z%vb3, bc_z%ve1, bc_z%ve2, bc_z%ve3]')
 
-        $:GPU_UPDATE(device='[bc_x%grcbc_in, bc_x%grcbc_out, bc_x%grcbc_vel_out]')
-        $:GPU_UPDATE(device='[bc_y%grcbc_in, bc_y%grcbc_out, bc_y%grcbc_vel_out]')
-        $:GPU_UPDATE(device='[bc_z%grcbc_in, bc_z%grcbc_out, bc_z%grcbc_vel_out]')
-
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             $:GPU_UPDATE(device='[igr_order]')
         #:endif
 
@@ -809,7 +755,6 @@ contains
     impure subroutine s_finalize_modules
 
         call s_finalize_time_steppers_module()
-        call s_finalize_derived_variables_module()
         call s_finalize_data_output_module()
         call s_finalize_rhs_module()
         call s_finalize_igr_module()

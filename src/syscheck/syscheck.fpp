@@ -1,28 +1,20 @@
 #:def LOG(*args)
-#ifdef MFC_MPI
     if (rank == 0) then
-#endif
         print *, ${','.join(args)}$
-#ifdef MFC_MPI
     end if
-#endif
 #:enddef LOG
 
 #:def MPIC(*args)
-#ifdef MFC_MPI
     @:LOG("[TEST] MPI: ${','.join([ x.replace("'", '') for x in args ])}$")
     ${','.join([ x.replace("'", '') for x in args ])}$
     if (ierr /= MPI_SUCCESS) then
         print *, " -> Error: ", ierr
         stop ierr
     end if
-#else
-    @:LOG("[SKIP] MPI: ${','.join([ x.replace("'", '') for x in args ])}$")
-#endif
 #:enddef MPIC
 
 #:def ACCC(*args)
-#ifdef MFC_OpenACC
+#ifdef FIGR_OpenACC
     @:LOG("[TEST] ACC: ${','.join([ x.replace("'", '') for x in args ])}$")
     ${','.join([ x.replace("'", '') for x in args ])}$
 #else
@@ -31,7 +23,7 @@
 #:enddef ACCC
 
 #:def OMPC(*args)
-#ifdef MFC_OpenMP
+#ifdef FIGR_OpenMP
     @:LOG("[TEST] OMP: ${','.join([ x.replace("'", '') for x in args ])}$")
     ${','.join([ x.replace("'", '') for x in args ])}$
 #else
@@ -40,19 +32,17 @@
 #:enddef OMPC
 
 #:def MPI(*args)
-#ifdef MFC_MPI
     ${','.join([ x.replace("'", '') for x in args ])}$
-#endif
 #:enddef MPI
 
 #:def ACC(*args)
-#ifdef MFC_OpenACC
+#ifdef FIGR_OpenACC
     ${','.join([ x.replace("'", '') for x in args ])}$
 #endif
 #:enddef ACC
 
 #:def OMP(*args)
-#ifdef MFC_OpenMP
+#ifdef FIGR_OpenMP
     ${','.join([ x.replace("'", '') for x in args ])}$
 #endif
 #:enddef OMP

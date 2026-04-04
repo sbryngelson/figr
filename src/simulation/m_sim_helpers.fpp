@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_sim_helpers
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Simulation helper routines for enthalpy computation, CFL calculation, and stability checks
 module m_sim_helpers
 
     use m_derived_types
@@ -18,17 +14,6 @@ module m_sim_helpers
 
 contains
 
-    !> Computes the modified dtheta for Fourier filtering in azimuthal direction (unused in IGR-only build)
-    function f_compute_filtered_dtheta(k, l) result(fltr_dtheta)
-
-        $:GPU_ROUTINE(parallelism='[seq]')
-        integer, intent(in) :: k, l
-        real(wp)            :: fltr_dtheta
-
-        fltr_dtheta = 0._wp
-
-    end function f_compute_filtered_dtheta
-
     !> Computes inviscid CFL terms for multi-dimensional cases (2D/3D only)
     function f_compute_multidim_cfl_terms(vel, c, j, k, l) result(cfl_terms)
 
@@ -40,7 +25,7 @@ contains
 
         if (p > 0) then
             ! 3D
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                 cfl_terms = min(dx(j)/(abs(vel(1)) + c), dy(k)/(abs(vel(2)) + c), dz(l)/(abs(vel(3)) + c))
             #:endif
         else
@@ -56,7 +41,7 @@ contains
         $:GPU_ROUTINE(function_name='s_compute_enthalpy',parallelism='[seq]', cray_inline=True)
 
         type(scalar_field), intent(in), dimension(sys_size) :: q_prim_vf
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), intent(inout), dimension(3) :: alpha
             real(wp), intent(inout), dimension(3) :: vel
         #:else
@@ -67,7 +52,7 @@ contains
         real(wp), intent(out)                 :: qv
         integer, intent(in)                   :: j, k, l
         real(wp), dimension(2), intent(inout) :: Re
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3) :: alpha_rho, Gs
         #:else
             real(wp), dimension(num_fluids) :: alpha_rho, Gs
@@ -107,7 +92,6 @@ contains
         real(wp), dimension(0:m,0:n,0:p), intent(inout), optional :: vcfl_sf, Rc_sf
         real(wp), dimension(2), intent(in)                        :: Re_l
         integer, intent(in)                                       :: j, k, l
-        real(wp)                                                  :: fltr_dtheta
 
         ! Inviscid CFL calculation
         if (p > 0 .or. n > 0) then
@@ -121,7 +105,7 @@ contains
         ! Viscous calculations
         if (viscous) then
             if (p > 0) then
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     ! 3D
                     vcfl_sf(j, k, l) = maxval(dt/Re_l/rho)/min(dx(j), dy(k), dz(l))**2._wp
                     Rc_sf(j, k, l) = min(dx(j)*(abs(vel(1)) + c), dy(k)*(abs(vel(2)) + c), &
@@ -150,7 +134,6 @@ contains
         real(wp), dimension(2), intent(in)              :: Re_l
         integer, intent(in)                             :: j, k, l
         real(wp)                                        :: icfl_dt, vcfl_dt
-        real(wp)                                        :: fltr_dtheta
 
         ! Inviscid CFL calculation
         if (p > 0 .or. n > 0) then

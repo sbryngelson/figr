@@ -1,36 +1,28 @@
 !> Allocate memory and read initial condition data for IC extrusion.
-!>
 !> @details
 !> This macro handles the complete initialization process for IC extrusion by:
-!>
 !> **Memory Allocation:**
 !> - stored_values(xRows, yRows, sys_size) - stores primitive variable data from files
 !> - x_coords(nrows) - stores x-coordinates from input files
 !> - y_coords(nrows) - stores y-coordinates from input files (3D case only)
-!>
 !> **File Reading Operations:**
 !> - Reads primitive variable data from multiple files with pattern:
 !> `prim.<file_number>.00.<timestep>.dat` where timestep uses `zeros_default` padding
 !> - Files are read from directory specified by `init_dir` parameter
 !> - Supports 1D, 2D, and 3D computational domains
-!>
 !> **Grid Structure Detection:**
 !> - 1D/2D: Counts lines in first file to determine xRows
 !> - 3D: Analyzes coordinate patterns to determine xRows and yRows structure
-!>
 !> **MPI Domain Mapping:**
 !> - Calculates global_offset_x and global_offset_y for MPI subdomain positioning
 !> - Maps file coordinates to local computational grid coordinates
-!>
 !> **Data Assignment:**
 !> - Populates q_prim_vf primitive variable arrays with file data
 !> - Handles momentum component indexing with special treatment for momxe
 !> - Sets momxe component to zero for 2D/3D cases
-!>
 !> **State Management:**
 !> - Uses files_loaded flag to prevent redundant file operations
 !> - Preserves data across multiple macro calls within same simulation
-!>
 !> @note File pattern uses `zeros_default` parameter (default: "000000") for timestep padding
 !> @note Directory path is hardcoded in `init_dir` parameter - modify as needed
 !> @warning Aborts execution if file reading errors occur.
@@ -48,7 +40,7 @@
     real(wp), allocatable                   :: x_coords(:), y_coords(:)
     logical                                 :: files_loaded = .false.
     real(wp)                                :: domain_xstart, domain_xend, domain_ystart, domain_yend
-    character(len=*), parameter             :: init_dir = "/home/MFC/FilesDirectory"  !< For example /home/MFC/examples/1D_Shock/D/
+    character(len=*), parameter             :: init_dir = "/home/figr/FilesDirectory"  !< For example /home/figr/examples/1D_Shock/D/
     character(len=20)                       :: file_num_str                           !< For storing the file number as a string
     character(len=20)                       :: zeros_part                             !< For the trailing zeros part
     character(len=6), parameter             :: zeros_default = "000000"               !< Default zeros (can be changed)

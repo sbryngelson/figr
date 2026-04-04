@@ -1,13 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_mpi_proxy
 
-!> @brief Broadcasts user inputs and decomposes the domain across MPI ranks for pre-processing
 module m_mpi_proxy
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_helper
     use m_derived_types
@@ -21,7 +15,6 @@ contains
     !! not available to the remaining processors. This subroutine is then in charge of broadcasting the required information.
     impure subroutine s_mpi_bcast_user_inputs
 
-#ifdef MFC_MPI
         integer :: i, j
         integer :: ierr
 
@@ -29,33 +22,23 @@ contains
 
         #:for VAR in ['t_step_old', 't_step_start', 'm', 'n', 'p', 'm_glb', 'n_glb', 'p_glb',  &
             & 'loops_x', 'loops_y', 'loops_z', 'model_eqns', 'num_fluids',     &
-            & 'weno_order', 'precision', 'perturb_flow_fluid',                 &
-            & 'perturb_sph_fluid', 'num_patches',                              &
-            & 'n_start', 'elliptic_smoothing_iters',                           &
-            & 'num_bc_patches', 'mixlayer_perturb_nk', 'recon_type',           &
+            & 'weno_order', 'precision', 'num_patches',                         &
+            & 'n_start', 'num_bc_patches', 'recon_type',                        &
             & 'muscl_order', 'igr_order' ]
             call MPI_BCAST(${VAR}$, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
         #:for VAR in [ 'old_grid','old_ic','stretch_x','stretch_y','stretch_z',&
-            & 'parallel_io',                                                   &
-            & 'perturb_flow', 'perturb_sph', 'mixlayer_vel_profile',           &
-            & 'mixlayer_perturb', 'file_per_process', 'cfl_adap_dt',           &
-            & 'cfl_const_dt', 'cfl_dt',                                        &
-            & 'elliptic_smoothing', 'viscous',                                 &
-            & 'bc_io',                                                         &
-            & 'down_sample', 'simplex_perturb' ]
+            & 'parallel_io', 'file_per_process', 'cfl_adap_dt',               &
+            & 'cfl_const_dt', 'cfl_dt', 'viscous',                            &
+            & 'bc_io', 'down_sample', 'double_mach' ]
             call MPI_BCAST(${VAR}$, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         #:endfor
-        call MPI_BCAST(fluid_rho(1), num_fluids_max, mpi_p, 0, MPI_COMM_WORLD, ierr)
-
         #:for VAR in [ 'x_domain%beg', 'x_domain%end', 'y_domain%beg',         &
             & 'y_domain%end', 'z_domain%beg', 'z_domain%end', 'a_x', 'a_y',    &
             & 'a_z', 'x_a', 'x_b', 'y_a', 'y_b', 'z_a', 'z_b', 'bc_x%beg',     &
             & 'bc_x%end', 'bc_y%beg', 'bc_y%end', 'bc_z%beg', 'bc_z%end',      &
-            & 'perturb_flow_mag', 'pref', 'rhoref',                             &
-            & 'pi_fac', 'mixlayer_vel_coef',                                    &
-            & 'mixlayer_perturb_k0']
+            & 'pref', 'rhoref']
             call MPI_BCAST(${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
@@ -91,43 +74,19 @@ contains
                 call MPI_BCAST(patch_icpp(i)%a(${VAR}$), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             #:endfor
 
-            #:for VAR in [ 'normal', 'radii', 'vel', 'alpha_rho', 'alpha', &
-                'fourier_cos', 'fourier_sin' ]
+            #:for VAR in [ 'normal', 'radii', 'vel', 'alpha_rho', 'alpha' ]
                 call MPI_BCAST(patch_icpp(i)%${VAR}$, size(patch_icpp(i)%${VAR}$), mpi_p, 0, MPI_COMM_WORLD, ierr)
             #:endfor
 
             call MPI_BCAST(patch_icpp(i)%sph_har_coeff, size(patch_icpp(i)%sph_har_coeff), mpi_p, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(patch_icpp(i)%modal_clip_r_to_min, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(patch_icpp(i)%modal_r_min, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(patch_icpp(i)%modal_use_exp_form, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-
         end do
 
-        ! Simplex noise  and fluid physical parameters
+        ! Fluid physical parameters
         do i = 1, num_fluids_max
-            #:for VAR in [ 'gamma','pi_inf', 'G', 'cv', 'qv', 'qvp' ]
+            #:for VAR in [ 'gamma','pi_inf', 'cv', 'qv', 'qvp' ]
                 call MPI_BCAST(fluid_pp(i)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             #:endfor
-
-            call MPI_BCAST(simplex_params%perturb_dens(i), 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(simplex_params%perturb_dens_freq(i), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(simplex_params%perturb_dens_scale(i), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-
-            do j = 1, 3
-                call MPI_BCAST(simplex_params%perturb_dens_offset(i, j), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            end do
         end do
-
-        do i = 1, 3
-            call MPI_BCAST(simplex_params%perturb_vel(i), 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(simplex_params%perturb_vel_freq(i), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(simplex_params%perturb_vel_scale(i), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-
-            do j = 1, 3
-                call MPI_BCAST(simplex_params%perturb_vel_offset(i, j), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            end do
-        end do
-#endif
 
     end subroutine s_mpi_bcast_user_inputs
 

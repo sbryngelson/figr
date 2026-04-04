@@ -3,7 +3,7 @@
 # Function to display help message
 show_help() {
   echo "Usage: $(basename "$0") [OPTIONS] [PATHS...]"
-  echo "Format code in the MFC repository."
+  echo "Format code in the figr repository."
   echo ""
   echo "Options:"
   echo "  -h, --help            Display this help message and exit."
@@ -13,9 +13,9 @@ show_help() {
   echo "  PATHS                 Paths to format. Defaults to src/, examples/, benchmarks/"
   echo ""
   echo "Examples:"
-  echo "  ./mfc.sh format                          Format all code"
-  echo "  ./mfc.sh format -j 8                     Format with 8 parallel jobs"
-  echo "  ./mfc.sh format examples/1D_sodshocktube Format a specific directory"
+  echo "  ./figr.sh format                          Format all code"
+  echo "  ./figr.sh format -j 8                     Format with 8 parallel jobs"
+  echo "  ./figr.sh format examples/1D_sodshocktube Format a specific directory"
   echo ""
   exit 0
 }
@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-log "Formatting MFC:"
+log "Formatting figr:"
 
 if [[ ${#PATHS[@]} -gt 0 ]]; then
     SEARCH_PATHS="${PATHS[@]}"
@@ -70,4 +70,4 @@ if ! ruff format $PYTHON_DIRS; then
     exit 1
 fi
 
-ok "Done. MFC has been formatted."
+ok "Done. figr has been formatted."

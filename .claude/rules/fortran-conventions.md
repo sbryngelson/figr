@@ -23,8 +23,8 @@ Every Fortran module follows this pattern:
 
 ## Forbidden Patterns
 
-All checks below are enforced by `python3 toolchain/mfc/lint_source.py`
-(runs via `./mfc.sh precheck` and CI). See that file for the full list.
+All checks below are enforced by `python3 toolchain/figr/lint_source.py`
+(runs via `./figr.sh precheck` and CI). See that file for the full list.
 
 Fortran/Fypp source (`src/`):
 - `dsqrt`, `dexp`, `dlog`, `dble`, `dabs`, `dcos`, `dsin`, `dtan`, etc. → use generic intrinsics
@@ -53,7 +53,7 @@ Enforced by convention/code review (not automated):
 ## Error Checking Macros (from macros.fpp)
 - `@:PROHIBIT(condition, message)` — Runtime constraint check; aborts with file/line info
 - `@:ASSERT(predicate, message)` — Invariant assertion; aborts if predicate is false
-- `@:LOG(expr)` — Debug logging, active only in `MFC_DEBUG` builds
+- `@:LOG(expr)` — Debug logging, active only in `FIGR_DEBUG` builds
 - Fortran-side runtime validation also exists in `m_checker*.fpp` files using `@:PROHIBIT`
 
 ## Precision Types

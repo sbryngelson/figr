@@ -1,16 +1,10 @@
-!>
-!! @file
-!! @brief Contains module m_mpi_proxy
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief MPI halo exchange, domain decomposition, and buffer packing/unpacking for the simulation solver
 module m_mpi_proxy
 
-#ifdef MFC_MPI
     use mpi  !< Message passing interface (MPI) module
-#endif
 
     use m_helper_basic
     use m_helper
@@ -39,7 +33,6 @@ contains
     !! the communicator.
     impure subroutine s_mpi_bcast_user_inputs()
 
-#ifdef MFC_MPI
         integer :: i, j  !< Generic loop iterator
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
@@ -49,67 +42,40 @@ contains
             & 't_step_start','t_step_stop','t_step_save','t_step_print',       &
             & 'model_eqns','time_stepper',                                     &
             & 'precision', 'bc_x%beg', 'bc_x%end',               &
-            & 'bc_y%beg', 'bc_y%end', 'bc_z%beg', 'bc_z%end',  'fd_order',     &
-            & 'num_probes', 'num_integrals', 'bubble_model', 'thermal',        &
+            & 'bc_y%beg', 'bc_y%end', 'bc_z%beg', 'bc_z%end',     &
             & 'n_start',    &
-            & 'num_bc_patches', 'num_igr_iters', 'num_igr_warm_start_iters', &
-            & 'adap_dt_max_iters' ]
+            & 'num_bc_patches', 'num_igr_iters', 'num_igr_warm_start_iters' ]
             call MPI_BCAST(${VAR}$, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
-        #:for VAR in [ 'run_time_info',     &
-            & 'mp_weno', 'rdma_mpi', 'bc_io', &
-            & 'weno_Re_flux', 'null_weights', 'mixture_err',   &
-            & 'parallel_io', 'polytropic',    &
-            & 'polydisperse', 'qbmm', 'integral_wrt',   &
-            & 'prim_vars_wrt', 'weno_avg', 'file_per_process',   &
-            & 'adv_n', 'adap_dt',    &
-            & 'bc_x%grcbc_in', 'bc_x%grcbc_out', 'bc_x%grcbc_vel_out',          &
-            & 'bc_y%grcbc_in', 'bc_y%grcbc_out', 'bc_y%grcbc_vel_out',          &
-            & 'bc_z%grcbc_in', 'bc_z%grcbc_out', 'bc_z%grcbc_vel_out',          &
-            & 'cfl_adap_dt', 'cfl_const_dt', 'cfl_dt',       &
-            & 'down_sample']
+        #:for VAR in [ 'run_time_info', 'rdma_mpi', 'bc_io', &
+            & 'parallel_io', 'prim_vars_wrt', 'file_per_process', &
+            & 'cfl_adap_dt', 'cfl_const_dt', 'cfl_dt', 'down_sample', 'double_mach']
             call MPI_BCAST(${VAR}$, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
-        #:for VAR in [ 'dt','weno_eps','teno_CT','pref','rhoref','R0ref','Web','Ca', &
-            & 'Re_inv', 'poly_sigma', 'pi_fac',    &
+        #:for VAR in [ 'dt','pref','rhoref', &
             & 'bc_x%vb1','bc_x%vb2','bc_x%vb3','bc_x%ve1','bc_x%ve2','bc_x%ve3', &
             & 'bc_y%vb1','bc_y%vb2','bc_y%vb3','bc_y%ve1','bc_y%ve2','bc_y%ve3', &
             & 'bc_z%vb1','bc_z%vb2','bc_z%vb3','bc_z%ve1','bc_z%ve2','bc_z%ve3', &
-            & 'bc_x%pres_in','bc_x%pres_out','bc_y%pres_in','bc_y%pres_out', 'bc_z%pres_in','bc_z%pres_out', &
             & 'x_domain%beg', 'x_domain%end', 'y_domain%beg', 'y_domain%end',    &
             & 'z_domain%beg', 'z_domain%end', 'x_a', 'x_b', 'y_a', 'y_b', 'z_a', &
-            & 'z_b', 't_stop', 't_save', 'cfl_target', 'alf_factor',  &
-            & 'adap_dt_tol' ]
+            & 'z_b', 't_stop', 't_save', 'cfl_target', 'alf_factor' ]
             call MPI_BCAST(${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
-        do i = 1, 3
-            #:for VAR in [ 'bc_x%vel_in', 'bc_x%vel_out', 'bc_y%vel_in', 'bc_y%vel_out',  &
-                & 'bc_z%vel_in', 'bc_z%vel_out']
-                call MPI_BCAST(${VAR}$ (i), 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            #:endfor
-        end do
-
-        #:if not MFC_CASE_OPTIMIZATION
-            call MPI_BCAST(mapped_weno, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(wenoz, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(teno, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
+        #:if not FIGR_CASE_OPTIMIZATION
             call MPI_BCAST(weno_order, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
             call MPI_BCAST(num_fluids, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(wenoz_q, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             call MPI_BCAST(igr_order, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
             call MPI_BCAST(igr_pres_lim, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
             call MPI_BCAST(igr_iter_solver, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
             call MPI_BCAST(viscous, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
             call MPI_BCAST(recon_type, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(muscl_order, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-            call MPI_BCAST(muscl_lim, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
         #:endif
 
         do i = 1, num_fluids_max
-            #:for VAR in [ 'gamma','pi_inf','G','cv','qv','qvp' ]
+            #:for VAR in [ 'gamma','pi_inf','cv','qv','qvp' ]
                 call MPI_BCAST(fluid_pp(i)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             #:endfor
             call MPI_BCAST(fluid_pp(i)%Re(1), 2, mpi_p, 0, MPI_COMM_WORLD, ierr)
@@ -122,21 +88,10 @@ contains
             #:endfor
         end do
 
-        do j = 1, num_probes_max
-            #:for VAR in [ 'x','y','z' ]
-                call MPI_BCAST(probe(j)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            #:endfor
-
-            #:for VAR in [ 'xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax' ]
-                call MPI_BCAST(integral(j)%${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
-            #:endfor
-        end do
-
         ! NVIDIA UVM variables
         call MPI_BCAST(nv_uvm_out_of_core, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         call MPI_BCAST(nv_uvm_igr_temps_on_gpu, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
         call MPI_BCAST(nv_uvm_pref_gpu, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_bcast_user_inputs
 
@@ -146,11 +101,9 @@ contains
         integer, intent(in)                            :: num_freq
         real(wp), intent(inout), dimension(1:num_freq) :: phi_rn
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
 
         call MPI_BCAST(phi_rn, num_freq, mpi_p, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_send_random_number
 

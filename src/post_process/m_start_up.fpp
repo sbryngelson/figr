@@ -1,10 +1,6 @@
 #:include 'macros.fpp'
 
-!>
-!! @file
-!! @brief  Contains module m_start_up
 
-!> @brief Reads and validates user inputs, allocates variables, and configures MPI decomposition and I/O for post-processing
 
 module m_start_up
 
@@ -24,13 +20,11 @@ module m_start_up
     use m_finite_differences
     ! m_chemistry removed (IGR-only build)
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     implicit none
 
-    integer                                 :: ierr
+    integer :: ierr
 
 contains
 
@@ -46,9 +40,9 @@ contains
         namelist /user_inputs/ case_dir, m, n, p, t_step_start, t_step_stop, t_step_save, model_eqns, num_fluids, bc_x, bc_y, &
             & bc_z, fluid_pp, format, precision, output_partial_domain, x_output, y_output, z_output, alpha_rho_wrt, rho_wrt, &
             & mom_wrt, vel_wrt, E_wrt, pres_wrt, alpha_wrt, gamma_wrt, heat_ratio_wrt, pi_inf_wrt, pres_inf_wrt, cons_vars_wrt, &
-            & prim_vars_wrt, c_wrt, omega_wrt, qm_wrt, schlieren_wrt, schlieren_alpha, fd_order, flux_lim, flux_wrt, &
-            & parallel_io, rhoref, pref, file_per_process, cfl_adap_dt, cfl_const_dt, t_save, t_stop, n_start, cfl_target, &
-            & sim_data, num_bc_patches, igr_order, down_sample, alpha_rho_e_wrt
+            & prim_vars_wrt, c_wrt, omega_wrt, qm_wrt, schlieren_wrt, schlieren_alpha, fd_order, flux_lim, flux_wrt, parallel_io, &
+            & rhoref, pref, file_per_process, cfl_adap_dt, cfl_const_dt, t_save, t_stop, n_start, cfl_target, sim_data, &
+            & num_bc_patches, igr_order, down_sample, alpha_rho_e_wrt, double_mach, dt
 
         file_loc = 'post_process.inp'
         inquire (FILE=trim(file_loc), EXIST=file_check)
@@ -132,6 +126,10 @@ contains
 
         call s_read_data_files(t_step)
 
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm) + Mach*t_step*dt/sin(theta_dm)
+        end if
+
         if (buff_size > 0) then
             call s_populate_grid_variables_buffers()
             call s_populate_variables_buffers(bc_type, q_cons_vf)
@@ -148,9 +146,8 @@ contains
         character(LEN=name_len), intent(inout) :: varname
         real(wp), intent(inout)                :: pres, c, H
         real(wp)                               :: theta1, theta2
-
-        integer       :: i, j, k, l
-        integer       :: x_beg, x_end, y_beg, y_end, z_beg, z_end
+        integer                                :: i, j, k, l
+        integer                                :: x_beg, x_end, y_beg, y_end, z_beg, z_end
 
         if (output_partial_domain) then
             call s_define_output_region
@@ -195,17 +192,15 @@ contains
             call s_compute_finite_difference_coefficients(p, z_cc, fd_coeff_z, buff_size, fd_number, fd_order, offset_z)
         end if
 
-        if (model_eqns == 2) then
-            do i = 1, num_fluids
-                if (alpha_rho_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                    q_sf(:,:,:) = q_cons_vf(i)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
-                    write (varname, '(A,I0)') 'alpha_rho', i
-                    call s_write_variable_to_formatted_database_file(varname, t_step)
+        do i = 1, num_fluids
+            if (alpha_rho_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+                q_sf(:,:,:) = q_cons_vf(i)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
+                write (varname, '(A,I0)') 'alpha_rho', i
+                call s_write_variable_to_formatted_database_file(varname, t_step)
 
-                    varname(:) = ' '
-                end if
-            end do
-        end if
+                varname(:) = ' '
+            end if
+        end do
 
         if (rho_wrt) then
             q_sf(:,:,:) = rho_sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
@@ -262,33 +257,31 @@ contains
             varname(:) = ' '
         end if
 
-        if (model_eqns == 2) then
-            do i = 1, num_fluids - 1
-                if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                    q_sf(:,:,:) = q_cons_vf(i + E_idx)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
-                    write (varname, '(A,I0)') 'alpha', i
-                    call s_write_variable_to_formatted_database_file(varname, t_step)
-
-                    varname(:) = ' '
-                end if
-            end do
-
-            if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                do k = z_beg, z_end
-                    do j = y_beg, y_end
-                        do i = x_beg, x_end
-                            q_sf(i, j, k) = 1._wp
-                            do l = 1, num_fluids - 1
-                                q_sf(i, j, k) = q_sf(i, j, k) - q_cons_vf(E_idx + l)%sf(i, j, k)
-                            end do
-                        end do
-                    end do
-                end do
-                write (varname, '(A,I0)') 'alpha', num_fluids
+        do i = 1, num_fluids - 1
+            if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+                q_sf(:,:,:) = q_cons_vf(i + E_idx)%sf(x_beg:x_end,y_beg:y_end,z_beg:z_end)
+                write (varname, '(A,I0)') 'alpha', i
                 call s_write_variable_to_formatted_database_file(varname, t_step)
 
                 varname(:) = ' '
             end if
+        end do
+
+        if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+            do k = z_beg, z_end
+                do j = y_beg, y_end
+                    do i = x_beg, x_end
+                        q_sf(i, j, k) = 1._wp
+                        do l = 1, num_fluids - 1
+                            q_sf(i, j, k) = q_sf(i, j, k) - q_cons_vf(E_idx + l)%sf(i, j, k)
+                        end do
+                    end do
+                end do
+            end do
+            write (varname, '(A,I0)') 'alpha', num_fluids
+            call s_write_variable_to_formatted_database_file(varname, t_step)
+
+            varname(:) = ' '
         end if
 
         if (gamma_wrt) then

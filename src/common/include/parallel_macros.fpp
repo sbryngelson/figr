@@ -12,9 +12,9 @@
     #:set omp_code = OMP_PARALLEL(code, private, default, firstprivate, reduction, reductionOp, copy, copyin, copyinReadOnly, &
                                   & copyout, create, no_create, present, deviceptr, attach, extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #else
     $:code
@@ -34,9 +34,9 @@
                                             & copyin, copyinReadOnly, copyout, create, no_create, present, deviceptr, attach, &
                                             & extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_directive
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_directive
 #endif
 #:enddef
@@ -46,9 +46,9 @@
     #:set acc_end_directive = '!$acc end parallel loop'
     #:set omp_end_directive = END_OMP_PARALLEL_LOOP()
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_end_directive
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_end_directive
 #endif
 #:enddef
@@ -69,18 +69,18 @@
         #:endif
         #:set cray_noinline_directive = ('!DIR$ NOINLINE ' + function_name).strip('\n')
 #ifdef _CRAYFTN
-#if MFC_OpenACC
+#if FIGR_OpenACC
         $:acc_directive
-#elif MFC_OpenMP
+#elif FIGR_OpenMP
         $:omp_directive
 #else
         $:cray_noinline_directive
 #endif
-        #! On non-Cray CPU builds (no _CRAYFTN, no MFC_OpenACC, no MFC_OpenMP), nothing is
+        #! On non-Cray CPU builds (no _CRAYFTN, no FIGR_OpenACC, no FIGR_OpenMP), nothing is
         #! emitted — intentional, since !DIR$ NOINLINE is a Cray-specific directive.
-#elif MFC_OpenACC
+#elif FIGR_OpenACC
         $:acc_directive
-#elif MFC_OpenMP
+#elif FIGR_OpenMP
         $:omp_directive
 #endif
     #:elif cray_inline == True
@@ -89,22 +89,22 @@
         #:endif
         #:set cray_directive = ('!DIR$ INLINEALWAYS ' + function_name).strip('\n')
 #ifdef _CRAYFTN
-#if MFC_OpenACC
+#if FIGR_OpenACC
         $:acc_directive
-#elif MFC_OpenMP
+#elif FIGR_OpenMP
         $:omp_directive
 #else
         $:cray_directive
 #endif
-#elif MFC_OpenACC
+#elif FIGR_OpenACC
         $:acc_directive
-#elif MFC_OpenMP
+#elif FIGR_OpenMP
         $:omp_directive
 #endif
     #:else
-#if MFC_OpenACC
+#if FIGR_OpenACC
         $:acc_directive
-#elif MFC_OpenMP
+#elif FIGR_OpenMP
         $:omp_directive
 #endif
     #:endif
@@ -121,9 +121,9 @@
     #:assert copy is None
     #:set omp_code = OMP_DECLARE(copyin=copyin, copyinReadOnly=copyinReadOnly, create=create, link=link, extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
@@ -136,9 +136,9 @@
     #:set omp_code = OMP_LOOP(collapse=collapse, parallelism=parallelism, data_dependency=data_dependency, reduction=reduction, &
                               & reductionOp=reductionOp, private=private, extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
@@ -153,9 +153,9 @@
                               & no_create=no_create, present=present, deviceptr=deviceptr, attach=attach, default=default, &
                               & extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #else
     $:code
@@ -182,9 +182,9 @@
     #:set omp_code = OMP_HOST_DATA(code=code, use_device_addr=use_device_addr, use_device_ptr=use_device_ptr, &
                                    & extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #else
     $:code
@@ -198,9 +198,9 @@
     #:set omp_code = OMP_ENTER_DATA(copyin=copyin, copyinReadOnly=copyinReadOnly, create=create, attach=attach, &
                                     & extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
@@ -210,9 +210,9 @@
     #:set acc_code = ACC_EXIT_DATA(copyout=copyout, delete=delete, detach=detach, extraAccArgs=extraAccArgs)
     #:set omp_code = OMP_EXIT_DATA(copyout=copyout, delete=delete, detach=detach, extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
@@ -222,9 +222,9 @@
     #:set acc_code = ACC_ATOMIC(atomic=atomic, extraAccArgs=extraAccArgs)
     #:set omp_code = OMP_ATOMIC(atomic=atomic, extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
@@ -233,9 +233,9 @@
 #:def END_GPU_ATOMIC_CAPTURE()
     #:set acc_end_directive = '!$acc end atomic'
     #:set omp_end_directive = '!$omp end atomic'
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_end_directive
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_end_directive
 #endif
 #:enddef
@@ -245,9 +245,9 @@
     #:set acc_code = ACC_UPDATE(host=host, device=device, extraAccArgs=extraAccArgs)
     #:set omp_code = OMP_UPDATE(host=host, device=device, extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
@@ -257,50 +257,50 @@
     #:set acc_code = ACC_WAIT(extraAccArgs=extraAccArgs)
     #:set omp_code = OMP_WAIT(extraOmpArgs=extraOmpArgs)
 
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     $:acc_code
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     $:omp_code
 #endif
 #:enddef
 
 ! Import GPU library module (openacc or omp_lib)
 #:def USE_GPU_MODULE()
-#if defined(MFC_OpenACC)
+#if defined(FIGR_OpenACC)
     use openacc
-#elif defined(MFC_OpenMP)
+#elif defined(FIGR_OpenMP)
     use omp_lib
 #endif
 #:enddef
 
 ! Emit code only for AMD compiler
 #:def DEF_AMD(code)
-    #:if MFC_COMPILER == AMD_COMPILER_ID
+    #:if FIGR_COMPILER == AMD_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 ! Emit code for non-Cray compilers
 #:def UNDEF_CCE(code)
-    #:if MFC_COMPILER != CCE_COMPILER_ID
+    #:if FIGR_COMPILER != CCE_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 ! Emit code only for Cray compiler
 #:def DEF_CCE(code)
-    #:if MFC_COMPILER == CCE_COMPILER_ID
+    #:if FIGR_COMPILER == CCE_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 ! Emit code for non-NVIDIA compilers
 #:def UNDEF_NVIDIA(code)
-    #:if MFC_COMPILER != NVIDIA_COMPILER_ID and MFC_COMPILER != PGI_COMPILER_ID
+    #:if FIGR_COMPILER != NVIDIA_COMPILER_ID and FIGR_COMPILER != PGI_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
-#:set USING_NVHPC = (MFC_COMPILER == NVIDIA_COMPILER_ID or MFC_COMPILER == PGI_COMPILER_ID)
-#:set USING_CCE = (MFC_COMPILER == CCE_COMPILER_ID)
+#:set USING_NVHPC = (FIGR_COMPILER == NVIDIA_COMPILER_ID or FIGR_COMPILER == PGI_COMPILER_ID)
+#:set USING_CCE = (FIGR_COMPILER == CCE_COMPILER_ID)
 ! New line at end of file is required for FYPP

@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_data_output
 
-!> @brief Writes post-processed grid and flow-variable data to Silo-HDF5 or binary database files
 module m_data_output
 
     use m_derived_types
@@ -225,16 +221,14 @@ contains
             if (E_wrt .or. cons_vars_wrt) dbvars = dbvars + 1
             if (pres_wrt .or. prim_vars_wrt) dbvars = dbvars + 1
 
-            if (model_eqns == 2) then
-                do i = 1, num_fluids - 1
-                    if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
-                        dbvars = dbvars + 1
-                    end if
-                end do
-
-                if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+            do i = 1, num_fluids - 1
+                if (alpha_wrt(i) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
                     dbvars = dbvars + 1
                 end if
+            end do
+
+            if (alpha_wrt(num_fluids) .or. (cons_vars_wrt .or. prim_vars_wrt)) then
+                dbvars = dbvars + 1
             end if
 
             if (gamma_wrt) then
@@ -311,7 +305,7 @@ contains
             write (file_loc, '(A,I0,A)') '/', t_step, '.silo'
             file_loc = trim(proc_rank_dir) // trim(file_loc)
 
-            ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'MFC v3.0', 8, DB_HDF5, dbfile)
+            ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'figr', 8, DB_HDF5, dbfile)
 
             if (dbfile == -1) then
                 call s_mpi_abort('Unable to create Silo-HDF5 database ' // 'slave file ' // trim(file_loc) // '. ' // 'Exiting.')
@@ -321,7 +315,7 @@ contains
                 write (file_loc, '(A,I0,A)') '/collection_', t_step, '.silo'
                 file_loc = trim(rootdir) // trim(file_loc)
 
-                ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'MFC v3.0', 8, DB_HDF5, dbroot)
+                ierr = DBCREATE(trim(file_loc), len_trim(file_loc), DB_CLOBBER, DB_LOCAL, 'figr', 8, DB_HDF5, dbroot)
 
                 if (dbroot == -1) then
                     call s_mpi_abort('Unable to create Silo-HDF5 database ' // 'master file ' // trim(file_loc) // '. ' &

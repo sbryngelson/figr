@@ -1,13 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_mpi_proxy
 
-!> @brief MPI gather and scatter operations for distributing post-process grid and flow-variable data
 module m_mpi_proxy
 
-#ifdef MFC_MPI
     use mpi  !< Message passing interface (MPI) module
-#endif
 
     use m_derived_types
     use m_global_parameters
@@ -16,19 +10,15 @@ module m_mpi_proxy
 
     implicit none
 
-    !> @name Receive counts and displacement vector variables, respectively, used in enabling MPI to gather varying amounts of data
     !! from all processes to the root process
-    !> @{
     integer, allocatable, dimension(:) :: recvcounts
     integer, allocatable, dimension(:) :: displs
-    !> @}
 
 contains
 
     !> Computation of parameters, allocation procedures, and/or any other tasks needed to properly setup the module
     impure subroutine s_initialize_mpi_proxy_module
 
-#ifdef MFC_MPI
         integer :: i     !< Generic loop iterator
         integer :: ierr  !< Generic flag used to identify and report MPI errors
         ! Allocating and configuring the receive counts and the displacement vector variables used in variable-gather communication
@@ -53,7 +43,6 @@ contains
                 end do
             end if
         end if
-#endif
 
     end subroutine s_initialize_mpi_proxy_module
 
@@ -61,7 +50,6 @@ contains
     !! not available to the remaining processors. This subroutine is then in charge of broadcasting the required information.
     impure subroutine s_mpi_bcast_user_inputs
 
-#ifdef MFC_MPI
         integer :: i     !< Generic loop iterator
         integer :: ierr  !< Generic flag used to identify and report MPI errors
         ! Logistics
@@ -84,7 +72,7 @@ contains
             & 'file_per_process',                                               &
             & 'cfl_adap_dt', 'cfl_const_dt', 'cfl_dt',                          &
             & 'output_partial_domain', 'bc_io',                                 &
-            & 'down_sample']
+            & 'down_sample', 'double_mach']
             call MPI_BCAST(${VAR}$, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 
@@ -107,11 +95,10 @@ contains
         #:for VAR in [ 'pref', 'rhoref',                                        &
             & 't_save', 't_stop',                                               &
             & 'x_output%beg', 'x_output%end', 'y_output%beg', &
-            & 'y_output%end', 'z_output%beg', 'z_output%end']
+            & 'y_output%end', 'z_output%beg', 'z_output%end', 'dt']
             call MPI_BCAST(${VAR}$, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
         #:endfor
         call MPI_BCAST(schlieren_alpha(1), num_fluids_max, mpi_p, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_bcast_user_inputs
 
@@ -120,7 +107,6 @@ contains
 
         real(wp), dimension(1:,0:), intent(inout) :: spatial_extents
 
-#ifdef MFC_MPI
         integer  :: ierr  !< Generic flag used to identify and report MPI errors
         real(wp) :: ext_temp(0:num_procs - 1)
 
@@ -170,7 +156,6 @@ contains
             call MPI_GATHER(maxval(x_cb), 1, mpi_p, ext_temp, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             if (proc_rank == 0) spatial_extents(2,:) = ext_temp
         end if
-#endif
 
     end subroutine s_mpi_gather_spatial_extents
 
@@ -178,7 +163,6 @@ contains
     !! entire computational domain on the rank 0 processor. This is only done for 1D simulations.
     impure subroutine s_mpi_defragment_1d_grid_variable
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
         ! Silo-HDF5 database format
 
@@ -191,18 +175,15 @@ contains
 
             if (proc_rank == 0) x_root_cb(-1) = x_cb(-1)
         end if
-#endif
 
     end subroutine s_mpi_defragment_1d_grid_variable
 
     !> Gather the Silo database metadata for the flow variable's extents to boost performance of the multidimensional visualization.
-    !! @param q_sf Flow variable on a single computational sub-domain
     impure subroutine s_mpi_gather_data_extents(q_sf, data_extents)
 
         real(wp), dimension(:,:,:), intent(in)                  :: q_sf
         real(wp), dimension(1:2,0:num_procs - 1), intent(inout) :: data_extents
 
-#ifdef MFC_MPI
         integer  :: ierr  !< Generic flag used to identify and report MPI errors
         real(wp) :: ext_temp(0:num_procs - 1)
 
@@ -224,39 +205,32 @@ contains
             call MPI_GATHER(maxval(q_sf), 1, mpi_p, ext_temp, 1, mpi_p, 0, MPI_COMM_WORLD, ierr)
             if (proc_rank == 0) data_extents(2,:) = ext_temp
         end if
-#endif
 
     end subroutine s_mpi_gather_data_extents
 
     !> Gather the sub-domain flow variable data from all processors and reassemble it for the entire computational domain on the
     !! rank 0 processor. This is only done for 1D simulations.
-    !! @param q_sf Flow variable on a single computational sub-domain
-    !! @param q_root_sf Flow variable on the entire computational domain
     impure subroutine s_mpi_defragment_1d_flow_variable(q_sf, q_root_sf)
 
         real(wp), dimension(0:m), intent(in)    :: q_sf
         real(wp), dimension(0:m), intent(inout) :: q_root_sf
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
         ! Gathering the sub-domain flow variable data from all the processes and putting it back together for the entire
         ! computational domain on the process with rank 0
 
         call MPI_GATHERV(q_sf(0), m + 1, mpi_p, q_root_sf(0), recvcounts, displs, mpi_p, 0, MPI_COMM_WORLD, ierr)
-#endif
 
     end subroutine s_mpi_defragment_1d_flow_variable
 
     !> Deallocation procedures for the module
     impure subroutine s_finalize_mpi_proxy_module
 
-#ifdef MFC_MPI
         ! Deallocating the receive counts and the displacement vector variables used in variable-gather communication procedures
         if ((format == 1 .and. n > 0) .or. n == 0) then
             deallocate (recvcounts)
             deallocate (displs)
         end if
-#endif
 
     end subroutine s_finalize_mpi_proxy_module
 

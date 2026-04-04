@@ -22,17 +22,17 @@ else
     cmake_patch=$(echo $cmake_verstr | tr '.' '\n' | sed -n 3p)
     cmake_version="$(printf %05d%05d%05d $cmake_major $cmake_minor $cmake_patch)"
 
-    MFC_CMAKE_MIN_VERSTR=$(cat CMakeLists.txt | grep cmake_minimum_required | head -n 1 | sed 's/[^0-9,.]*//g')
-    MFC_CMAKE_MIN_MAJOR=$(echo $MFC_CMAKE_MIN_VERSTR | tr '.' '\n' | head -n 1)
-    MFC_CMAKE_MIN_MINOR=$(echo $MFC_CMAKE_MIN_VERSTR | tr '.' '\n' | head -n 2 | tail -n 1)
-    MFC_CMAKE_MIN_PATCH=0
-    MFC_CMAKE_MIN_VERSION="$(printf %05d%05d%05d $MFC_CMAKE_MIN_MAJOR $MFC_CMAKE_MIN_MINOR $MFC_CMAKE_MIN_PATCH)"
+    FIGR_CMAKE_MIN_VERSTR=$(cat CMakeLists.txt | grep cmake_minimum_required | head -n 1 | sed 's/[^0-9,.]*//g')
+    FIGR_CMAKE_MIN_MAJOR=$(echo $FIGR_CMAKE_MIN_VERSTR | tr '.' '\n' | head -n 1)
+    FIGR_CMAKE_MIN_MINOR=$(echo $FIGR_CMAKE_MIN_VERSTR | tr '.' '\n' | head -n 2 | tail -n 1)
+    FIGR_CMAKE_MIN_PATCH=0
+    FIGR_CMAKE_MIN_VERSION="$(printf %05d%05d%05d $FIGR_CMAKE_MIN_MAJOR $FIGR_CMAKE_MIN_MINOR $FIGR_CMAKE_MIN_PATCH)"
 
-    if [ "$cmake_version" -lt "$MFC_CMAKE_MIN_VERSION" ]; then
+    if [ "$cmake_version" -lt "$FIGR_CMAKE_MIN_VERSION" ]; then
         # Out of date
         bShouldInstallCMake=true
 
-        log "$MAGENTA CMake$YELLOW is out of date (current: $MAGENTA$cmake_verstr$YELLOW < minimum: $MAGENTA$MFC_CMAKE_MIN_VERSTR$YELLOW).$COLOR_RESET"
+        log "$MAGENTA CMake$YELLOW is out of date (current: $MAGENTA$cmake_verstr$YELLOW < minimum: $MAGENTA$FIGR_CMAKE_MIN_VERSTR$YELLOW).$COLOR_RESET"
     fi
 fi
 
@@ -76,11 +76,11 @@ if [ "$bShouldInstallCMake" = true ]; then
     log "Downloading$MAGENTA CMake v$version$COLOR_RESET for $MAGENTA$arch$COLOR_RESET from $CYAN$repository$COLOR_RESET."
 
     cmake_fatal_error() {
-        log   "$MAGENTA""CMake$COLOR_RESET is not discoverable or is an older release, incompatible with$MAGENTA MFC$COLOR_RESET. Please download"
+        log   "$MAGENTA""CMake$COLOR_RESET is not discoverable or is an older release, incompatible with figr$COLOR_RESET. Please download"
         log   "or install a recent version of$MAGENTA CMake$COLOR_RESET to get past this step. If you are currently on a"
         log   "managed system like a cluster, provided there is no suitable environment module, you can"
         log   "either build it from source, or get it via$MAGENTA Spack$COLOR_RESET."
-        log   "- The minimum required version is currently$MAGENTA CMake$COLOR_RESET v$MFC_CMAKE_MIN_MAJOR.$MFC_CMAKE_MIN_MINOR.$MFC_CMAKE_MIN_PATCH."
+        log   "- The minimum required version is currently$MAGENTA CMake$COLOR_RESET v$FIGR_CMAKE_MIN_MAJOR.$FIGR_CMAKE_MIN_MINOR.$FIGR_CMAKE_MIN_PATCH."
         log   "- We attempted to download$MAGENTA CMake$COLOR_RESET v$version from $url."
 
         exit 1

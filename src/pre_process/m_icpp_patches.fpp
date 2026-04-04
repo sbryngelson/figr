@@ -1,6 +1,3 @@
-!>
-!! @file
-!! @brief Contains module m_icpp_patches
 
 #:include 'case.fpp'
 #:include 'ExtrusionHardcodedIC.fpp'
@@ -9,12 +6,11 @@
 #:include '3dHardcodedIC.fpp'
 #:include 'macros.fpp'
 
-!> @brief Constructs initial condition patch geometries (lines, circles, rectangles, spheres, etc.) on the grid
 module m_icpp_patches
 
     use m_derived_types  ! Definitions of the derived types
     use m_global_parameters
-    use m_constants, only: max_2d_fourier_modes, max_sph_harm_degree, small_radius
+    use m_constants, only: max_sph_harm_degree, small_radius
     use m_helper_basic
     use m_helper
     use m_mpi_common
@@ -38,12 +34,40 @@ module m_icpp_patches
 
 contains
 
+    !> Entropy wave fluctuations to be used in Riemann test problem with IGR
+    subroutine symm_2d_blending(vout, vtl, vtr, vbl, vbr, x_0, y_0, eps_smooth, i1, j1)
+
+        real(wp), intent(out) :: vout
+        real(wp), intent(in)  :: vtl, vtr, vbl, vbr, x_0, y_0, eps_smooth
+        integer, intent(in)   :: i1, j1
+        real(wp)              :: x_blend_b, x_blend_t, y_blend_r, y_blend_l, x_wise, y_wise
+
+        call blend(x_blend_t, vtl, vtr, x_0, eps_smooth, x_cc(i1))
+        call blend(x_blend_b, vbl, vbr, x_0, eps_smooth, x_cc(i1))
+        call blend(y_blend_l, vbl, vtl, y_0, eps_smooth, y_cc(j1))
+        call blend(y_blend_r, vbr, vtr, y_0, eps_smooth, y_cc(j1))
+
+        call blend(y_wise, x_blend_b, x_blend_t, y_0, eps_smooth, y_cc(j1))
+        call blend(x_wise, y_blend_l, y_blend_r, x_0, eps_smooth, x_cc(i1))
+        vout = (y_wise + x_wise)/2
+
+    end subroutine symm_2d_blending
+
+    subroutine blend(vout, vl, vr, center, eps, s_cc)
+
+        real(wp), intent(out) :: vout
+        real(wp), intent(in)  :: vl, vr, center, eps, s_cc
+
+        vout = (tanh((s_cc - center)/eps) + 1)/2*(vr - vl) + vl
+
+    end subroutine blend
+
     !> Dispatch each initial condition patch to its geometry-specific initialization routine.
     impure subroutine s_apply_icpp_patches(patch_id_fp, q_prim_vf)
 
         type(scalar_field), dimension(1:sys_size), intent(inout) :: q_prim_vf
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -59,7 +83,6 @@ contains
                 end if
 
                 !> ICPP Patches
-                !> @{
                 ! Spherical patch
                 if (patch_icpp(i)%geometry == 8) then
                     call s_icpp_sphere(i, patch_id_fp, q_prim_vf)
@@ -83,7 +106,6 @@ contains
                     call s_icpp_3dvarcircle(i, patch_id_fp, q_prim_vf)
                 end if
             end do
-            !> @}
 
             ! 2D Patch Geometries
         else if (n > 0) then
@@ -93,7 +115,6 @@ contains
                 end if
 
                 !> ICPP Patches
-                !> @{
                 ! Circular patch
                 if (patch_icpp(i)%geometry == 2) then
                     call s_icpp_circle(i, patch_id_fp, q_prim_vf)
@@ -110,9 +131,6 @@ contains
                 else if (patch_icpp(i)%geometry == 6) then
                     call s_mpi_abort('This used to be the isentropic vortex patch, ' &
                                      & // 'which no longer exists. See Examples. Exiting.')
-                    ! 2D modal (Fourier) patch
-                else if (patch_icpp(i)%geometry == 13) then
-                    call s_icpp_2d_modal(i, patch_id_fp, q_prim_vf)
                     ! Spiral patch
                 else if (patch_icpp(i)%geometry == 17) then
                     call s_icpp_spiral(i, patch_id_fp, q_prim_vf)
@@ -123,7 +141,6 @@ contains
                 else if (patch_icpp(i)%geometry == 20) then
                     call s_icpp_2D_TaylorGreen_vortex(i, patch_id_fp, q_prim_vf)
                 end if
-                !> @}
             end do
 
             ! 1D Patch Geometries
@@ -149,7 +166,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -209,7 +226,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -274,7 +291,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -328,7 +345,7 @@ contains
         ! Patch identifier
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -385,7 +402,7 @@ contains
         ! Patch identifier
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -448,7 +465,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -505,7 +522,7 @@ contains
         ! Patch identifier
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -573,7 +590,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -636,7 +653,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -693,7 +710,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -756,70 +773,13 @@ contains
 
     end subroutine s_icpp_2D_TaylorGreen_Vortex
 
-    !> 2D modal (Fourier) patch. theta = atan2(y - y_centroid, x - x_centroid). Additive (modal_use_exp_form false): R = radius +
-    !! sum_n [fourier_cos*cos(n*theta)+fourier_sin*sin(n*theta)]; coefficients are absolute (same units as radius). R is clipped to
-    !! max(R,0). If modal_clip_r_to_min, R = max(R, modal_r_min). Exponential (modal_use_exp_form true): R = radius*exp(sum);
-    !! coefficients are relative (dimensionless).
-    subroutine s_icpp_2d_modal(patch_id, patch_id_fp, q_prim_vf)
-
-        integer, intent(in) :: patch_id
-
-#ifdef MFC_MIXED_PRECISION
-        integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
-#else
-        integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
-#endif
-        type(scalar_field), dimension(1:sys_size), intent(inout) :: q_prim_vf
-        real(wp)                                                 :: r, theta, R_boundary, sum_series
-        integer                                                  :: i, j, nn
-
-        x_centroid = patch_icpp(patch_id)%x_centroid
-        y_centroid = patch_icpp(patch_id)%y_centroid
-        smooth_patch_id = patch_icpp(patch_id)%smooth_patch_id
-        smooth_coeff = patch_icpp(patch_id)%smooth_coeff
-        eta = 1._wp
-
-        do j = 0, n
-            do i = 0, m
-                r = sqrt((x_cc(i) - x_centroid)**2 + (y_cc(j) - y_centroid)**2)
-                if (r < small_radius) then
-                    theta = 0._wp
-                else
-                    theta = atan2(y_cc(j) - y_centroid, x_cc(i) - x_centroid)
-                end if
-                sum_series = 0._wp
-                do nn = 1, max_2d_fourier_modes
-                    sum_series = sum_series + patch_icpp(patch_id)%fourier_cos(nn)*cos(real(nn, &
-                                                         & wp)*theta) + patch_icpp(patch_id)%fourier_sin(nn)*sin(real(nn, wp)*theta)
-                end do
-                if (patch_icpp(patch_id)%modal_use_exp_form) then
-                    R_boundary = patch_icpp(patch_id)%radius*exp(sum_series)
-                else
-                    R_boundary = patch_icpp(patch_id)%radius + sum_series
-                    R_boundary = max(R_boundary, 0._wp)
-                    if (patch_icpp(patch_id)%modal_clip_r_to_min) then
-                        R_boundary = max(R_boundary, patch_icpp(patch_id)%modal_r_min)
-                    end if
-                end if
-                if (patch_icpp(patch_id)%smoothen) then
-                    eta = 0.5_wp + 0.5_wp*tanh(smooth_coeff/min(dx, dy)*(R_boundary - r))
-                end if
-                if ((r <= R_boundary .and. patch_icpp(patch_id)%alter_patch(patch_id_fp(i, j, 0))) .or. patch_id_fp(i, j, &
-                    & 0) == smooth_patch_id) then
-                    call s_assign_patch_primitive_variables(patch_id, i, j, 0, eta, q_prim_vf, patch_id_fp)
-                end if
-            end do
-        end do
-
-    end subroutine s_icpp_2d_modal
-
     !> 3D spherical harmonic patch. Surface r = radius + sum_lm sph_har_coeff(l,m)*Y_lm(theta,phi). theta = acos(z/r), phi =
     !! atan2(y,x) relative to centroid.
     subroutine s_icpp_3d_spherical_harmonic(patch_id, patch_id_fp, q_prim_vf)
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -876,7 +836,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -941,7 +901,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -1007,7 +967,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -1098,7 +1058,7 @@ contains
 
         integer, intent(in) :: patch_id
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp

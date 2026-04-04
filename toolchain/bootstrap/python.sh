@@ -1,11 +1,11 @@
 #!/bin/bash
 
-MFC_PYTHON_MIN_MAJOR=3
-MFC_PYTHON_MIN_MINOR=9
-MFC_PYTHON_MIN_STR="$MFC_PYTHON_MIN_MAJOR.$MFC_PYTHON_MIN_MINOR"
+FIGR_PYTHON_MIN_MAJOR=3
+FIGR_PYTHON_MIN_MINOR=9
+FIGR_PYTHON_MIN_STR="$FIGR_PYTHON_MIN_MAJOR.$FIGR_PYTHON_MIN_MINOR"
 
 is_python_compatible() {
-    if ! ${1:-python3} -c "import sys; exit(int(not (sys.version_info[0]==$MFC_PYTHON_MIN_MAJOR and sys.version_info[1] >= $MFC_PYTHON_MIN_MINOR)))"; then
+    if ! ${1:-python3} -c "import sys; exit(int(not (sys.version_info[0]==$FIGR_PYTHON_MIN_MAJOR and sys.version_info[1] >= $FIGR_PYTHON_MIN_MINOR)))"; then
         return 1
     fi
 
@@ -14,7 +14,7 @@ is_python_compatible() {
 
 assert_python_compatible() {
     if ! is_python_compatible $1; then
-        error "$MAGENTA$(${1:-python3} --version)$COLOR_RESET (${1:-python3}) is out of date. Required >= $MAGENTA$MFC_PYTHON_MIN_STR$COLOR_RESET."
+        error "$MAGENTA$(${1:-python3} --version)$COLOR_RESET (${1:-python3}) is out of date. Required >= $MAGENTA$FIGR_PYTHON_MIN_STR$COLOR_RESET."
 
         exit 1
     fi
@@ -95,23 +95,23 @@ fi
 
 
 # If the user wishes to enter the python venv
-# mfc.sh must be source'd for this to work
+# figr.sh must be source'd for this to work
 if [ "$1" == "venv" ]; then
     if [[ "$VIRTUAL_ENV" != "" ]]; then
         # Already inside the venv, exit out of it
 
-        log " > Exiting the$MAGENTA MFC Python$COLOR_RESET virtual environment."
+        log " > Exiting the$MAGENTA figr Python$COLOR_RESET virtual environment."
 
         deactivate
     else
         # Enter the venv
-        log " > Entering the$MAGENTA MFC Python$COLOR_RESET virtual environment."
+        log " > Entering the$MAGENTA figr Python$COLOR_RESET virtual environment."
 
         source "$(pwd)/build/venv/bin/activate"
 
         log " > To exit, you can do any of the following:"
         log "    - Run 'deactivate'."
-        log "    - Run '. ./mfc.sh venv'."
+        log "    - Run '. ./figr.sh venv'."
         log "    - Close your terminal."
     fi
 
@@ -121,7 +121,7 @@ fi
 
 # Activate the Python venv
 source "$(pwd)/build/venv/bin/activate"
-ok "(venv) Entered the $MAGENTA$(python3 --version)$COLOR_RESET virtual environment (>= $MAGENTA$MFC_PYTHON_MIN_STR$COLOR_RESET)."
+ok "(venv) Entered the $MAGENTA$(python3 --version)$COLOR_RESET virtual environment (>= $MAGENTA$FIGR_PYTHON_MIN_STR$COLOR_RESET)."
 
 
 # Install Python dependencies if, either:

@@ -20,15 +20,15 @@ __pycache__
 *.egg-info
 
 # Auto-generated version file
-toolchain/mfc/_version.py
+toolchain/figr/_version.py
 
 # Raw coverage cache — legacy, not tracked (the .json.gz version IS committed)
-toolchain/mfc/test/test_coverage_cache.json
+toolchain/figr/test/test_coverage_cache.json
 
-# Auto-generated toolchain files (regenerate with: ./mfc.sh generate)
-toolchain/completions/mfc.bash
+# Auto-generated toolchain files (regenerate with: ./figr.sh generate)
+toolchain/completions/figr.bash
 toolchain/completions/_mfc
-toolchain/mfc-case-schema.json
+toolchain/figr-case-schema.json
 docs/documentation/cli-reference.md
 docs/documentation/parameters.md
 
@@ -76,8 +76,6 @@ examples/*/workloads/
 examples/*/run-*/
 examples/*/logs/
 examples/**/*.f90
-!examples/3D_lag_bubbles_shbubcollapse/input/lag_bubbles.dat
-!examples/3D_lag_bubbles_bubblescreen/input/lag_bubbles.dat
 workloads/
 
 benchmarks/*batch/*/

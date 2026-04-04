@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_derived_variables
 
-!> @brief Computes derived flow quantities (sound speed, vorticity, Schlieren, etc.) from conservative and primitive variables
 
 module m_derived_variables
 
@@ -19,14 +15,11 @@ module m_derived_variables
         & s_derive_numerical_schlieren_function, s_compute_speed_of_sound, s_finalize_derived_variables_module
 
     real(wp), allocatable, dimension(:,:,:) :: gm_rho_sf  !< Density gradient magnitude for numerical Schlieren
-    !> @name Finite-difference (fd) coefficients in x-, y- and z-coordinate directions. Note that because sufficient boundary
     !! information is available for all the active coordinate directions, the centered family of the finite-difference schemes is
     !! used.
-    !> @{
     real(wp), allocatable, dimension(:,:), public :: fd_coeff_x
     real(wp), allocatable, dimension(:,:), public :: fd_coeff_y
     real(wp), allocatable, dimension(:,:), public :: fd_coeff_z
-    !> @}
 
     integer, private :: flg  !< Dimensionality flag: 1 = 3D dataset, 0 = otherwise
 

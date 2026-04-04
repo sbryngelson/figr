@@ -1,11 +1,7 @@
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!>
-!! @file
-!! @brief Contains module m_helper
 
-!> @brief Utility routines for coordinate transforms, array sampling, and special functions
 module m_helper
 
     use m_derived_types
@@ -15,41 +11,10 @@ module m_helper
     implicit none
 
     private
-    public :: s_int_to_str, s_swap, f_cross, &
-        & s_print_2D_array, f_xor, f_logical_to_int, associated_legendre, real_ylm, double_factorial, factorial, &
-        & f_cut_on, f_cut_off, s_downsample_data, s_upsample_data
+    public :: s_int_to_str, f_xor, f_logical_to_int, associated_legendre, real_ylm, &
+        & double_factorial, factorial, f_cut_on, f_cut_off, s_downsample_data, s_upsample_data
 
 contains
-
-    !> Print a 2D real array to standard output, optionally dividing each element by a given scalar.
-    impure subroutine s_print_2D_array(A, div)
-
-        real(wp), dimension(:,:), intent(in) :: A
-        real(wp), optional, intent(in)       :: div
-        integer                              :: i, j
-        integer                              :: local_m, local_n
-        real(wp)                             :: c
-
-        local_m = size(A, 1)
-        local_n = size(A, 2)
-
-        if (present(div)) then
-            c = div
-        else
-            c = 1._wp
-        end if
-
-        print *, local_m, local_n
-
-        do i = 1, local_m
-            do j = 1, local_n
-                write (*, fmt="(F12.4)", advance="no") A(i, j)/c
-            end do
-            write (*, fmt="(A1)") " "
-        end do
-        write (*, fmt="(A1)") " "
-
-    end subroutine s_print_2D_array
 
     !> Convert an integer to its trimmed string representation.
     elemental subroutine s_int_to_str(i, res)
@@ -61,32 +26,6 @@ contains
         res = trim(res)
 
     end subroutine s_int_to_str
-
-    !> Compute the cross product of two vectors.
-    pure function f_cross(a, b) result(c)
-
-        $:GPU_ROUTINE(parallelism='[seq]')
-
-        real(wp), dimension(3), intent(in) :: a, b
-        real(wp), dimension(3)             :: c
-
-        c(1) = a(2)*b(3) - a(3)*b(2)
-        c(2) = a(3)*b(1) - a(1)*b(3)
-        c(3) = a(1)*b(2) - a(2)*b(1)
-
-    end function f_cross
-
-    !> Swap two real numbers.
-    elemental subroutine s_swap(lhs, rhs)
-
-        real(wp), intent(inout) :: lhs, rhs
-        real(wp)                :: ltemp
-
-        ltemp = lhs
-        lhs = rhs
-        rhs = ltemp
-
-    end subroutine s_swap
 
     !> Perform XOR on lhs and rhs.
     elemental function f_xor(lhs, rhs) result(res)
@@ -141,9 +80,6 @@ contains
     !> Associated Legendre polynomial P_l^m(x) (Ferrers function, Condon-Shortley phase). Valid for integer l >= 0, 0 <= m <= l, and
     !! x in [-1,1]. Returns 0 for |m| > l or l < 0. Formulas: DLMF 14.10.3 (recurrence in degree), Wikipedia "Associated Legendre
     !! polynomials" (P_l^l and P_l^{l-1} identities). Recurrence: (l-m)P_l^m = (2l-1)x P_{l-1}^m - (l+m-1)P_{l-2}^m.
-    !! @param x argument (typically cos(theta)), should be in [-1,1]
-    !! @param l degree (>= 0)
-    !! @param m_order order (0 <= m_order <= l)
     recursive function associated_legendre(x, l, m_order) result(result_P)
 
         integer, intent(in)  :: l, m_order

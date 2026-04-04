@@ -1,10 +1,6 @@
-!>
-!! @file
-!! @brief Contains module m_start_up
 
 #:include 'macros.fpp'
 
-!> @brief Reads and validates user inputs, loads existing grid/IC data, and initializes pre-process modules
 module m_start_up
 
     use m_derived_types
@@ -21,9 +17,7 @@ module m_start_up
     use m_helper_basic
     use m_helper
 
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_check_patches
     use m_helper
@@ -74,11 +68,9 @@ contains
 
         namelist /user_inputs/ case_dir, old_grid, old_ic, t_step_old, t_step_start, m, n, p, x_domain, y_domain, z_domain, &
             & stretch_x, stretch_y, stretch_z, a_x, a_y, a_z, x_a, y_a, z_a, x_b, y_b, z_b, model_eqns, num_fluids, bc_x, bc_y, &
-            & bc_z, num_patches, patch_icpp, fluid_pp, precision, parallel_io, mixlayer_vel_profile, mixlayer_vel_coef, &
-            & mixlayer_perturb, mixlayer_perturb_nk, mixlayer_perturb_k0, pi_fac, perturb_flow, perturb_flow_fluid, &
-            & perturb_flow_mag, perturb_sph, perturb_sph_fluid, fluid_rho, loops_x, loops_y, loops_z, rhoref, pref, &
-            & file_per_process, cfl_adap_dt, cfl_const_dt, n_start, n_start_old, elliptic_smoothing, elliptic_smoothing_iters, &
-            & viscous, num_bc_patches, patch_bc, igr_order, down_sample, simplex_perturb, simplex_params
+            & bc_z, num_patches, patch_icpp, fluid_pp, precision, parallel_io, loops_x, loops_y, loops_z, rhoref, pref, &
+            & file_per_process, cfl_adap_dt, cfl_const_dt, n_start, n_start_old, viscous, num_bc_patches, patch_bc, igr_order, &
+            & down_sample, double_mach
 
         file_loc = 'pre_process.inp'
         inquire (FILE=trim(file_loc), EXIST=file_check)
@@ -287,7 +279,6 @@ contains
     !! coordinate directions and making sure that all of the cell-widths are positively valued
     impure subroutine s_read_parallel_grid_data_files
 
-#ifdef MFC_MPI
         real(wp), allocatable, dimension(:)  :: x_cb_glb, y_cb_glb, z_cb_glb
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
@@ -360,7 +351,6 @@ contains
         end if
 
         deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
-#endif
 
     end subroutine s_read_parallel_grid_data_files
 
@@ -370,7 +360,6 @@ contains
 
         type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf_in
 
-#ifdef MFC_MPI
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
         integer(KIND=MPI_OFFSET_KIND)        :: disp
@@ -424,7 +413,6 @@ contains
         end if
 
         call s_mpi_barrier()
-#endif
 
     end subroutine s_read_parallel_ic_data_files
 
@@ -437,7 +425,6 @@ contains
         call s_initialize_variables_conversion_module()
         call s_initialize_grid_module()
         call s_initialize_initial_condition_module()
-        call s_initialize_perturbation_module()
         call s_initialize_assign_variables_module()
         call s_initialize_boundary_common_module()
 
@@ -565,7 +552,6 @@ contains
         call s_finalize_data_output_module()
         call s_finalize_global_parameters_module()
         call s_finalize_assign_variables_module()
-        call s_finalize_perturbation_module()
         call s_finalize_boundary_common_module()
         call s_finalize_initial_condition_module()
         call s_mpi_finalize()

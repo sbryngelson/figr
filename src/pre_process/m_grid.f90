@@ -1,17 +1,11 @@
-!>
-!! @file
-!! @brief Contains module m_grid
 
-!> @brief Generates uniform or stretched rectilinear grids with hyperbolic-tangent spacing
 module m_grid
 
     use m_derived_types  ! Definitions of the derived types
     use m_global_parameters  ! Global parameters for the code
     use m_mpi_proxy  ! Message passing interface (MPI) module proxy
     use m_helper_basic
-#ifdef MFC_MPI
     use mpi  ! Message passing interface (MPI) module
-#endif
 
     implicit none
 
@@ -72,25 +66,12 @@ contains
         ! Grid Generation in the y-direction
         if (n == 0) return
 
-        ! Axisymmetric cylindrical grid (r, z): half-cell offset at r=0 axis
-        if (grid_geometry == 2 .and. f_approx_equal(y_domain%beg, 0.0_wp)) then
-            dy = (y_domain%end - y_domain%beg)/real(2*n + 1, wp)
+        dy = (y_domain%end - y_domain%beg)/real(n + 1, wp)
 
-            y_cc(0) = y_domain%beg + 5.e-1_wp*dy
-            y_cb(-1) = y_domain%beg
-
-            do i = 1, n
-                y_cc(i) = y_domain%beg + 2._wp*dy*real(i, wp)
-                y_cb(i - 1) = y_domain%beg + dy*real(2*i - 1, wp)
-            end do
-        else
-            dy = (y_domain%end - y_domain%beg)/real(n + 1, wp)
-
-            do i = 0, n
-                y_cc(i) = y_domain%beg + 5.e-1_wp*dy*real(2*i + 1, wp)
-                y_cb(i - 1) = y_domain%beg + dy*real(i, wp)
-            end do
-        end if
+        do i = 0, n
+            y_cc(i) = y_domain%beg + 5.e-1_wp*dy*real(2*i + 1, wp)
+            y_cb(i - 1) = y_domain%beg + dy*real(i, wp)
+        end do
 
         y_cb(n) = y_domain%end
 
@@ -155,7 +136,6 @@ contains
     !> Generate a uniform or stretched rectilinear grid in parallel from user parameters.
     impure subroutine s_generate_parallel_grid
 
-#ifdef MFC_MPI
         real(wp) :: length  !< domain lengths
         ! Locations of cell boundaries
         real(wp), allocatable, dimension(:) :: x_cb_glb, y_cb_glb, z_cb_glb  !< Locations of cell boundaries
@@ -195,19 +175,10 @@ contains
 
         ! Grid generation in the y-direction
         if (n_glb > 0) then
-            ! Axisymmetric cylindrical grid (r, z): half-cell offset at r=0 axis
-            if (grid_geometry == 2 .and. f_approx_equal(y_domain%beg, 0.0_wp)) then
-                dy = (y_domain%end - y_domain%beg)/real(2*n_glb + 1, wp)
-                y_cb_glb(-1) = y_domain%beg
-                do i = 1, n_glb
-                    y_cb_glb(i - 1) = y_domain%beg + dy*real(2*i - 1, wp)
-                end do
-            else
-                dy = (y_domain%end - y_domain%beg)/real(n_glb + 1, wp)
-                do i = 0, n_glb
-                    y_cb_glb(i - 1) = y_domain%beg + dy*real(i, wp)
-                end do
-            end if
+            dy = (y_domain%end - y_domain%beg)/real(n_glb + 1, wp)
+            do i = 0, n_glb
+                y_cb_glb(i - 1) = y_domain%beg + dy*real(i, wp)
+            end do
             y_cb_glb(n_glb) = y_domain%end
             if (stretch_y) then
                 length = abs(y_cb_glb(n_glb) - y_cb_glb(-1))
@@ -277,7 +248,6 @@ contains
         end if
 
         deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
-#endif
 
     end subroutine s_generate_parallel_grid
 

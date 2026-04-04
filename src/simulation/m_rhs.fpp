@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_rhs
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Assembles the right-hand side of the governing equations using IGR Riemann solvers and physical source terms
 module m_rhs
 
     use m_derived_types
@@ -21,48 +17,25 @@ module m_rhs
 
     private; public :: s_initialize_rhs_module, s_compute_rhs, s_finalize_rhs_module
 
-    type(vector_field) :: q_cons_qp  !< Conservative variables at quadrature points
-    $:GPU_DECLARE(create='[q_cons_qp]')
-
-    type(vector_field) :: q_prim_qp  !< Primitive variables at cell-interior quadrature points
-    $:GPU_DECLARE(create='[q_prim_qp]')
-
 contains
 
     !> Initialize the RHS module
     impure subroutine s_initialize_rhs_module
 
-        integer :: i, j, k, l, id  !< Generic loop iterators
-
         $:GPU_ENTER_DATA(copyin='[idwbuff]')
         $:GPU_UPDATE(device='[idwbuff]')
-
-        @:ALLOCATE(q_cons_qp%vf(1:sys_size))
-        @:ALLOCATE(q_prim_qp%vf(1:sys_size))
-
-        do l = adv_idx%end + 1, sys_size
-            @:ALLOCATE(q_prim_qp%vf(l)%sf(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, &
-                       & idwbuff(3)%beg:idwbuff(3)%end))
-        end do
 
     end subroutine s_initialize_rhs_module
 
     !> Compute the right-hand side of the semi-discrete governing equations for a single time stage
-    impure subroutine s_compute_rhs(q_cons_vf, q_prim_vf, bc_type, rhs_vf, pb_in, rhs_pb, mv_in, rhs_mv, t_step, &
+    impure subroutine s_compute_rhs(q_cons_vf, q_prim_vf, bc_type, rhs_vf, t_step, &
 
         & time_avg, stage)
 
-        type(scalar_field), dimension(sys_size), intent(inout)                                     :: q_cons_vf
-        type(scalar_field), dimension(sys_size), intent(inout)                                     :: q_prim_vf
-        type(integer_field), dimension(1:num_dims,1:2), intent(in)                                 :: bc_type
-        type(scalar_field), dimension(sys_size), intent(inout)                                     :: rhs_vf
-        real(stp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in
-
-        real(wp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), &
-             & intent(inout) &
-             & :: rhs_pb  ! TODO :: I think these other two variables need to be stp as well, but it doesn't compile like that right now
-        real(stp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: mv_in
-        real(wp), dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: rhs_mv
+        type(scalar_field), dimension(sys_size), intent(inout)     :: q_cons_vf
+        type(scalar_field), dimension(sys_size), intent(inout)     :: q_prim_vf
+        type(integer_field), dimension(1:num_dims,1:2), intent(in) :: bc_type
+        type(scalar_field), dimension(sys_size), intent(inout)     :: rhs_vf
         integer, intent(in) :: t_step
         real(wp), intent(inout) :: time_avg
         integer, intent(in) :: stage
@@ -77,7 +50,7 @@ contains
         call cpu_time(t_start)
 
         call nvtxStartRange("RHS-COMMUNICATION")
-        call s_populate_variables_buffers(bc_type, q_cons_vf, pb_in, mv_in)
+        call s_populate_variables_buffers(bc_type, q_cons_vf)
         call nvtxEndRange
 
         if (cfl_dt) then
@@ -134,10 +107,6 @@ contains
 
     !> Module deallocation and/or disassociation procedures
     impure subroutine s_finalize_rhs_module
-
-        integer :: i, j, l
-
-        @:DEALLOCATE(q_cons_qp%vf, q_prim_qp%vf)
 
     end subroutine s_finalize_rhs_module
 

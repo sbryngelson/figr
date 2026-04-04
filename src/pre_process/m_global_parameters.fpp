@@ -1,15 +1,9 @@
-!>
-!! @file
-!! @brief Contains module m_global_parameters
 
 #:include 'case.fpp'
 
-!> @brief Defines global parameters for the computational domain, simulation algorithm, and initial conditions
 module m_global_parameters
 
-#ifdef MFC_MPI
     use mpi  ! Message passing interface (MPI) module
-#endif
 
     use m_derived_types  ! Definitions of the derived types
     use m_helper_basic  ! Functions to compare floating point numbers
@@ -32,7 +26,6 @@ module m_global_parameters
     integer :: n
     integer :: p
 
-    !> @name Max and min number of cells in a direction of each combination of x-,y-, and z-
     type(cell_num_bounds) :: cells_bounds
     integer(kind=8)       :: nGlobal              !< Global number of cells in the domain
     integer               :: m_glb, n_glb, p_glb  !< Global number of cells in each direction
@@ -63,52 +56,27 @@ module m_global_parameters
     integer :: muscl_order  !< Order of accuracy for the MUSCL reconstruction
     integer :: igr_order    !< IGR reconstruction order
     ! Annotations of the structure, i.e. the organization, of the state vectors
-    type(int_bounds_info) :: cont_idx              !< Indexes of first & last continuity eqns.
-    type(int_bounds_info) :: mom_idx               !< Indexes of first & last momentum eqns.
-    integer               :: E_idx                 !< Index of total energy equation
-    integer               :: alf_idx               !< Index of void fraction
-    type(int_bounds_info) :: adv_idx               !< Indexes of first & last advection eqns.
-    type(int_bounds_info) :: internalEnergies_idx  !< Indexes of first & last internal energy eqns.
-    integer               :: gamma_idx             !< Index of specific heat ratio func. eqn.
-    integer               :: pi_inf_idx            !< Index of liquid stiffness func. eqn.
-    type(int_bounds_info) :: stress_idx            !< Indexes of elastic shear stress eqns.
-    type(int_bounds_info) :: xi_idx                !< Indexes of first and last reference map eqns.
+    type(int_bounds_info) :: cont_idx  !< Indexes of first & last continuity eqns.
+    type(int_bounds_info) :: mom_idx   !< Indexes of first & last momentum eqns.
+    integer               :: E_idx     !< Index of total energy equation
+    integer               :: alf_idx   !< Index of void fraction
+    type(int_bounds_info) :: adv_idx   !< Indexes of first & last advection eqns.
     ! Cell Indices for the (local) interior points (O-m, O-n, 0-p). Stands for "InDices With BUFFer".
     type(int_bounds_info) :: idwint(1:3)
 
     ! Cell indices (InDices With BUFFer): includes buffer except in pre_process
-    type(int_bounds_info)      :: idwbuff(1:3)
-    type(int_bounds_info)      :: bc_x, bc_y, bc_z      !< Boundary conditions in the x-, y- and z-coordinate directions
-    logical                    :: parallel_io           !< Format of the data files
-    logical                    :: file_per_process      !< type of data output
-    integer                    :: precision             !< Precision of output files
-    logical                    :: down_sample           !< Down-sample the output data
-    logical                    :: mixlayer_vel_profile  !< Set hyperbolic tangent streamwise velocity profile
-    real(wp)                   :: mixlayer_vel_coef     !< Coefficient for the hyperbolic tangent streamwise velocity profile
-    logical                    :: mixlayer_perturb      !< Superimpose instability waves to surrounding fluid flow
-    integer                    :: mixlayer_perturb_nk   !< Number of Fourier modes for perturbation with mixlayer_perturb flag
-    real(wp)                   :: mixlayer_perturb_k0   !< Peak wavenumber for mixlayer perturbation (default: most unstable mode)
-    logical                    :: simplex_perturb
-    type(simplex_noise_params) :: simplex_params
-    real(wp)                   :: pi_fac                !< Factor for artificial pi_inf
-    logical                    :: viscous
-
-    ! Perturb density of surrounding air so as to break symmetry of grid
-    logical                             :: perturb_flow
-    integer                             :: perturb_flow_fluid  !< Fluid to be perturbed with perturb_flow flag
-    real(wp)                            :: perturb_flow_mag    !< Magnitude of perturbation with perturb_flow flag
-    logical                             :: perturb_sph
-    integer                             :: perturb_sph_fluid   !< Fluid to be perturbed with perturb_sph flag
-    real(wp), dimension(num_fluids_max) :: fluid_rho
-    logical                             :: elliptic_smoothing
-    integer                             :: elliptic_smoothing_iters
-    integer, allocatable, dimension(:)  :: proc_coords         !< Processor coordinates in MPI_CART_COMM
-    integer, allocatable, dimension(:)  :: start_idx           !< Starting cell-center index of local processor in global grid
-#ifdef MFC_MPI
+    type(int_bounds_info)              :: idwbuff(1:3)
+    type(int_bounds_info)              :: bc_x, bc_y, bc_z  !< Boundary conditions in the x-, y- and z-coordinate directions
+    logical                            :: parallel_io       !< Format of the data files
+    logical                            :: file_per_process  !< type of data output
+    integer                            :: precision         !< Precision of output files
+    logical                            :: down_sample       !< Down-sample the output data
+    logical                            :: viscous
+    integer, allocatable, dimension(:) :: proc_coords       !< Processor coordinates in MPI_CART_COMM
+    integer, allocatable, dimension(:) :: start_idx         !< Starting cell-center index of local processor in global grid
     type(mpi_io_var), public :: MPI_IO_DATA
     character(LEN=name_len)  :: mpiiofs
     integer                  :: mpi_info_int  !< MPI info for parallel IO with Lustre file systems
-#endif
 
     ! Initial Condition Parameters
     integer                                                  :: num_patches     !< Number of patches composing initial condition
@@ -120,13 +88,13 @@ module m_global_parameters
     ! Fluids Physical Parameters
     type(physical_parameters), dimension(num_fluids_max) :: fluid_pp  !< Stiffened gas EOS parameters and Reynolds numbers per fluid
     real(wp)                                             :: rhoref, pref  !< Reference parameters for Tait EOS
-    !> @name Index variables used for m_variables_conversion
-    !> @{
     integer :: momxb, momxe
     integer :: advxb, advxe
     integer :: contxb, contxe
-    integer :: intxb, intxe
-    !> @}
+
+    ! Double Mach parameters
+    logical  :: double_mach
+    real(wp) :: xshock, cf, Mach, pshock, rhoshock, velshock, rho0_dm, p0_dm, u0_dm, v0_dm, xr_dm, theta_dm, gam_dm
 
     integer, allocatable, dimension(:,:,:) :: logic_grid
     integer                                :: buff_size  !< Number of ghost cells for boundary condition storage
@@ -208,31 +176,8 @@ contains
         precision = 2
         down_sample = .false.
         viscous = .false.
-        mixlayer_vel_profile = .false.
-        mixlayer_vel_coef = 1._wp
-        mixlayer_perturb = .false.
-        mixlayer_perturb_nk = 100
-        mixlayer_perturb_k0 = 0.4446_wp
-        perturb_flow = .false.
-        perturb_flow_fluid = dflt_int
-        perturb_flow_mag = dflt_real
-        perturb_sph = .false.
-        perturb_sph_fluid = dflt_int
-        fluid_rho = dflt_real
-        elliptic_smoothing_iters = dflt_int
-        elliptic_smoothing = .false.
 
         dummy = .false.
-
-        simplex_perturb = .false.
-        simplex_params%perturb_vel(:) = .false.
-        simplex_params%perturb_vel_freq(:) = dflt_real
-        simplex_params%perturb_vel_scale(:) = dflt_real
-        simplex_params%perturb_vel_offset(:,:) = dflt_real
-        simplex_params%perturb_dens(:) = .false.
-        simplex_params%perturb_dens_freq(:) = dflt_real
-        simplex_params%perturb_dens_scale(:) = dflt_real
-        simplex_params%perturb_dens_offset(:,:) = dflt_real
 
         ! Initial condition parameters
         num_patches = dflt_int
@@ -274,11 +219,6 @@ contains
             patch_icpp(i)%a(8) = dflt_real
             patch_icpp(i)%a(9) = dflt_real
             patch_icpp(i)%non_axis_sym = .false.
-            patch_icpp(i)%fourier_cos(:) = 0._wp
-            patch_icpp(i)%fourier_sin(:) = 0._wp
-            patch_icpp(i)%modal_clip_r_to_min = .false.
-            patch_icpp(i)%modal_r_min = 1.e-12_wp
-            patch_icpp(i)%modal_use_exp_form = .false.
             patch_icpp(i)%sph_har_coeff(:,:) = 0._wp
 
             patch_icpp(i)%hcid = dflt_int
@@ -301,8 +241,6 @@ contains
         rhoref = dflt_real
         pref = dflt_real
 
-        pi_fac = 1._wp
-
         ! Fluids physical parameters
         do i = 1, num_fluids_max
             fluid_pp(i)%gamma = dflt_real
@@ -310,8 +248,22 @@ contains
             fluid_pp(i)%cv = 0._wp
             fluid_pp(i)%qv = 0._wp
             fluid_pp(i)%qvp = 0._wp
-            fluid_pp(i)%G = 0._wp
         end do
+
+        double_mach = .false.
+        xshock = dflt_real
+        cf = dflt_real
+        rhoshock = dflt_real
+        pshock = dflt_real
+        velshock = dflt_real
+        u0_dm = dflt_real
+        v0_dm = dflt_real
+        p0_dm = dflt_real
+        rho0_dm = dflt_real
+        theta_dm = dflt_real
+        gam_dm = dflt_real
+        xr_dm = dflt_real
+        Mach = dflt_real
 
     end subroutine s_assign_default_values_to_user_inputs
 
@@ -368,7 +320,6 @@ contains
 
         call s_configure_coordinate_bounds(igr_order, buff_size, idwint, idwbuff, viscous, m, n, p, num_dims)
 
-#ifdef MFC_MPI
         allocate (MPI_IO_DATA%view(1:sys_size))
         allocate (MPI_IO_DATA%var(1:sys_size))
 
@@ -378,7 +329,6 @@ contains
                 MPI_IO_DATA%var(i)%sf => null()
             end do
         end if
-#endif
 
         ! Allocating grid variables for the x-direction
         allocate (x_cc(0:m), x_cb(-1:m))
@@ -392,14 +342,16 @@ contains
 
         grid_geometry = 1  ! Always Cartesian in IGR-only build
 
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm)
+        end if
+
     end subroutine s_initialize_global_parameters_module
 
     !> Configure MPI parallel I/O settings and allocate processor coordinate arrays.
     impure subroutine s_initialize_parallel_io
 
-#ifdef MFC_MPI
         integer :: ierr  !< Generic flag used to identify and report MPI errors
-#endif
 
         num_dims = 1 + min(1, n) + min(1, p)
 
@@ -409,7 +361,6 @@ contains
 
         if (parallel_io .neqv. .true.) return
 
-#ifdef MFC_MPI
         ! Option for Lustre file system (Darter/Comet/Stampede)
         write (mpiiofs, '(A)') '/lustre_'
         mpiiofs = trim(mpiiofs)
@@ -420,7 +371,6 @@ contains
         ! MPI_INFO_NULL
 
         allocate (start_idx(1:num_dims))
-#endif
 
     end subroutine s_initialize_parallel_io
 
@@ -442,7 +392,6 @@ contains
 
         deallocate (proc_coords)
 
-#ifdef MFC_MPI
         if (parallel_io) then
             deallocate (start_idx)
             do i = 1, sys_size
@@ -452,7 +401,6 @@ contains
             deallocate (MPI_IO_DATA%var)
             deallocate (MPI_IO_DATA%view)
         end if
-#endif
 
     end subroutine s_finalize_global_parameters_module
 

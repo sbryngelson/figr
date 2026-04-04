@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_compile_specific
 
-!> @brief Platform-specific file and directory operations: create, delete, inquire, getcwd, and basename
 module m_compile_specific
 
     ! Dependencies
@@ -52,7 +48,6 @@ contains
     end subroutine s_delete_directory
 
     !> Inquires on the existence of a directory
-    !! @param dircheck Switch that indicates if directory exists
     impure subroutine my_inquire(fileloc, dircheck)
 
         character(LEN=*), intent(in) :: fileloc

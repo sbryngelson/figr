@@ -1,8 +1,4 @@
-!>
-!! @file
-!! @brief Contains module m_boundary_common
 
-!> @brief Noncharacteristic and processor boundary condition application for ghost cells and buffer regions
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
@@ -20,10 +16,8 @@ module m_boundary_common
     type(scalar_field), dimension(:,:), allocatable :: bc_buffers
     $:GPU_DECLARE(create='[bc_buffers]')
 
-#ifdef MFC_MPI
     integer, dimension(1:3,1:2) :: MPI_BC_TYPE_TYPE
     integer, dimension(1:3,1:2) :: MPI_BC_BUFFER_TYPE
-#endif
 
     private; public :: s_initialize_boundary_common_module, s_populate_variables_buffers, s_create_mpi_types, &
         & s_populate_F_igr_buffers, s_write_serial_boundary_condition_files, s_write_parallel_boundary_condition_files, &
@@ -32,9 +26,7 @@ module m_boundary_common
 
     public :: bc_buffers
 
-#ifdef MFC_MPI
     public :: MPI_BC_TYPE_TYPE, MPI_BC_BUFFER_TYPE
-#endif
 
 contains
 
@@ -48,11 +40,11 @@ contains
         if (bc_io) then
             @:ALLOCATE(bc_buffers(1, 1)%sf(1:sys_size, 0:n, 0:p))
             @:ALLOCATE(bc_buffers(1, 2)%sf(1:sys_size, 0:n, 0:p))
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                 if (n > 0) then
                     @:ALLOCATE(bc_buffers(2,1)%sf(-buff_size:m+buff_size,1:sys_size,0:p))
                     @:ALLOCATE(bc_buffers(2,2)%sf(-buff_size:m+buff_size,1:sys_size,0:p))
-                    #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                    #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                         if (p > 0) then
                             @:ALLOCATE(bc_buffers(3,1)%sf(-buff_size:m+buff_size,-buff_size:n+buff_size,1:sys_size))
                             @:ALLOCATE(bc_buffers(3,2)%sf(-buff_size:m+buff_size,-buff_size:n+buff_size,1:sys_size))
@@ -67,20 +59,47 @@ contains
             end do
         end if
 
+        if (double_mach) then
+            ! Smoothing parameter
+            cf = 20._wp
+            ! Mach number
+            Mach = 10._wp
+
+            ! Pre shock
+            rho0_dm = 1.4_wp
+            p0_dm = 1._wp
+            u0_dm = 0._wp
+            v0_dm = 0._wp
+
+            gam_dm = 1._wp + 1._wp/fluid_pp(1)%gamma
+
+            ! Post shock
+            pshock = (2._wp*gam_dm*Mach**2 - (gam_dm - 1._wp))/(1._wp + gam_dm)
+            rhoshock = ((1._wp + gam_dm)*Mach**2)*rho0_dm/((gam_dm - 1._wp)*Mach**2 + 2._wp)
+            velshock = (Mach - (Mach*rho0_dm/rhoshock))/2._wp
+
+            ! Reflecting wall location
+            xr_dm = 1._wp/6._wp
+            ! Shock Angle in radian
+            theta_dm = (pi/180._wp)*60._wp
+
+            $:GPU_UPDATE(device='[cf, double_mach, Mach, pshock, rhoshock, velshock, rho0_dm, p0_dm, u0_dm, v0_dm, xr_dm, &
+                         & theta_dm, gam_dm]')
+        end if
+
     end subroutine s_initialize_boundary_common_module
 
     !> Populate the buffers of the primitive variables based on the selected boundary conditions.
-    impure subroutine s_populate_variables_buffers(bc_type, q_prim_vf, pb_in, mv_in)
+    impure subroutine s_populate_variables_buffers(bc_type, q_prim_vf)
 
         type(scalar_field), dimension(sys_size), intent(inout)                                               :: q_prim_vf
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         type(integer_field), dimension(1:num_dims,1:2), intent(in)                                           :: bc_type
         integer                                                                                              :: k, l
 
         ! BC type codes defined in m_constants.fpp; non-negative values are MPI boundaries
 
         if (bc_x%beg >= 0) then
-            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, -1, sys_size, pb_in, mv_in)
+            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, -1, sys_size)
         else
             $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
             do l = 0, p
@@ -89,9 +108,9 @@ contains
                     case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                         call s_ghost_cell_extrapolation(q_prim_vf, 1, -1, k, l)
                     case (BC_REFLECTIVE)
-                        call s_symmetry(q_prim_vf, 1, -1, k, l, pb_in, mv_in)
+                        call s_symmetry(q_prim_vf, 1, -1, k, l)
                     case (BC_PERIODIC)
-                        call s_periodic(q_prim_vf, 1, -1, k, l, pb_in, mv_in)
+                        call s_periodic(q_prim_vf, 1, -1, k, l)
                     case (BC_SLIP_WALL)
                         call s_slip_wall(q_prim_vf, 1, -1, k, l)
                     case (BC_NO_SLIP_WALL)
@@ -105,7 +124,7 @@ contains
         end if
 
         if (bc_x%end >= 0) then
-            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, 1, sys_size, pb_in, mv_in)
+            call s_mpi_sendrecv_variables_buffers(q_prim_vf, 1, 1, sys_size)
         else
             $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
             do l = 0, p
@@ -114,9 +133,9 @@ contains
                     case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)  ! Ghost-cell extrap. BC at end
                         call s_ghost_cell_extrapolation(q_prim_vf, 1, 1, k, l)
                     case (BC_REFLECTIVE)
-                        call s_symmetry(q_prim_vf, 1, 1, k, l, pb_in, mv_in)
+                        call s_symmetry(q_prim_vf, 1, 1, k, l)
                     case (BC_PERIODIC)
-                        call s_periodic(q_prim_vf, 1, 1, k, l, pb_in, mv_in)
+                        call s_periodic(q_prim_vf, 1, 1, k, l)
                     case (BC_SLIP_WALL)
                         call s_slip_wall(q_prim_vf, 1, 1, k, l)
                     case (BC_NO_SLIP_WALL)
@@ -133,9 +152,9 @@ contains
 
         if (n == 0) return
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (bc_y%beg >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, -1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, -1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = 0, p
@@ -144,9 +163,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 2, -1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 2, -1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 2, -1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 2, -1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 2, -1, k, l)
                         case (BC_SLIP_WALL)
                             call s_slip_wall(q_prim_vf, 2, -1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -160,7 +179,7 @@ contains
             end if
 
             if (bc_y%end >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, 1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 2, 1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = 0, p
@@ -169,9 +188,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 2, 1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 2, 1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 2, 1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 2, 1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 2, 1, k, l)
                         case (BC_SLIP_WALL)
                             call s_slip_wall(q_prim_vf, 2, 1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -189,9 +208,9 @@ contains
 
         if (p == 0) return
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
             if (bc_z%beg >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, -1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, -1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = -buff_size, n + buff_size
@@ -200,9 +219,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 3, -1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 3, -1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 3, -1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 3, -1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 3, -1, k, l)
                         case (BC_SLIP_WALL)
                             call s_slip_wall(q_prim_vf, 3, -1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -216,7 +235,7 @@ contains
             end if
 
             if (bc_z%end >= 0) then
-                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, 1, sys_size, pb_in, mv_in)
+                call s_mpi_sendrecv_variables_buffers(q_prim_vf, 3, 1, sys_size)
             else
                 $:GPU_PARALLEL_LOOP(private='[l, k]', collapse=2)
                 do l = -buff_size, n + buff_size
@@ -225,9 +244,9 @@ contains
                         case (BC_CHAR_SUP_OUTFLOW:BC_GHOST_EXTRAP)
                             call s_ghost_cell_extrapolation(q_prim_vf, 3, 1, k, l)
                         case (BC_REFLECTIVE)
-                            call s_symmetry(q_prim_vf, 3, 1, k, l, pb_in, mv_in)
+                            call s_symmetry(q_prim_vf, 3, 1, k, l)
                         case (BC_PERIODIC)
-                            call s_periodic(q_prim_vf, 3, 1, k, l, pb_in, mv_in)
+                            call s_periodic(q_prim_vf, 3, 1, k, l)
                         case (BC_SlIP_WALL)
                             call s_slip_wall(q_prim_vf, 3, 1, k, l)
                         case (BC_NO_SLIP_WALL)
@@ -279,6 +298,31 @@ contains
                         q_prim_vf(i)%sf(k, n + j, l) = q_prim_vf(i)%sf(k, n, l)
                     end do
                 end do
+
+                if (double_mach) then
+                    !! DOUBLE MACH
+                    do j = 1, buff_size
+                        q_prim_vf(contxb)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*rhoshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*rho0_dm
+                        q_prim_vf(E_idx)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*pshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*p0_dm
+                        q_prim_vf(momxb)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*(velshock*tan(theta_dm)) &
+                                  & + 0.5_wp*(1._wp - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*u0_dm
+                        q_prim_vf(momxb + 1)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*(-velshock) + 0.5_wp*(1._wp &
+                                  & - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*v0_dm
+                        ! IGR is always on in figr
+                        q_prim_vf(momxb)%sf(k, n + j, l) = q_prim_vf(contxb)%sf(k, n + j, l)*q_prim_vf(momxb)%sf(k, n + j, l)
+                        q_prim_vf(momxb + 1)%sf(k, n + j, l) = q_prim_vf(contxb)%sf(k, n + j, l)*q_prim_vf(momxb + 1)%sf(k, &
+                                  & n + j, l)
+                        q_prim_vf(E_idx)%sf(k, n + j, l) = (1._wp/(gam_dm - 1._wp))*q_prim_vf(E_idx)%sf(k, n + j, &
+                                  & l) + 0.5_wp*(q_prim_vf(momxb)%sf(k, n + j, l)**2 + q_prim_vf(momxb + 1)%sf(k, n + j, &
+                                  & l)**2)/q_prim_vf(contxb)%sf(k, n + j, l)
+                    end do
+                end if
             end if
         else if (bc_dir == 3) then  !< z-direction
             if (bc_loc == -1) then  !< bc_z%beg
@@ -299,11 +343,10 @@ contains
     end subroutine s_ghost_cell_extrapolation
 
     !> Apply reflective (symmetry) boundary conditions by mirroring primitive variables and flipping the normal velocity component.
-    subroutine s_symmetry(q_prim_vf, bc_dir, bc_loc, k, l, pb_in, mv_in)
+    subroutine s_symmetry(q_prim_vf, bc_dir, bc_loc, k, l)
 
         $:GPU_ROUTINE(parallelism='[seq]')
         type(scalar_field), dimension(sys_size), intent(inout)                                               :: q_prim_vf
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         integer, intent(in)                                                                                  :: bc_dir, bc_loc
         integer, intent(in)                                                                                  :: k, l
         integer                                                                                              :: j, q, i
@@ -336,17 +379,42 @@ contains
             end if
         else if (bc_dir == 2) then  !< y-direction
             if (bc_loc == -1) then  !< bc_y%beg
-                do j = 1, buff_size
-                    do i = 1, momxb
-                        q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                if (double_mach .and. x_cc(k) < xr_dm) then
+                    do j = 1, buff_size
+                        q_prim_vf(contxb)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*rhoshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*rho0_dm
+                        q_prim_vf(E_idx)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*pshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*p0_dm
+                        q_prim_vf(momxb)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*(velshock*tan(theta_dm)) &
+                                  & + 0.5_wp*(1._wp - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*u0_dm
+                        q_prim_vf(momxb + 1)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*(-velshock) + 0.5_wp*(1._wp &
+                                  & - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*v0_dm
+#ifdef FIGR_SIMULATION
+                        ! IGR is always on in figr
+                        q_prim_vf(momxb)%sf(k, -j, l) = q_prim_vf(contxb)%sf(k, -j, l)*q_prim_vf(momxb)%sf(k, -j, l)
+                        q_prim_vf(momxb + 1)%sf(k, -j, l) = q_prim_vf(contxb)%sf(k, -j, l)*q_prim_vf(momxb + 1)%sf(k, -j, l)
+                        q_prim_vf(E_idx)%sf(k, -j, l) = (1._wp/(gam_dm - 1._wp))*q_prim_vf(E_idx)%sf(k, -j, &
+                                  & l) + 0.5_wp*(q_prim_vf(momxb)%sf(k, -j, l)**2 + q_prim_vf(momxb + 1)%sf(k, -j, &
+                                  & l)**2)/q_prim_vf(contxb)%sf(k, -j, l)
+#endif
                     end do
+                else
+                    do j = 1, buff_size
+                        do i = 1, momxb
+                            q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                        end do
 
-                    q_prim_vf(momxb + 1)%sf(k, -j, l) = -q_prim_vf(momxb + 1)%sf(k, j - 1, l)
+                        q_prim_vf(momxb + 1)%sf(k, -j, l) = -q_prim_vf(momxb + 1)%sf(k, j - 1, l)
 
-                    do i = momxb + 2, sys_size
-                        q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                        do i = momxb + 2, sys_size
+                            q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                        end do
                     end do
-                end do
+                end if
             else  !< bc_y%end
                 do j = 1, buff_size
                     do i = 1, momxb
@@ -391,11 +459,10 @@ contains
     end subroutine s_symmetry
 
     !> Apply periodic boundary conditions by copying values from the opposite domain boundary.
-    subroutine s_periodic(q_prim_vf, bc_dir, bc_loc, k, l, pb_in, mv_in)
+    subroutine s_periodic(q_prim_vf, bc_dir, bc_loc, k, l)
 
         $:GPU_ROUTINE(parallelism='[seq]')
         type(scalar_field), dimension(sys_size), intent(inout)                                               :: q_prim_vf
-        real(stp), optional, dimension(idwbuff(1)%beg:,idwbuff(2)%beg:,idwbuff(3)%beg:,1:,1:), intent(inout) :: pb_in, mv_in
         integer, intent(in)                                                                                  :: bc_dir, bc_loc
         integer, intent(in)                                                                                  :: k, l
         integer                                                                                              :: j, q, i
@@ -638,7 +705,7 @@ contains
         integer, intent(in)                                    :: k, l
         integer                                                :: j, i
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         if (bc_dir == 1) then  !< x-direction
             if (bc_loc == -1) then  ! bc_x%beg
                 do i = 1, sys_size
@@ -654,7 +721,7 @@ contains
                 end do
             end if
         else if (bc_dir == 2) then  !< y-direction
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                 if (bc_loc == -1) then  !< bc_y%beg
                     do i = 1, sys_size
                         do j = 1, buff_size
@@ -670,7 +737,7 @@ contains
                 end if
             #:endif
         else if (bc_dir == 3) then  !< z-direction
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                 if (bc_loc == -1) then  !< bc_z%beg
                     do i = 1, sys_size
                         do j = 1, buff_size
@@ -749,7 +816,7 @@ contains
             $:END_GPU_PARALLEL_LOOP()
         end if
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n == 0) then
                 return
             else if (bc_y%beg >= 0) then
@@ -764,9 +831,15 @@ contains
                                 jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, n - j + 1, l)
                             end do
                         case (BC_REFLECTIVE)
-                            do j = 1, buff_size
-                                jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, j - 1, l)
-                            end do
+                            if (double_mach .and. x_cc(k) < xr_dm) then
+                                do j = 1, buff_size
+                                    jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, 0, l)
+                                end do
+                            else
+                                do j = 1, buff_size
+                                    jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, j - 1, l)
+                                end do
+                            end if
                         case default
                             do j = 1, buff_size
                                 jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, 0, l)
@@ -803,7 +876,7 @@ contains
             end if
         #:endif
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
             if (p == 0) then
                 return
             else if (bc_z%beg >= 0) then
@@ -864,7 +937,6 @@ contains
 
         type(integer_field), dimension(1:num_dims,1:2), intent(in) :: bc_type
 
-#ifdef MFC_MPI
         integer               :: dir, loc
         integer, dimension(3) :: sf_start_idx, sf_extents_loc
         integer               :: ierr
@@ -890,7 +962,6 @@ contains
                 call MPI_TYPE_COMMIT(MPI_BC_BUFFER_TYPE(dir, loc), ierr)
             end do
         end do
-#endif
 
     end subroutine s_create_mpi_types
 
@@ -942,7 +1013,6 @@ contains
         character(len=path_len)                                    :: file_loc, file_path
         character(len=10)                                          :: status
 
-#ifdef MFC_MPI
         integer          :: ierr
         integer          :: file_id
         integer          :: offset
@@ -975,7 +1045,7 @@ contains
         ! Write bc_types
         do dir = 1, num_dims
             do loc = 1, 2
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
                 nelements = sizeof(bc_type(dir, loc)%sf)
                 call MPI_File_write_all(file_id, bc_type(dir, loc)%sf, nelements, MPI_BYTE, MPI_STATUS_IGNORE, ierr)
 #else
@@ -994,7 +1064,6 @@ contains
         end do
 
         call MPI_File_close(file_id, ierr)
-#endif
 
     end subroutine s_write_parallel_boundary_condition_files
 
@@ -1051,7 +1120,6 @@ contains
         character(len=path_len)                                       :: file_loc, file_path
         character(len=10)                                             :: status
 
-#ifdef MFC_MPI
         integer          :: ierr
         integer          :: file_id
         integer          :: offset
@@ -1083,7 +1151,7 @@ contains
         ! Read bc_types
         do dir = 1, num_dims
             do loc = 1, 2
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
                 nelements = sizeof(bc_type(dir, loc)%sf)
                 call MPI_File_read_all(file_id, bc_type(dir, loc)%sf, nelements, MPI_BYTE, MPI_STATUS_IGNORE, ierr)
 #else
@@ -1104,7 +1172,6 @@ contains
         end do
 
         call MPI_File_close(file_id, ierr)
-#endif
 
     end subroutine s_read_parallel_boundary_condition_files
 
@@ -1123,7 +1190,7 @@ contains
             end do
         end do
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n > 0) then
                 do k = 0, p
                     do j = 1, sys_size
@@ -1134,7 +1201,7 @@ contains
                     end do
                 end do
 
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     if (p > 0) then
                         do k = 1, sys_size
                             do j = 0, n
@@ -1160,12 +1227,12 @@ contains
         bc_type(1, 2)%sf(:,:,:) = int(min(bc_x%end, 0), kind=1)
         $:GPU_UPDATE(device='[bc_type(1, 1)%sf, bc_type(1, 2)%sf]')
 
-        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+        #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
             if (n > 0) then
                 bc_type(2, 1)%sf(:,:,:) = int(min(bc_y%beg, 0), kind=1)
                 bc_type(2, 2)%sf(:,:,:) = int(min(bc_y%end, 0), kind=1)
                 $:GPU_UPDATE(device='[bc_type(2, 1)%sf, bc_type(2, 2)%sf]')
-                #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                     if (p > 0) then
                         bc_type(3, 1)%sf(:,:,:) = int(min(bc_z%beg, 0), kind=1)
                         bc_type(3, 2)%sf(:,:,:) = int(min(bc_z%end, 0), kind=1)
@@ -1183,7 +1250,7 @@ contains
 
         integer :: i
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         ! Required for compatibility between codes
         type(int_bounds_info) :: offset_x, offset_y, offset_z
 
@@ -1192,7 +1259,7 @@ contains
         offset_z%beg = buff_size; offset_z%end = buff_size
 #endif
 
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
         ! Population of Buffers in x-direction
 
         ! Populating cell-width distribution buffer at bc_x%beg
@@ -1368,11 +1435,11 @@ contains
         if (bc_io) then
             deallocate (bc_buffers(1, 1)%sf)
             deallocate (bc_buffers(1, 2)%sf)
-            #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
+            #:if not FIGR_CASE_OPTIMIZATION or num_dims > 1
                 if (n > 0) then
                     deallocate (bc_buffers(2, 1)%sf)
                     deallocate (bc_buffers(2, 2)%sf)
-                    #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
+                    #:if not FIGR_CASE_OPTIMIZATION or num_dims > 2
                         if (p > 0) then
                             deallocate (bc_buffers(3, 1)%sf)
                             deallocate (bc_buffers(3, 2)%sf)

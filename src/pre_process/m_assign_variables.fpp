@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_assign_variables
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Assigns initial primitive variables to computational cells based on patch geometry
 module m_assign_variables
 
     use m_derived_types
@@ -23,7 +19,7 @@ module m_assign_variables
     !! the subroutine, to a particular cell in the computational domain
     abstract interface
 
-        !> Skeleton of s_assign_patch_mixture_primitive_variables and s_assign_patch_species_primitive_variables
+        !> Skeleton of s_assign_patch_species_primitive_variables
         subroutine s_assign_patch_xxxxx_primitive_variables(patch_id, j, k, l, eta, q_prim_vf, patch_id_fp)
 
             import :: scalar_field, sys_size, n, m, p, wp
@@ -33,7 +29,7 @@ module m_assign_variables
             real(wp), intent(in)                                     :: eta
             type(scalar_field), dimension(1:sys_size), intent(inout) :: q_prim_vf
 
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
             integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
             integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -44,7 +40,7 @@ module m_assign_variables
 
     private
     public :: s_initialize_assign_variables_module, s_assign_patch_primitive_variables, &
-        & s_assign_patch_mixture_primitive_variables, s_assign_patch_species_primitive_variables, s_finalize_assign_variables_module
+        & s_assign_patch_species_primitive_variables, s_finalize_assign_variables_module
 
 contains
 
@@ -58,51 +54,6 @@ contains
 
     end subroutine s_initialize_assign_variables_module
 
-    !> Assign the mixture primitive variables of the patch designated by the patch_id to the cell that is designated by the indexes
-    !! (j,k,l). In addition, the variable bookkeeping the patch identities in the entire domain is updated with the new assignment.
-    !! Note that if the smoothing of the patch's boundaries is employed, the ensuing primitive variables in the cell will be a type
-    !! of combination of the current patch's primitive variables with those of the smoothing patch. The specific details of the
-    !! combination may be found in Shyue's work (1998).
-    subroutine s_assign_patch_mixture_primitive_variables(patch_id, j, k, l, eta, q_prim_vf, patch_id_fp)
-
-        $:GPU_ROUTINE(parallelism='[seq]')
-
-        integer, intent(in)                                      :: patch_id
-        integer, intent(in)                                      :: j, k, l
-        real(wp), intent(in)                                     :: eta
-        type(scalar_field), dimension(1:sys_size), intent(inout) :: q_prim_vf
-#ifdef MFC_MIXED_PRECISION
-        integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
-#else
-        integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
-#endif
-
-        real(wp) :: Ys(1:1)
-        integer  :: smooth_patch_id
-        integer  :: i
-
-        smooth_patch_id = patch_icpp(patch_id)%smooth_patch_id
-
-        q_prim_vf(1)%sf(j, k, l) = eta*patch_icpp(patch_id)%rho + (1._wp - eta)*patch_icpp(smooth_patch_id)%rho
-
-        do i = 1, E_idx - mom_idx%beg
-            q_prim_vf(i + 1)%sf(j, k, l) = 1._wp/q_prim_vf(1)%sf(j, k, &
-                      & l)*(eta*patch_icpp(patch_id)%rho*patch_icpp(patch_id)%vel(i) + (1._wp - eta)*patch_icpp(smooth_patch_id) &
-                      & %rho*patch_icpp(smooth_patch_id)%vel(i))
-        end do
-
-        q_prim_vf(gamma_idx)%sf(j, k, l) = eta*patch_icpp(patch_id)%gamma + (1._wp - eta)*patch_icpp(smooth_patch_id)%gamma
-
-        q_prim_vf(E_idx)%sf(j, k, l) = 1._wp/q_prim_vf(gamma_idx)%sf(j, k, &
-                  & l)*(eta*patch_icpp(patch_id)%gamma*patch_icpp(patch_id)%pres + (1._wp - eta)*patch_icpp(smooth_patch_id) &
-                  & %gamma*patch_icpp(smooth_patch_id)%pres)
-
-        q_prim_vf(pi_inf_idx)%sf(j, k, l) = eta*patch_icpp(patch_id)%pi_inf + (1._wp - eta)*patch_icpp(smooth_patch_id)%pi_inf
-
-        if (1._wp - eta < 1.e-16_wp) patch_id_fp(j, k, l) = patch_id
-
-    end subroutine s_assign_patch_mixture_primitive_variables
-
     !> Assign the species primitive variables for the volume fraction model
     impure subroutine s_assign_patch_species_primitive_variables(patch_id, j, k, l, eta, q_prim_vf, patch_id_fp)
 
@@ -111,7 +62,7 @@ contains
         integer, intent(in)  :: patch_id
         integer, intent(in)  :: j, k, l
         real(wp), intent(in) :: eta
-#ifdef MFC_MIXED_PRECISION
+#ifdef FIGR_MIXED_PRECISION
         integer(kind=1), dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
 #else
         integer, dimension(0:m,0:n,0:p), intent(inout) :: patch_id_fp
@@ -186,13 +137,6 @@ contains
             q_prim_vf(i + cont_idx%end)%sf(j, k, &
                       & l) = (eta*patch_icpp(patch_id)%vel(i) + (1._wp - eta)*orig_prim_vf(i + cont_idx%end))
         end do
-
-        ! Set streamwise velocity to hyperbolic tangent function of y
-        if (mixlayer_vel_profile) then
-            q_prim_vf(1 + cont_idx%end)%sf(j, k, &
-                      & l) = (eta*patch_icpp(patch_id)%vel(1)*tanh(y_cc(k)*mixlayer_vel_coef) + (1._wp - eta)*orig_prim_vf(1 &
-                      & + cont_idx%end))
-        end if
 
         if (1._wp - eta < 1.e-16_wp) patch_id_fp(j, k, l) = patch_id
 

@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_variables_conversion
 
 #:include 'macros.fpp'
 #:include 'case.fpp'
 
-!> @brief Conservative-to-primitive variable conversion, mixture property evaluation, and pressure computation
 module m_variables_conversion
 
     use m_derived_types
@@ -19,7 +15,6 @@ module m_variables_conversion
     private
     public :: s_initialize_variables_conversion_module, &
               s_convert_to_mixture_variables, &
-              s_convert_mixture_to_mixture_variables, &
               s_convert_species_to_mixture_variables, &
               s_convert_species_to_mixture_variables_acc, &
               s_convert_conservative_to_primitive_variables, &
@@ -27,20 +22,19 @@ module m_variables_conversion
               s_convert_primitive_to_flux_variables, &
               s_compute_pressure, &
               s_compute_species_fraction, &
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
     s_compute_speed_of_sound, &
 #endif
     s_finalize_variables_conversion_module
 
     ! In simulation, gammas, pi_infs, and qvs are already declared in m_global_variables
-#ifndef MFC_SIMULATION
+#ifndef FIGR_SIMULATION
     real(wp), allocatable, public, dimension(:) :: gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps
     $:GPU_DECLARE(create='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
 #endif
 
-    real(wp), allocatable, dimension(:)   :: Gs_vc
     real(wp), allocatable, dimension(:,:) :: Res_vc
-    $:GPU_DECLARE(create='[Gs_vc, Res_vc]')
+    $:GPU_DECLARE(create='[Res_vc]')
 
     integer :: is1b, is2b, is3b, is1e, is2e, is3e
     $:GPU_DECLARE(create='[is1b, is2b, is3b, is1e, is2e, is3e]')
@@ -52,23 +46,20 @@ module m_variables_conversion
 
 contains
 
-    !> Dispatch to the s_convert_mixture_to_mixture_variables and s_convert_species_to_mixture_variables subroutines. Replaces a
-    !! procedure pointer.
-    subroutine s_convert_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K, G_K, G)
+    !> Dispatch to s_convert_species_to_mixture_variables.
+    subroutine s_convert_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K)
 
-        type(scalar_field), dimension(sys_size), intent(in)   :: q_vf
-        integer, intent(in)                                   :: i, j, k
-        real(wp), intent(out), target                         :: rho, gamma, pi_inf, qv
-        real(wp), optional, dimension(2), intent(out)         :: Re_K
-        real(wp), optional, intent(out)                       :: G_K
-        real(wp), optional, dimension(num_fluids), intent(in) :: G
+        type(scalar_field), dimension(sys_size), intent(in) :: q_vf
+        integer, intent(in)                                 :: i, j, k
+        real(wp), intent(out), target                       :: rho, gamma, pi_inf, qv
+        real(wp), optional, dimension(2), intent(out)       :: Re_K
 
-        call s_convert_species_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K, G_K, G)
+        call s_convert_species_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv, Re_K)
 
     end subroutine s_convert_to_mixture_variables
 
     !> Compute the pressure from the appropriate equation of state
-    subroutine s_compute_pressure(energy, alf, dyn_p, pi_inf, gamma, rho, qv, pres, stress, mom, G, pres_mag)
+    subroutine s_compute_pressure(energy, alf, dyn_p, pi_inf, gamma, rho, qv, pres, stress, mom, pres_mag)
 
         $:GPU_ROUTINE(function_name='s_compute_pressure',parallelism='[seq]', cray_noinline=True)
 
@@ -77,57 +68,26 @@ contains
         real(wp), intent(in)            :: pi_inf, gamma, rho, qv
         real(wp), intent(out)           :: pres
         real(stp), intent(in), optional :: stress, mom
-        real(wp), intent(in), optional  :: G, pres_mag
+        real(wp), intent(in), optional  :: pres_mag
 
         pres = (energy - dyn_p - pi_inf - qv)/gamma
 
     end subroutine s_compute_pressure
 
-    !> Convert mixture variables to density, gamma, pi_inf, and qv for the gamma/pi_inf model. Given conservative or primitive
-    !! variables, transfers the density, specific heat ratio function and the liquid stiffness function from q_vf to rho, gamma and
-    !! pi_inf.
-    subroutine s_convert_mixture_to_mixture_variables(q_vf, i, j, k, rho, gamma, pi_inf, qv)
+    !> Convert species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv. Given conservative or
+    !! primitive variables, computes the density, the specific heat ratio function and the liquid stiffness function from q_vf and
+    !! stores the results into rho, gamma and pi_inf.
+    subroutine s_convert_species_to_mixture_variables(q_vf, k, l, r, rho, gamma, pi_inf, qv, Re_K)
 
         type(scalar_field), dimension(sys_size), intent(in) :: q_vf
-        integer, intent(in)                                 :: i, j, k
+        integer, intent(in)                                 :: k, l, r
         real(wp), intent(out), target                       :: rho
         real(wp), intent(out), target                       :: gamma
         real(wp), intent(out), target                       :: pi_inf
         real(wp), intent(out), target                       :: qv
-
-        ! Transferring the density, the specific heat ratio function and the liquid stiffness function, respectively
-
-        rho = q_vf(1)%sf(i, j, k)
-        gamma = q_vf(gamma_idx)%sf(i, j, k)
-        pi_inf = q_vf(pi_inf_idx)%sf(i, j, k)
-        qv = 0._wp  ! keep this value nil for now. For future adjustment
-
-        ! Post process requires rho_sf/gamma_sf/pi_inf_sf/qv_sf to also be updated
-#ifdef MFC_POST_PROCESS
-        rho_sf(i, j, k) = rho
-        gamma_sf(i, j, k) = gamma
-        pi_inf_sf(i, j, k) = pi_inf
-        qv_sf(i, j, k) = qv
-#endif
-
-    end subroutine s_convert_mixture_to_mixture_variables
-
-    !> Convert species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv. Given conservative or
-    !! primitive variables, computes the density, the specific heat ratio function and the liquid stiffness function from q_vf and
-    !! stores the results into rho, gamma and pi_inf.
-    subroutine s_convert_species_to_mixture_variables(q_vf, k, l, r, rho, gamma, pi_inf, qv, Re_K, G_K, G)
-
-        type(scalar_field), dimension(sys_size), intent(in)   :: q_vf
-        integer, intent(in)                                   :: k, l, r
-        real(wp), intent(out), target                         :: rho
-        real(wp), intent(out), target                         :: gamma
-        real(wp), intent(out), target                         :: pi_inf
-        real(wp), intent(out), target                         :: qv
-        real(wp), optional, dimension(2), intent(out)         :: Re_K
-        real(wp), optional, intent(out)                       :: G_K
-        real(wp), dimension(num_fluids)                       :: alpha_rho_K, alpha_K
-        real(wp), optional, dimension(num_fluids), intent(in) :: G
-        integer                                               :: i, j  !< Generic loop iterator
+        real(wp), optional, dimension(2), intent(out)       :: Re_K
+        real(wp), dimension(num_fluids)                     :: alpha_rho_K, alpha_K
+        integer                                             :: i, j  !< Generic loop iterator
         ! Computing the density, the specific heat ratio function and the liquid stiffness function, respectively
 
         call s_compute_species_fraction(q_vf, k, l, r, alpha_rho_K, alpha_K)
@@ -142,7 +102,7 @@ contains
             qv = qv + alpha_rho_K(i)*qvs(i)
         end do
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         ! Computing the shear and bulk Reynolds numbers from species analogs
         if (viscous) then
             do i = 1, 2
@@ -157,16 +117,8 @@ contains
         end if
 #endif
 
-        if (present(G_K)) then
-            G_K = 0._wp
-            do i = 1, num_fluids
-                G_K = G_K + alpha_K(i)*G(i)
-            end do
-            G_K = max(0._wp, G_K)
-        end if
-
         ! Post process requires rho_sf/gamma_sf/pi_inf_sf/qv_sf to also be updated
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         rho_sf(k, l, r) = rho
         gamma_sf(k, l, r) = gamma
         pi_inf_sf(k, l, r) = pi_inf
@@ -176,20 +128,17 @@ contains
     end subroutine s_convert_species_to_mixture_variables
 
     !> GPU-accelerated conversion of species volume fractions and partial densities to mixture density, gamma, pi_inf, and qv.
-    subroutine s_convert_species_to_mixture_variables_acc(rho_K, gamma_K, pi_inf_K, qv_K, alpha_K, alpha_rho_K, Re_K, G_K, G)
+    subroutine s_convert_species_to_mixture_variables_acc(rho_K, gamma_K, pi_inf_K, qv_K, alpha_K, alpha_rho_K, Re_K)
 
         $:GPU_ROUTINE(function_name='s_convert_species_to_mixture_variables_acc', parallelism='[seq]', cray_noinline=True)
 
         real(wp), intent(out) :: rho_K, gamma_K, pi_inf_K, qv_K
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
-            real(wp), dimension(3), intent(inout)        :: alpha_rho_K, alpha_K
-            real(wp), optional, dimension(3), intent(in) :: G
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
+            real(wp), dimension(3), intent(inout) :: alpha_rho_K, alpha_K
         #:else
-            real(wp), dimension(num_fluids), intent(inout)        :: alpha_rho_K, alpha_K
-            real(wp), optional, dimension(num_fluids), intent(in) :: G
+            real(wp), dimension(num_fluids), intent(inout) :: alpha_rho_K, alpha_K
         #:endif
         real(wp), dimension(2), intent(out) :: Re_K
-        real(wp), optional, intent(out)     :: G_K
         real(wp)                            :: alpha_K_sum
         integer                             :: i, j  !< Generic loop iterators
         rho_K = 0._wp; gamma_K = 0._wp; pi_inf_K = 0._wp; qv_K = 0._wp
@@ -199,15 +148,6 @@ contains
             pi_inf_K = pi_inf_K + alpha_K(i)*pi_infs(i)
             qv_K = qv_K + alpha_rho_K(i)*qvs(i)
         end do
-
-        if (present(G_K)) then
-            G_K = 0._wp
-            do i = 1, num_fluids
-                ! TODO: change to use Gs_vc directly here? TODO: Make this change as well for GPUs
-                G_K = G_K + alpha_K(i)*G(i)
-            end do
-            G_K = max(0._wp, G_K)
-        end if
 
         if (viscous) then
             do i = 1, 2
@@ -239,21 +179,19 @@ contains
         @:ALLOCATE(cvs    (1:num_fluids))
         @:ALLOCATE(qvs    (1:num_fluids))
         @:ALLOCATE(qvps    (1:num_fluids))
-        @:ALLOCATE(Gs_vc     (1:num_fluids))
 
         do i = 1, num_fluids
             gammas(i) = fluid_pp(i)%gamma
             gs_min(i) = 1.0_wp/gammas(i) + 1.0_wp
             pi_infs(i) = fluid_pp(i)%pi_inf
-            Gs_vc(i) = fluid_pp(i)%G
             ps_inf(i) = pi_infs(i)/(1.0_wp + gammas(i))
             cvs(i) = fluid_pp(i)%cv
             qvs(i) = fluid_pp(i)%qv
             qvps(i) = fluid_pp(i)%qvp
         end do
-        $:GPU_UPDATE(device='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps, Gs_vc]')
+        $:GPU_UPDATE(device='[gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps]')
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         if (viscous) then
             @:ALLOCATE(Res_vc(1:2, 1:Re_size_max))
             do i = 1, 2
@@ -266,7 +204,7 @@ contains
         end if
 #endif
 
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         ! Allocating the density, the specific heat ratio function and the liquid stiffness function, respectively
 
         ! Simulation is at least 2D
@@ -305,7 +243,7 @@ contains
         type(scalar_field), dimension(sys_size), intent(inout) :: qK_prim_vf
         type(int_bounds_info), dimension(1:3), intent(in)      :: ibounds
 
-        #:if USING_AMD and not MFC_CASE_OPTIMIZATION
+        #:if USING_AMD and not FIGR_CASE_OPTIMIZATION
             real(wp), dimension(3) :: alpha_K, alpha_rho_K
             real(wp)               :: rhoYks(1:10)
         #:else
@@ -314,14 +252,13 @@ contains
         #:endif
         real(wp), dimension(2) :: Re_K
         real(wp)               :: rho_K, gamma_K, pi_inf_K, qv_K, dyn_pres_K
-        real(wp)               :: G_K
         real(wp)               :: pres
         integer                :: i, j, k, l  !< Generic loop iterators
         real(wp)               :: T
         real(wp)               :: pres_mag
 
         $:GPU_PARALLEL_LOOP(collapse=3, private='[alpha_K, alpha_rho_K, Re_K, rho_K, gamma_K, pi_inf_K, qv_K, dyn_pres_K, rhoYks, &
-                            & pres, G_K, T, pres_mag]')
+                            & pres, T, pres_mag]')
         do l = ibounds(3)%beg, ibounds(3)%end
             do k = ibounds(2)%beg, ibounds(2)%end
                 do j = ibounds(1)%beg, ibounds(1)%end
@@ -329,7 +266,7 @@ contains
 
                     call s_compute_species_fraction(qK_cons_vf, j, k, l, alpha_rho_K, alpha_K)
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
                     call s_convert_species_to_mixture_variables_acc(rho_K, gamma_K, pi_inf_K, qv_K, alpha_K, alpha_rho_K, Re_K)
 #else
                     call s_convert_to_mixture_variables(qK_cons_vf, j, k, l, rho_K, gamma_K, pi_inf_K, qv_K)
@@ -341,7 +278,7 @@ contains
                         qK_prim_vf(i)%sf(j, k, l) = qK_cons_vf(i)%sf(j, k, l)
                     end do
 
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
                     rho_K = max(rho_K, sgm_eps)
 #endif
 
@@ -380,26 +317,23 @@ contains
 
         ! Density, specific heat ratio function, liquid stiffness function and dynamic pressure, as defined in the incompressible
         ! flow sense, respectively
-        real(wp)                         :: rho
-        real(wp)                         :: gamma
-        real(wp)                         :: pi_inf
-        real(wp)                         :: qv
-        real(wp)                         :: dyn_pres
-        real(wp)                         :: G
-        real(wp), dimension(2)           :: Re_K
-        integer                          :: i, j, k, l  !< Generic loop iterators
+        real(wp)               :: rho
+        real(wp)               :: gamma
+        real(wp)               :: pi_inf
+        real(wp)               :: qv
+        real(wp)               :: dyn_pres
+        real(wp), dimension(2) :: Re_K
+        integer                :: i, j, k, l  !< Generic loop iterators
         real(wp), dimension(1) :: Ys
-        real(wp)                         :: e_mix, mix_mol_weight, T
+        real(wp)               :: e_mix, mix_mol_weight, T
 
-        G = 0._wp
-
-#ifndef MFC_SIMULATION
+#ifndef FIGR_SIMULATION
         ! Converting the primitive variables to the conservative variables
         do l = 0, p
             do k = 0, n
                 do j = 0, m
                     ! Obtaining the density, specific heat ratio function and the liquid stiffness function, respectively
-                    call s_convert_to_mixture_variables(q_prim_vf, j, k, l, rho, gamma, pi_inf, qv, Re_K, G, fluid_pp(:)%G)
+                    call s_convert_to_mixture_variables(q_prim_vf, j, k, l, rho, gamma, pi_inf, qv, Re_K)
 
                     if (num_fluids > 1) then
                         ! Transferring the advection equation(s) variable(s)
@@ -447,16 +381,16 @@ contains
         ! Partial densities, density, velocity, pressure, energy, advection variables, the specific heat ratio and liquid stiffness
         ! functions, the shear and volume Reynolds numbers and the Weber numbers
 
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3)  :: alpha_rho_K
             real(wp), dimension(3)  :: alpha_K
             real(wp), dimension(3)  :: vel_K
             real(wp), dimension(10) :: Y_K
         #:else
-            real(wp), dimension(num_fluids)  :: alpha_rho_K
-            real(wp), dimension(num_fluids)  :: alpha_K
-            real(wp), dimension(num_vels)    :: vel_K
-            real(wp), dimension(1) :: Y_K
+            real(wp), dimension(num_fluids) :: alpha_rho_K
+            real(wp), dimension(num_fluids) :: alpha_K
+            real(wp), dimension(num_vels)   :: vel_K
+            real(wp), dimension(1)          :: Y_K
         #:endif
         real(wp)               :: rho_K
         real(wp)               :: vel_K_sum
@@ -466,7 +400,6 @@ contains
         real(wp)               :: pi_inf_K
         real(wp)               :: qv_K
         real(wp), dimension(2) :: Re_K
-        real(wp)               :: G_K
         real(wp)               :: T_K, mix_mol_weight, R_gas
         integer                :: i, j, k, l  !< Generic loop iterators
 
@@ -478,9 +411,9 @@ contains
 
         ! Computing the flux variables from the primitive variables, without accounting for the contribution of either viscosity or
         ! capillarity
-#ifdef MFC_SIMULATION
+#ifdef FIGR_SIMULATION
         $:GPU_PARALLEL_LOOP(collapse=3, private='[alpha_rho_K, vel_K, alpha_K, Re_K, Y_K, rho_K, vel_K_sum, pres_K, E_K, gamma_K, &
-                            & pi_inf_K, qv_K, G_K, T_K, mix_mol_weight, R_gas]')
+                            & pi_inf_K, qv_K, T_K, mix_mol_weight, R_gas]')
         do l = is3b, is3e
             do k = is2b, is2e
                 do j = is1b, is1e
@@ -550,7 +483,7 @@ contains
         $:GPU_ROUTINE(function_name='s_compute_species_fraction', parallelism='[seq]', cray_noinline=True)
         type(scalar_field), dimension(sys_size), intent(in) :: q_vf
         integer, intent(in)                                 :: k, l, r
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3), intent(out) :: alpha_rho_K, alpha_K
         #:else
             real(wp), dimension(num_fluids), intent(out) :: alpha_rho_K, alpha_K
@@ -576,15 +509,15 @@ contains
     impure subroutine s_finalize_variables_conversion_module()
 
         ! Deallocating the density, the specific heat ratio function and the liquid stiffness function
-#ifdef MFC_POST_PROCESS
+#ifdef FIGR_POST_PROCESS
         deallocate (rho_sf, gamma_sf, pi_inf_sf, qv_sf)
 #endif
 
-        @:DEALLOCATE(gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps, Gs_vc)
+        @:DEALLOCATE(gammas, gs_min, pi_infs, ps_inf, cvs, qvs, qvps)
 
     end subroutine s_finalize_variables_conversion_module
 
-#ifndef MFC_PRE_PROCESS
+#ifndef FIGR_PRE_PROCESS
     !> Compute the speed of sound from thermodynamic state variables, supporting multiple equation-of-state models.
     subroutine s_compute_speed_of_sound(pres, rho, gamma, pi_inf, H, adv, vel_sum, c_c, c, qv)
 
@@ -593,7 +526,7 @@ contains
         real(wp), intent(in) :: pres
         real(wp), intent(in) :: rho, gamma, pi_inf, qv
         real(wp), intent(in) :: H
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3), intent(in) :: adv
         #:else
             real(wp), dimension(num_fluids), intent(in) :: adv

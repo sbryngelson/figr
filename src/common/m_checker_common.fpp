@@ -1,11 +1,9 @@
-!>
 !!@file
 !!@brief Contains module m_checker_common
 
 #:include 'case.fpp'
 #:include 'macros.fpp'
 
-!> @brief Shared input validation checks for grid dimensions and AMD GPU compiler limits
 module m_checker_common
 
     use m_global_parameters
@@ -22,7 +20,7 @@ contains
     !> Checks compatibility of parameters in the input file. Used by all three stages
     impure subroutine s_check_inputs_common
 
-#ifndef MFC_SIMULATION
+#ifndef FIGR_SIMULATION
         call s_check_total_cells
 #endif
         #:if USING_AMD
@@ -31,7 +29,7 @@ contains
 
     end subroutine s_check_inputs_common
 
-#ifndef MFC_SIMULATION
+#ifndef FIGR_SIMULATION
     !> Verify that the total number of grid cells meets the minimum required by the number of dimensions and MPI ranks.
     impure subroutine s_check_total_cells
 
@@ -51,12 +49,12 @@ contains
     !> Check that simulation parameters stay within AMD GPU compiler limits when case optimization is disabled.
     impure subroutine s_check_amd
 
-        #:if not MFC_CASE_OPTIMIZATION
+        #:if not FIGR_CASE_OPTIMIZATION
             @:PROHIBIT(num_fluids > 3, "num_fluids <= 3 for AMDFLang when Case optimization is off")
         #:endif
 
     end subroutine s_check_amd
 
-#ifndef MFC_POST_PROCESS
+#ifndef FIGR_POST_PROCESS
 #endif
 end module m_checker_common

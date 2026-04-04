@@ -1,11 +1,7 @@
-!>
-!! @file
-!! @brief Contains module m_data_output
 
 #:include 'macros.fpp'
 #:include 'case.fpp'
 
-!> @brief Writes solution data, run-time stability diagnostics (ICFL, VCFL, CCFL, Rc), and probe/center-of-mass files
 module m_data_output
 
     use m_derived_types
@@ -22,17 +18,15 @@ module m_data_output
     implicit none
 
     private
-    public :: s_initialize_data_output_module, s_open_run_time_information_file, s_open_com_files, s_open_probe_files, &
-        & s_write_run_time_information, s_write_data_files, s_write_serial_data_files, s_write_parallel_data_files, &
-        & s_write_com_files, s_write_probe_files, s_close_run_time_information_file, s_close_com_files, s_close_probe_files, &
+    public :: s_initialize_data_output_module, s_open_run_time_information_file, s_write_run_time_information, &
+        & s_write_data_files, s_write_serial_data_files, s_write_parallel_data_files, s_close_run_time_information_file, &
         & s_finalize_data_output_module
 
-    real(wp), allocatable, dimension(:,:,:)       :: icfl_sf  !< ICFL stability criterion
-    real(wp), allocatable, dimension(:,:,:)       :: vcfl_sf  !< VCFL stability criterion
-    real(wp), allocatable, dimension(:,:,:)       :: ccfl_sf  !< CCFL stability criterion
-    real(wp), allocatable, dimension(:,:,:)       :: Rc_sf    !< Rc stability criterion
-    real(wp), public, allocatable, dimension(:,:) :: c_mass
-    $:GPU_DECLARE(create='[icfl_sf, vcfl_sf, ccfl_sf, Rc_sf, c_mass]')
+    real(wp), allocatable, dimension(:,:,:) :: icfl_sf  !< ICFL stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: vcfl_sf  !< VCFL stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: ccfl_sf  !< CCFL stability criterion
+    real(wp), allocatable, dimension(:,:,:) :: Rc_sf    !< Rc stability criterion
+    $:GPU_DECLARE(create='[icfl_sf, vcfl_sf, ccfl_sf, Rc_sf]')
 
     real(wp) :: icfl_max_loc, icfl_max_glb  !< ICFL stability extrema on local and global grids
     real(wp) :: vcfl_max_loc, vcfl_max_glb  !< VCFL stability extrema on local and global grids
@@ -41,13 +35,10 @@ module m_data_output
     $:GPU_DECLARE(create='[icfl_max_loc, icfl_max_glb, vcfl_max_loc, vcfl_max_glb]')
     $:GPU_DECLARE(create='[ccfl_max_loc, ccfl_max_glb, Rc_min_loc, Rc_min_glb]')
 
-    !> @name ICFL, VCFL, CCFL and Rc stability criteria extrema over all the time-steps
-    !> @{
     real(wp) :: icfl_max  !< ICFL criterion maximum
     real(wp) :: vcfl_max  !< VCFL criterion maximum
     real(wp) :: ccfl_max  !< CCFL criterion maximum
     real(wp) :: Rc_min    !< Rc criterion maximum
-    !> @}
 
     type(scalar_field), allocatable, dimension(:) :: q_cons_temp_ds
 
@@ -104,62 +95,6 @@ contains
 
     end subroutine s_open_run_time_information_file
 
-    !> Open center-of-mass data files for writing
-    impure subroutine s_open_com_files()
-
-        character(len=path_len + 3*name_len) :: file_path  !< Relative path to the CoM file in the case directory
-        integer                              :: i          !< Generic loop iterator
-
-        do i = 1, num_fluids
-            write (file_path, '(A,I0,A)') '/fluid', i, '_com.dat'
-            file_path = trim(case_dir) // trim(file_path)
-            open (i + 120, file=trim(file_path), form='formatted', position='append', status='unknown')
-            if (n == 0) then
-                write (i + 120, '(A)') '    Non-Dimensional Time ' // '    Total Mass ' // '    x-loc ' // '    Total Volume    '
-            else if (p == 0) then
-                write (i + 120, &
-                       & '(A)') '    Non-Dimensional Time ' // '    Total Mass ' // '    x-loc ' // '    y-loc ' &
-                       & // '    Total Volume    '
-            else
-                write (i + 120, &
-                       & '(A)') '    Non-Dimensional Time ' // '    Total Mass ' // '    x-loc ' // '    y-loc ' // '    z-loc ' &
-                       & // '    Total Volume    '
-            end if
-        end do
-
-    end subroutine s_open_com_files
-
-    !> Open flow probe data files for writing
-    impure subroutine s_open_probe_files
-
-        character(LEN=path_len + 3*name_len) :: file_path  !< Relative path to the probe data file in the case directory
-        integer                              :: i          !< Generic loop iterator
-        logical                              :: file_exist
-
-        do i = 1, num_probes
-            write (file_path, '(A,I0,A)') '/D/probe', i, '_prim.dat'
-            file_path = trim(case_dir) // trim(file_path)
-
-            inquire (file=trim(file_path), exist=file_exist)
-
-            if (file_exist) then
-                open (i + 30, FILE=trim(file_path), form='formatted', STATUS='old', POSITION='append')
-            else
-                open (i + 30, FILE=trim(file_path), form='formatted', STATUS='unknown')
-            end if
-        end do
-
-        if (integral_wrt) then
-            do i = 1, num_integrals
-                write (file_path, '(A,I0,A)') '/D/integral', i, '_prim.dat'
-                file_path = trim(case_dir) // trim(file_path)
-
-                open (i + 70, FILE=trim(file_path), form='formatted', POSITION='append', STATUS='unknown')
-            end do
-        end if
-
-    end subroutine s_open_probe_files
-
     !> Write stability criteria extrema to the run-time information file at the given time step
     impure subroutine s_write_run_time_information(q_prim_vf, t_step)
 
@@ -167,7 +102,7 @@ contains
         integer, intent(in)                                 :: t_step
         real(wp)                                            :: rho  !< Cell-avg. density
 
-        #:if not MFC_CASE_OPTIMIZATION and USING_AMD
+        #:if not FIGR_CASE_OPTIMIZATION and USING_AMD
             real(wp), dimension(3) :: alpha  !< Cell-avg. volume fraction
             real(wp), dimension(3) :: vel    !< Cell-avg. velocity
         #:else
@@ -408,7 +343,6 @@ contains
         type(scalar_field), intent(inout), optional                 :: beta
         type(integer_field), dimension(1:num_dims,-1:1), intent(in) :: bc_type
 
-#ifdef MFC_MPI
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
         integer(kind=MPI_OFFSET_kind)        :: disp
@@ -533,420 +467,8 @@ contains
 
             call MPI_FILE_CLOSE(ifile, ierr)
         end if
-#endif
 
     end subroutine s_write_parallel_data_files
-
-    !> Write center-of-mass data at the current time step
-    impure subroutine s_write_com_files(t_step, c_mass_in)
-
-        integer, intent(in)                            :: t_step
-        real(wp), dimension(num_fluids, 5), intent(in) :: c_mass_in
-        integer                                        :: i            !< Generic loop iterator
-        real(wp)                                       :: nondim_time  !< Non-dimensional time
-
-        if (t_step_old /= dflt_int) then
-            nondim_time = real(t_step + t_step_old, wp)*dt
-        else
-            nondim_time = real(t_step, wp)*dt
-        end if
-
-        if (proc_rank == 0) then
-            if (n == 0) then
-                do i = 1, num_fluids
-                    write (i + 120, '(6X,4F24.12)') nondim_time, c_mass_in(i, 1), c_mass_in(i, 2), c_mass_in(i, 5)
-                end do
-            else if (p == 0) then
-                do i = 1, num_fluids
-                    write (i + 120, '(6X,5F24.12)') nondim_time, c_mass_in(i, 1), c_mass_in(i, 2), c_mass_in(i, 3), c_mass_in(i, 5)
-                end do
-            else
-                do i = 1, num_fluids
-                    write (i + 120, '(6X,6F24.12)') nondim_time, c_mass_in(i, 1), c_mass_in(i, 2), c_mass_in(i, 3), c_mass_in(i, &
-                           & 4), c_mass_in(i, 5)
-                end do
-            end if
-        end if
-
-    end subroutine s_write_com_files
-
-    !> Write flow probe data at the current time step
-    impure subroutine s_write_probe_files(t_step, q_cons_vf, accel_mag)
-
-        integer, intent(in)                                 :: t_step
-        type(scalar_field), dimension(sys_size), intent(in) :: q_cons_vf
-        real(wp), dimension(0:m,0:n,0:p), intent(in)        :: accel_mag
-        real(wp), dimension(-1:m)                           :: distx
-        real(wp), dimension(-1:n)                           :: disty
-        real(wp), dimension(-1:p)                           :: distz
-
-        ! The cell-averaged partial densities, density, velocity, pressure, volume fractions, specific heat ratio function, liquid
-        ! stiffness function, and sound speed.
-        real(wp)                        :: lit_gamma, nbub
-        real(wp)                        :: rho
-        real(wp), dimension(num_vels)   :: vel
-        real(wp)                        :: pres
-        real(wp)                        :: ptilde
-        real(wp)                        :: ptot
-        real(wp)                        :: alf
-        real(wp)                        :: alfgr
-        real(wp), dimension(num_fluids) :: alpha
-        real(wp)                        :: gamma
-        real(wp)                        :: pi_inf
-        real(wp)                        :: qv
-        real(wp)                        :: c
-        real(wp)                        :: M00, M10, M01, M20, M11, M02
-        real(wp)                        :: varR, varV
-        real(wp), dimension(Nb)         :: nR, R, nRdot, Rdot
-        real(wp)                        :: nR3
-        real(wp)                        :: accel
-        real(wp)                        :: int_pres
-        real(wp)                        :: max_pres
-        real(wp), dimension(2)          :: Re
-        real(wp), dimension(6)          :: tau_e
-        real(wp)                        :: G_local
-        real(wp)                        :: dyn_p, T
-        real(wp)                        :: damage_state
-        integer                         :: i, j, k, l, s, d  !< Generic loop iterator
-        real(wp)                        :: nondim_time       !< Non-dimensional time
-        real(wp)                        :: tmp               !< Temporary variable to store quantity for mpi_allreduce
-        integer                         :: npts              !< Number of included integral points
-        real(wp)                        :: rad, thickness    !< For integral quantities
-        logical                         :: trigger           !< For integral quantities
-        real(wp)                        :: rhoYks(1:1)
-
-        T = dflt_T_guess
-
-        if (time_stepper == 23) then
-            nondim_time = mytime
-        else
-            if (t_step_old /= dflt_int) then
-                nondim_time = real(t_step + t_step_old, wp)*dt
-            else
-                nondim_time = real(t_step, wp)*dt
-            end if
-        end if
-
-        do i = 1, num_probes
-            rho = 0._wp
-            do s = 1, num_vels
-                vel(s) = 0._wp
-            end do
-            pres = 0._wp
-            gamma = 0._wp
-            pi_inf = 0._wp
-            qv = 0._wp
-            c = 0._wp
-            accel = 0._wp
-            nR = 0._wp; R = 0._wp
-            nRdot = 0._wp; Rdot = 0._wp
-            nbub = 0._wp
-            M00 = 0._wp
-            M10 = 0._wp
-            M01 = 0._wp
-            M20 = 0._wp
-            M11 = 0._wp
-            M02 = 0._wp
-            varR = 0._wp; varV = 0._wp
-            alf = 0._wp
-            do s = 1, (num_dims*(num_dims + 1))/2
-                tau_e(s) = 0._wp
-            end do
-            damage_state = 0._wp
-
-            if (n == 0) then
-                if ((probe(i)%x >= x_cb(-1)) .and. (probe(i)%x <= x_cb(m))) then
-                    do s = -1, m
-                        distx(s) = x_cb(s) - probe(i)%x
-                        if (distx(s) < 0._wp) distx(s) = 1000._wp
-                    end do
-                    j = minloc(distx, 1)
-                    if (j == 1) j = 2  ! Pick first point if probe is at edge
-                    k = 0
-                    l = 0
-
-                    ! Computing/Sharing necessary state variables
-                    call s_convert_to_mixture_variables(q_cons_vf, j - 2, k, l, rho, gamma, pi_inf, qv)
-                    do s = 1, num_vels
-                        vel(s) = q_cons_vf(cont_idx%end + s)%sf(j - 2, k, l)/rho
-                    end do
-
-                    dyn_p = 0.5_wp*rho*dot_product(vel, vel)
-
-                    call s_compute_pressure(q_cons_vf(E_idx)%sf(j - 2, k, l), q_cons_vf(alf_idx)%sf(j - 2, k, l), dyn_p, pi_inf, &
-                                            & gamma, rho, qv, pres)
-
-                    ! Compute mixture sound Speed
-                    call s_compute_speed_of_sound(pres, rho, gamma, pi_inf, ((gamma + 1._wp)*pres + pi_inf)/rho, alpha, 0._wp, &
-                                                  & 0._wp, c, qv)
-
-                    accel = accel_mag(j - 2, k, l)
-                end if
-            else if (p == 0) then
-                if ((probe(i)%x >= x_cb(-1)) .and. (probe(i)%x <= x_cb(m))) then
-                    if ((probe(i)%y >= y_cb(-1)) .and. (probe(i)%y <= y_cb(n))) then
-                        do s = -1, m
-                            distx(s) = x_cb(s) - probe(i)%x
-                            if (distx(s) < 0._wp) distx(s) = 1000._wp
-                        end do
-                        do s = -1, n
-                            disty(s) = y_cb(s) - probe(i)%y
-                            if (disty(s) < 0._wp) disty(s) = 1000._wp
-                        end do
-                        j = minloc(distx, 1)
-                        k = minloc(disty, 1)
-                        if (j == 1) j = 2  ! Pick first point if probe is at edge
-                        if (k == 1) k = 2  ! Pick first point if probe is at edge
-                        l = 0
-
-                        ! Computing/Sharing necessary state variables
-                        call s_convert_to_mixture_variables(q_cons_vf, j - 2, k - 2, l, rho, gamma, pi_inf, qv)
-                        do s = 1, num_vels
-                            vel(s) = q_cons_vf(cont_idx%end + s)%sf(j - 2, k - 2, l)/rho
-                        end do
-
-                        dyn_p = 0.5_wp*rho*dot_product(vel, vel)
-
-                        call s_compute_pressure(q_cons_vf(E_idx)%sf(j - 2, k - 2, l), q_cons_vf(alf_idx)%sf(j - 2, k - 2, l), &
-                                                & dyn_p, pi_inf, gamma, rho, qv, pres)
-
-                        ! Compute mixture sound speed
-                        call s_compute_speed_of_sound(pres, rho, gamma, pi_inf, ((gamma + 1._wp)*pres + pi_inf)/rho, alpha, &
-                                                      & 0._wp, 0._wp, c, qv)
-                    end if
-                end if
-            else
-                if ((probe(i)%x >= x_cb(-1)) .and. (probe(i)%x <= x_cb(m))) then
-                    if ((probe(i)%y >= y_cb(-1)) .and. (probe(i)%y <= y_cb(n))) then
-                        if ((probe(i)%z >= z_cb(-1)) .and. (probe(i)%z <= z_cb(p))) then
-                            do s = -1, m
-                                distx(s) = x_cb(s) - probe(i)%x
-                                if (distx(s) < 0._wp) distx(s) = 1000._wp
-                            end do
-                            do s = -1, n
-                                disty(s) = y_cb(s) - probe(i)%y
-                                if (disty(s) < 0._wp) disty(s) = 1000._wp
-                            end do
-                            do s = -1, p
-                                distz(s) = z_cb(s) - probe(i)%z
-                                if (distz(s) < 0._wp) distz(s) = 1000._wp
-                            end do
-                            j = minloc(distx, 1)
-                            k = minloc(disty, 1)
-                            l = minloc(distz, 1)
-                            if (j == 1) j = 2  ! Pick first point if probe is at edge
-                            if (k == 1) k = 2  ! Pick first point if probe is at edge
-                            if (l == 1) l = 2  ! Pick first point if probe is at edge
-
-                            ! Computing/Sharing necessary state variables
-                            call s_convert_to_mixture_variables(q_cons_vf, j - 2, k - 2, l - 2, rho, gamma, pi_inf, qv)
-                            do s = 1, num_vels
-                                vel(s) = q_cons_vf(cont_idx%end + s)%sf(j - 2, k - 2, l - 2)/rho
-                            end do
-
-                            dyn_p = 0.5_wp*rho*dot_product(vel, vel)
-
-                            call s_compute_pressure(q_cons_vf(E_idx)%sf(j - 2, k - 2, l - 2), q_cons_vf(alf_idx)%sf(j - 2, k - 2, &
-                                                    & l - 2), dyn_p, pi_inf, gamma, rho, qv, pres)
-
-                            ! Compute mixture sound speed
-                            call s_compute_speed_of_sound(pres, rho, gamma, pi_inf, ((gamma + 1._wp)*pres + pi_inf)/rho, alpha, &
-                                                          & 0._wp, 0._wp, c, qv)
-
-                            accel = accel_mag(j - 2, k - 2, l - 2)
-                        end if
-                    end if
-                end if
-            end if
-            if (num_procs > 1) then
-                #:for VAR in ['rho','pres','gamma','pi_inf','qv','c','accel']
-                    tmp = ${VAR}$
-                    call s_mpi_allreduce_sum(tmp, ${VAR}$)
-                #:endfor
-
-                do s = 1, num_vels
-                    tmp = vel(s)
-                    call s_mpi_allreduce_sum(tmp, vel(s))
-                end do
-
-                if (bubbles_euler) then
-                    #:for VAR in ['alf','alfgr','nbub','nR(1)','nRdot(1)','M00','R(1)','Rdot(1)','ptilde','ptot']
-                        tmp = ${VAR}$
-                        call s_mpi_allreduce_sum(tmp, ${VAR}$)
-                    #:endfor
-
-                    if (qbmm) then
-                        #:for VAR in ['varR','varV','M10','M01','M20','M02']
-                            tmp = ${VAR}$
-                            call s_mpi_allreduce_sum(tmp, ${VAR}$)
-                        #:endfor
-                    end if
-                end if
-            end if
-            if (proc_rank == 0) then
-                if (n == 0) then
-                    if (bubbles_euler .and. (num_fluids <= 2)) then
-                        if (qbmm) then
-                            write (i + 30, '(6x,f12.6,14f28.16)') nondim_time, rho, vel(1), pres, alf, R(1), Rdot(1), nR(1), &
-                                   & nRdot(1), varR, varV, M10, M01, M20, M02
-                        else
-                            write (i + 30, '(6x,f12.6,8f24.8)') nondim_time, rho, vel(1), pres, alf, R(1), Rdot(1), nR(1), nRdot(1)
-                            ! ptilde, & ptot
-                        end if
-                    else if (bubbles_euler .and. (num_fluids == 3)) then
-                        write (i + 30, &
-                               & '(6x,f12.6,f24.8,f24.8,f24.8,f24.8,f24.8,' // 'f24.8,f24.8,f24.8,f24.8,f24.8, f24.8)') &
-                               & nondim_time, rho, vel(1), pres, alf, alfgr, nR(1), nRdot(1), R(1), Rdot(1), ptilde, ptot
-                    else if (bubbles_euler .and. num_fluids == 4) then
-                        write (i + 30, &
-                               & '(6x,f12.6,f24.8,f24.8,f24.8,f24.8,' // 'f24.8,f24.8,f24.8,f24.8,f24.8,f24.8,f24.8,f24.8,f24.8)') &
-                               & nondim_time, q_cons_vf(1)%sf(j - 2, 0, 0), q_cons_vf(2)%sf(j - 2, 0, 0), q_cons_vf(3)%sf(j - 2, &
-                               & 0, 0), q_cons_vf(4)%sf(j - 2, 0, 0), q_cons_vf(5)%sf(j - 2, 0, 0), q_cons_vf(6)%sf(j - 2, 0, 0), &
-                               & q_cons_vf(7)%sf(j - 2, 0, 0), q_cons_vf(8)%sf(j - 2, 0, 0), q_cons_vf(9)%sf(j - 2, 0, 0), &
-                               & q_cons_vf(10)%sf(j - 2, 0, 0), nbub, R(1), Rdot(1)
-                    else
-                        write (i + 30, '(6X,F12.6,F24.8,F24.8,F24.8)') nondim_time, rho, vel(1), pres
-                    end if
-                else if (p == 0) then
-                    if (bubbles_euler) then
-                        #:if not MFC_CASE_OPTIMIZATION or num_dims > 1
-                            write (i + 30, '(6X,10F24.8)') nondim_time, rho, vel(1), vel(2), pres, alf, nR(1), nRdot(1), R(1), &
-                                   & Rdot(1)
-                        #:endif
-                    else
-                        write (i + 30, '(6X,F12.6,F24.8,F24.8,F24.8)') nondim_time, rho, vel(1), pres
-                        print *, 'time =', nondim_time, 'rho =', rho, 'pres =', pres
-                    end if
-                else
-                    #:if not MFC_CASE_OPTIMIZATION or num_dims > 2
-                        write (i + 30, &
-                               & '(6X,F12.6,F24.8,F24.8,F24.8,F24.8,' // 'F24.8,F24.8,F24.8,F24.8,F24.8,' // 'F24.8)') &
-                               & nondim_time, rho, vel(1), vel(2), vel(3), pres, gamma, pi_inf, qv, c, accel
-                    #:endif
-                end if
-            end if
-        end do
-
-        if (integral_wrt .and. bubbles_euler) then
-            if (n == 0) then
-                do i = 1, num_integrals
-                    int_pres = 0._wp
-                    max_pres = 0._wp
-                    k = 0; l = 0
-                    npts = 0
-                    do j = 1, m
-                        pres = 0._wp
-                        do s = 1, num_vels
-                            vel(s) = 0._wp
-                        end do
-                        rho = 0._wp
-                        pres = 0._wp
-                        gamma = 0._wp
-                        pi_inf = 0._wp
-                        qv = 0._wp
-
-                        if ((integral(i)%xmin <= x_cb(j)) .and. (integral(i)%xmax >= x_cb(j))) then
-                            npts = npts + 1
-                            call s_convert_to_mixture_variables(q_cons_vf, j, k, l, rho, gamma, pi_inf, qv, Re)
-                            do s = 1, num_vels
-                                vel(s) = q_cons_vf(cont_idx%end + s)%sf(j, k, l)/rho
-                            end do
-
-                            pres = ((q_cons_vf(E_idx)%sf(j, k, l) - 0.5_wp*(q_cons_vf(mom_idx%beg)%sf(j, k, &
-                                    & l)**2._wp)/rho)/(1._wp - q_cons_vf(alf_idx)%sf(j, k, l)) - pi_inf - qv)/gamma
-                            int_pres = int_pres + (pres - 1._wp)**2._wp
-                        end if
-                    end do
-                    int_pres = sqrt(int_pres/(1._wp*npts))
-
-                    if (num_procs > 1) then
-                        tmp = int_pres
-                        call s_mpi_allreduce_sum(tmp, int_pres)
-                    end if
-
-                    if (proc_rank == 0) then
-                        if (bubbles_euler .and. (num_fluids <= 2)) then
-                            write (i + 70, '(6x,f12.6,f24.8)') nondim_time, int_pres
-                        end if
-                    end if
-                end do
-            else if (p == 0) then
-                if (num_integrals /= 3) then
-                    call s_mpi_abort('Incorrect number of integrals')
-                end if
-
-                rad = integral(1)%xmax
-                thickness = integral(1)%xmin
-
-                do i = 1, num_integrals
-                    int_pres = 0._wp
-                    max_pres = 0._wp
-                    l = 0
-                    npts = 0
-                    do j = 1, m
-                        do k = 1, n
-                            trigger = .false.
-                            if (i == 1) then
-                                ! inner portion
-                                if (sqrt(x_cb(j)**2._wp + y_cb(k)**2._wp) < (rad - 0.5_wp*thickness)) trigger = .true.
-                            else if (i == 2) then
-                                ! net region
-                                if (sqrt(x_cb(j)**2._wp + y_cb(k)**2._wp) > (rad - 0.5_wp*thickness) .and. sqrt(x_cb(j)**2._wp &
-                                    & + y_cb(k)**2._wp) < (rad + 0.5_wp*thickness)) trigger = .true.
-                            else if (i == 3) then
-                                ! everything else
-                                if (sqrt(x_cb(j)**2._wp + y_cb(k)**2._wp) > (rad + 0.5_wp*thickness)) trigger = .true.
-                            end if
-
-                            pres = 0._wp
-                            do s = 1, num_vels
-                                vel(s) = 0._wp
-                            end do
-                            rho = 0._wp
-                            pres = 0._wp
-                            gamma = 0._wp
-                            pi_inf = 0._wp
-                            qv = 0._wp
-
-                            if (trigger) then
-                                npts = npts + 1
-                                call s_convert_to_mixture_variables(q_cons_vf, j, k, l, rho, gamma, pi_inf, qv, Re)
-                                do s = 1, num_vels
-                                    vel(s) = q_cons_vf(cont_idx%end + s)%sf(j, k, l)/rho
-                                end do
-
-                                pres = ((q_cons_vf(E_idx)%sf(j, k, l) - 0.5_wp*(q_cons_vf(mom_idx%beg)%sf(j, k, &
-                                        & l)**2._wp)/rho)/(1._wp - q_cons_vf(alf_idx)%sf(j, k, l)) - pi_inf - qv)/gamma
-                                int_pres = int_pres + abs(pres - 1._wp)
-                                max_pres = max(max_pres, abs(pres - 1._wp))
-                            end if
-                        end do
-                    end do
-
-                    if (npts > 0) then
-                        int_pres = int_pres/(1._wp*npts)
-                    else
-                        int_pres = 0._wp
-                    end if
-
-                    if (num_procs > 1) then
-                        tmp = int_pres
-                        call s_mpi_allreduce_sum(tmp, int_pres)
-
-                        tmp = max_pres
-                        call s_mpi_allreduce_max(tmp, max_pres)
-                    end if
-
-                    if (proc_rank == 0) then
-                        if (bubbles_euler .and. (num_fluids <= 2)) then
-                            write (i + 70, '(6x,f12.6,f24.8,f24.8)') nondim_time, int_pres, max_pres
-                        end if
-                    end if
-                end do
-            end if
-        end if
-
-    end subroutine s_write_probe_files
 
     !> Write footer with stability criteria extrema and run-time to the information file, then close it
     impure subroutine s_close_run_time_information_file
@@ -968,28 +490,6 @@ contains
         close (3)
 
     end subroutine s_close_run_time_information_file
-
-    !> Closes communication files
-    impure subroutine s_close_com_files()
-
-        integer :: i  !< Generic loop iterator
-
-        do i = 1, num_fluids
-            close (i + 120)
-        end do
-
-    end subroutine s_close_com_files
-
-    !> Closes probe files
-    impure subroutine s_close_probe_files
-
-        integer :: i  !< Generic loop iterator
-
-        do i = 1, num_probes
-            close (i + 30)
-        end do
-
-    end subroutine s_close_probe_files
 
     !> Initialize the data output module
     impure subroutine s_initialize_data_output_module

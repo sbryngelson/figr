@@ -1,17 +1,11 @@
-!>
-!! @file
-!! @brief Contains module m_data_output
 
-!> @brief Writes grid and initial condition data to serial or parallel output files
 module m_data_output
 
     use m_derived_types
     use m_global_parameters
     use m_helper
     use m_mpi_proxy
-#ifdef MFC_MPI
     use mpi
-#endif
 
     use m_compile_specific
     use m_variables_conversion
@@ -63,10 +57,7 @@ contains
         integer                                                     :: t_step
         real(wp)                                                    :: gamma, lit_gamma, pi_inf, qv
         real(wp)                                                    :: rho
-        real(wp)                                                    :: pres, T
-        real(wp)                                                    :: rhoYks(1:1)
-
-        T = dflt_T_guess
+        real(wp)                                                    :: pres
 
         t_step = 0
 
@@ -213,7 +204,6 @@ contains
         type(scalar_field), dimension(sys_size), intent(inout)      :: q_cons_vf, q_prim_vf
         type(integer_field), dimension(1:num_dims,-1:1), intent(in) :: bc_type
 
-#ifdef MFC_MPI
         integer                              :: ifile, ierr, data_size
         integer, dimension(MPI_STATUS_SIZE)  :: status
         integer(KIND=MPI_OFFSET_KIND)        :: disp
@@ -349,7 +339,6 @@ contains
 
             call MPI_FILE_CLOSE(ifile, ierr)
         end if
-#endif
 
         if (bc_io) then
             call s_write_parallel_boundary_condition_files(q_cons_vf, bc_type)

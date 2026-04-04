@@ -23,11 +23,11 @@
         #:assert isinstance(default, str)
         #:assert (default == 'present' or default == 'none')
         #:if default == 'present'
-            #:if MFC_COMPILER == NVIDIA_COMPILER_ID or MFC_COMPILER == PGI_COMPILER_ID
+            #:if FIGR_COMPILER == NVIDIA_COMPILER_ID or FIGR_COMPILER == PGI_COMPILER_ID
                 #:set default_val = 'defaultmap(tofrom:aggregate) defaultmap(tofrom:allocatable) defaultmap(tofrom:pointer) '
-            #:elif MFC_COMPILER == CCE_COMPILER_ID
+            #:elif FIGR_COMPILER == CCE_COMPILER_ID
                 #:set default_val = 'defaultmap(tofrom:aggregate) defaultmap(present:allocatable) defaultmap(present:pointer) '
-            #:elif MFC_COMPILER == AMD_COMPILER_ID
+            #:elif FIGR_COMPILER == AMD_COMPILER_ID
                 #:set default_val = ''
             #:else
                 #:set default_val = 'defaultmap(tofrom:aggregate) defaultmap(tofrom:allocatable) defaultmap(tofrom:pointer) '
@@ -176,11 +176,11 @@
         & deviceptr_val.strip('\n') + attach_val.strip('\n')
     #! Hardcoding the parallelism for now
 
-    #:if MFC_COMPILER == NVIDIA_COMPILER_ID or MFC_COMPILER == PGI_COMPILER_ID
+    #:if FIGR_COMPILER == NVIDIA_COMPILER_ID or FIGR_COMPILER == PGI_COMPILER_ID
         #:set omp_start_directive = '!$omp target teams loop defaultmap(firstprivate:scalar) bind(teams,parallel) '
-    #:elif MFC_COMPILER == CCE_COMPILER_ID
+    #:elif FIGR_COMPILER == CCE_COMPILER_ID
         #:set omp_start_directive = '!$omp target teams distribute parallel do simd defaultmap(firstprivate:scalar) '
-    #:elif MFC_COMPILER == AMD_COMPILER_ID
+    #:elif FIGR_COMPILER == AMD_COMPILER_ID
         #:set omp_start_directive = '!$omp target teams distribute parallel do '
     #:else
         #:set omp_start_directive = '!$omp target teams loop defaultmap(firstprivate:scalar) bind(teams,parallel) '
@@ -191,11 +191,11 @@
 #:enddef
 
 #:def END_OMP_PARALLEL_LOOP()
-    #:if MFC_COMPILER == NVIDIA_COMPILER_ID or MFC_COMPILER == PGI_COMPILER_ID
+    #:if FIGR_COMPILER == NVIDIA_COMPILER_ID or FIGR_COMPILER == PGI_COMPILER_ID
         #:set omp_end_directive = '!$omp end target teams loop'
-    #:elif MFC_COMPILER == CCE_COMPILER_ID
+    #:elif FIGR_COMPILER == CCE_COMPILER_ID
         #:set omp_end_directive = '!$omp end target teams distribute parallel do simd'
-    #:elif MFC_COMPILER == AMD_COMPILER_ID
+    #:elif FIGR_COMPILER == AMD_COMPILER_ID
         #:set omp_end_directive = '!$omp end target teams distribute parallel do'
     #:else
         #:set omp_end_directive = '!$omp end target teams loop'
@@ -218,7 +218,7 @@
         #:set function_name_val = ''
     #:endif
 
-    #:if MFC_COMPILER == AMD_COMPILER_ID
+    #:if FIGR_COMPILER == AMD_COMPILER_ID
         #:set clause_val = ''
     #:else
         #:set clause_val = nohost_val.strip('\n')
@@ -243,9 +243,9 @@
 #! Not fully implemented yet (ignores most args right now)
 #:def OMP_LOOP(collapse=None, parallelism=None, data_dependency=None, reduction=None, reductionOp=None, private=None, &
                & extraOmpArgs=None)
-    #:if MFC_COMPILER == NVIDIA_COMPILER_ID or MFC_COMPILER == PGI_COMPILER_ID
+    #:if FIGR_COMPILER == NVIDIA_COMPILER_ID or FIGR_COMPILER == PGI_COMPILER_ID
         #:set omp_directive = '!$omp loop bind(thread)'
-    #:elif MFC_COMPILER == CCE_COMPILER_ID or MFC_COMPILER == AMD_COMPILER_ID
+    #:elif FIGR_COMPILER == CCE_COMPILER_ID or FIGR_COMPILER == AMD_COMPILER_ID
         #:set omp_directive = ''
     #:else
         #:set omp_directive = ''
@@ -346,31 +346,31 @@
 #:enddef
 
 #:def UNDEF_AMD(code)
-    #:if MFC_COMPILER != AMD_COMPILER_ID
+    #:if FIGR_COMPILER != AMD_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 #:def DEF_AMD(code)
-    #:if MFC_COMPILER == AMD_COMPILER_ID
+    #:if FIGR_COMPILER == AMD_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 #:def UNDEF_CCE(code)
-    #:if MFC_COMPILER != CCE_COMPILER_ID
+    #:if FIGR_COMPILER != CCE_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 #:def DEF_CCE(code)
-    #:if MFC_COMPILER == CCE_COMPILER_ID
+    #:if FIGR_COMPILER == CCE_COMPILER_ID
         $:code
     #:endif
 #:enddef
 
 #:def UNDEF_NVIDIA(code)
-    #:if MFC_COMPILER != NVIDIA_COMPILER_ID and MFC_COMPILER != PGI_COMPILER_ID
+    #:if FIGR_COMPILER != NVIDIA_COMPILER_ID and FIGR_COMPILER != PGI_COMPILER_ID
         $:code
     #:endif
 #:enddef
