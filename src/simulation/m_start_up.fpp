@@ -1,0 +1,760 @@
+
+#:include 'case.fpp'
+#:include 'macros.fpp'
+
+module m_start_up
+
+    use m_derived_types
+    use m_global_parameters
+    use m_mpi_proxy
+    use m_mpi_common
+    use m_variables_conversion
+    use m_boundary_common
+    use m_rhs
+    use m_data_output
+    use m_time_steppers
+    use ieee_arithmetic
+    use m_helper_basic
+    use m_helper
+
+    $:USE_GPU_MODULE()
+
+    use m_nvtx
+    use m_compile_specific
+    use m_checker_common
+    use m_checker
+    use m_sim_helpers
+    use m_igr
+
+    implicit none
+
+    private; public :: s_read_input_file, s_check_input_file, s_read_data_files, s_read_serial_data_files, &
+        & s_read_parallel_data_files, s_initialize_modules, s_initialize_gpu_vars, s_initialize_mpi_domain, s_finalize_modules, &
+        & s_perform_time_step, s_save_data, s_save_performance_metrics
+
+    type(scalar_field), allocatable, dimension(:) :: q_cons_temp
+    real(wp)                                      :: dt_init
+
+contains
+
+    !> Read data files. Dispatch subroutine that replaces procedure pointer.
+    impure subroutine s_read_data_files(q_cons_vf)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
+
+        if (.not. parallel_io) then
+            call s_read_serial_data_files(q_cons_vf)
+        else
+            call s_read_parallel_data_files(q_cons_vf)
+        end if
+
+    end subroutine s_read_data_files
+
+    !> Verify the input file exists and read it
+    impure subroutine s_read_input_file
+
+        character(LEN=name_len), parameter :: file_path = './simulation.inp'
+        logical                            :: file_exist  !< Logical used to check the existence of the input file
+        integer                            :: iostatus
+        ! Integer to check iostat of file read
+
+        character(len=1000) :: line
+
+        namelist /user_inputs/ case_dir, run_time_info, m, n, p, dt, &
+            t_step_start, t_step_stop, t_step_save, t_step_print, &
+            model_eqns, time_stepper, &
+            rdma_mpi, &
+            bc_x, bc_y, bc_z, &
+            x_a, y_a, z_a, x_b, y_b, z_b, &
+            x_domain, y_domain, z_domain, &
+            fluid_pp, prim_vars_wrt, &
+            t_step_old, &
+            precision, parallel_io, &
+            rhoref, pref, &
+            num_fluids, igr_order, viscous, &
+            igr_iter_solver, igr_pres_lim, &
+        file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, num_bc_patches, alf_factor, &
+            & num_igr_iters, num_igr_warm_start_iters, down_sample, &
+            & double_mach
+
+        inquire (FILE=trim(file_path), EXIST=file_exist)
+
+        if (file_exist) then
+            open (1, FILE=trim(file_path), form='formatted', ACTION='read', STATUS='old')
+            read (1, NML=user_inputs, iostat=iostatus)
+
+            if (iostatus /= 0) then
+                backspace (1)
+                read (1, fmt='(A)') line
+                print *, 'Invalid line in namelist: ' // trim(line)
+                call s_mpi_abort('Invalid line in simulation.inp. It is ' // 'likely due to a datatype mismatch. Exiting.')
+            end if
+
+            close (1)
+
+            m_glb = m
+            n_glb = n
+            p_glb = p
+
+            call s_update_cell_bounds(cells_bounds, m, n, p)
+
+            if (cfl_adap_dt .or. cfl_const_dt) cfl_dt = .true.
+
+            if (any((/bc_x%beg, bc_x%end, bc_y%beg, bc_y%end, bc_z%beg, bc_z%end/) == -17) .or. num_bc_patches > 0) then
+                bc_io = .true.
+            end if
+        else
+            call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+        end if
+
+    end subroutine s_read_input_file
+
+    !> Validate that all user-provided inputs form a consistent simulation configuration
+    impure subroutine s_check_input_file
+
+        character(LEN=path_len) :: file_path
+        logical                 :: file_exist
+
+        file_path = trim(case_dir) // '/.'
+
+        call my_inquire(file_path, file_exist)
+
+        if (file_exist .neqv. .true.) then
+            call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+        end if
+
+        call s_check_inputs_common()
+        call s_check_inputs()
+
+    end subroutine s_check_input_file
+
+    !> Read serial initial condition and grid data files and compute cell-width distributions
+    impure subroutine s_read_serial_data_files(q_cons_vf)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
+        character(LEN=path_len + 2*name_len) :: t_step_dir  !< Relative path to the starting time-step directory
+        character(LEN=path_len + 3*name_len) :: file_path   !< Relative path to the grid and conservative variables data files
+        logical :: file_exist
+        integer :: i, r
+
+        if (cfl_dt) then
+            write (t_step_dir, '(A,I0,A,I0)') trim(case_dir) // '/p_all/p', proc_rank, '/', n_start
+        else
+            write (t_step_dir, '(A,I0,A,I0)') trim(case_dir) // '/p_all/p', proc_rank, '/', t_step_start
+        end if
+
+        file_path = trim(t_step_dir) // '/.'
+        call my_inquire(file_path, file_exist)
+
+        if (file_exist .neqv. .true.) then
+            call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+        end if
+
+        if (bc_io) then
+            call s_read_serial_boundary_condition_files(t_step_dir, bc_type)
+        else
+            call s_assign_default_bc_type(bc_type)
+        end if
+
+        file_path = trim(t_step_dir) // '/x_cb.dat'
+
+        inquire (FILE=trim(file_path), EXIST=file_exist)
+
+        if (file_exist) then
+            open (2, FILE=trim(file_path), form='unformatted', ACTION='read', STATUS='old')
+            read (2) x_cb(-1:m); close (2)
+        else
+            call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+        end if
+
+        dx(0:m) = x_cb(0:m) - x_cb(-1:m - 1)
+        x_cc(0:m) = x_cb(-1:m - 1) + dx(0:m)/2._wp
+
+        if (n > 0) then
+            file_path = trim(t_step_dir) // '/y_cb.dat'
+
+            inquire (FILE=trim(file_path), EXIST=file_exist)
+
+            if (file_exist) then
+                open (2, FILE=trim(file_path), form='unformatted', ACTION='read', STATUS='old')
+                read (2) y_cb(-1:n); close (2)
+            else
+                call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+            end if
+
+            dy(0:n) = y_cb(0:n) - y_cb(-1:n - 1)
+            y_cc(0:n) = y_cb(-1:n - 1) + dy(0:n)/2._wp
+        end if
+
+        if (p > 0) then
+            file_path = trim(t_step_dir) // '/z_cb.dat'
+
+            inquire (FILE=trim(file_path), EXIST=file_exist)
+
+            if (file_exist) then
+                open (2, FILE=trim(file_path), form='unformatted', ACTION='read', STATUS='old')
+                read (2) z_cb(-1:p); close (2)
+            else
+                call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+            end if
+
+            dz(0:p) = z_cb(0:p) - z_cb(-1:p - 1)
+            z_cc(0:p) = z_cb(-1:p - 1) + dz(0:p)/2._wp
+        end if
+
+        do i = 1, sys_size
+            write (file_path, '(A,I0,A)') trim(t_step_dir) // '/q_cons_vf', i, '.dat'
+            inquire (FILE=trim(file_path), EXIST=file_exist)
+            if (file_exist) then
+                open (2, FILE=trim(file_path), form='unformatted', ACTION='read', STATUS='old')
+                read (2) q_cons_vf(i)%sf(0:m,0:n,0:p); close (2)
+            else
+                call s_mpi_abort(trim(file_path) // ' is missing. Exiting.')
+            end if
+        end do
+
+    end subroutine s_read_serial_data_files
+
+    !> Read parallel initial condition and grid data files via MPI I/O
+    impure subroutine s_read_parallel_data_files(q_cons_vf)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_cons_vf
+
+        real(wp), allocatable, dimension(:)  :: x_cb_glb, y_cb_glb, z_cb_glb
+        integer                              :: ifile, ierr, data_size
+        integer, dimension(MPI_STATUS_SIZE)  :: status
+        integer(KIND=MPI_OFFSET_KIND)        :: disp
+        integer(KIND=MPI_OFFSET_KIND)        :: m_MOK, n_MOK, p_MOK
+        integer(KIND=MPI_OFFSET_KIND)        :: WP_MOK, var_MOK, str_MOK
+        integer(KIND=MPI_OFFSET_KIND)        :: NVARS_MOK
+        integer(KIND=MPI_OFFSET_KIND)        :: MOK
+        character(LEN=path_len + 2*name_len) :: file_loc
+        logical                              :: file_exist
+        character(len=10)                    :: t_step_start_string
+        integer                              :: i, j
+
+        ! Downsampled data variables
+        integer :: m_ds, n_ds, p_ds
+        integer :: m_glb_ds, n_glb_ds, p_glb_ds
+        integer :: m_glb_read, n_glb_read, p_glb_read  !< data size of read
+
+        allocate (x_cb_glb(-1:m_glb))
+        allocate (y_cb_glb(-1:n_glb))
+        allocate (z_cb_glb(-1:p_glb))
+
+        file_loc = trim(case_dir) // '/restart_data' // trim(mpiiofs) // 'x_cb.dat'
+        inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+        if (down_sample) then
+            m_ds = int((m + 1)/3) - 1
+            n_ds = int((n + 1)/3) - 1
+            p_ds = int((p + 1)/3) - 1
+
+            m_glb_ds = int((m_glb + 1)/3) - 1
+            n_glb_ds = int((n_glb + 1)/3) - 1
+            p_glb_ds = int((p_glb + 1)/3) - 1
+        end if
+
+        if (file_exist) then
+            data_size = m_glb + 2
+            call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+            call MPI_FILE_READ(ifile, x_cb_glb, data_size, mpi_p, status, ierr)
+            call MPI_FILE_CLOSE(ifile, ierr)
+        else
+            call s_mpi_abort('File ' // trim(file_loc) // ' is missing. Exiting.')
+        end if
+
+        x_cb(-1:m) = x_cb_glb((start_idx(1) - 1):(start_idx(1) + m))
+        dx(0:m) = x_cb(0:m) - x_cb(-1:m - 1)
+        x_cc(0:m) = x_cb(-1:m - 1) + dx(0:m)/2._wp
+
+        if (n > 0) then
+            file_loc = trim(case_dir) // '/restart_data' // trim(mpiiofs) // 'y_cb.dat'
+            inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+            if (file_exist) then
+                data_size = n_glb + 2
+                call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+                call MPI_FILE_READ(ifile, y_cb_glb, data_size, mpi_p, status, ierr)
+                call MPI_FILE_CLOSE(ifile, ierr)
+            else
+                call s_mpi_abort('File ' // trim(file_loc) // ' is missing. Exiting.')
+            end if
+
+            y_cb(-1:n) = y_cb_glb((start_idx(2) - 1):(start_idx(2) + n))
+            dy(0:n) = y_cb(0:n) - y_cb(-1:n - 1)
+            y_cc(0:n) = y_cb(-1:n - 1) + dy(0:n)/2._wp
+
+            if (p > 0) then
+                file_loc = trim(case_dir) // '/restart_data' // trim(mpiiofs) // 'z_cb.dat'
+                inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+                if (file_exist) then
+                    data_size = p_glb + 2
+                    call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+                    call MPI_FILE_READ(ifile, z_cb_glb, data_size, mpi_p, status, ierr)
+                    call MPI_FILE_CLOSE(ifile, ierr)
+                else
+                    call s_mpi_abort('File ' // trim(file_loc) // 'is missing. Exiting.')
+                end if
+
+                z_cb(-1:p) = z_cb_glb((start_idx(3) - 1):(start_idx(3) + p))
+                dz(0:p) = z_cb(0:p) - z_cb(-1:p - 1)
+                z_cc(0:p) = z_cb(-1:p - 1) + dz(0:p)/2._wp
+            end if
+        end if
+
+        if (file_per_process) then
+            if (cfl_dt) then
+                call s_int_to_str(n_start, t_step_start_string)
+                write (file_loc, '(I0,A1,I7.7,A)') n_start, '_', proc_rank, '.dat'
+            else
+                call s_int_to_str(t_step_start, t_step_start_string)
+                write (file_loc, '(I0,A1,I7.7,A)') t_step_start, '_', proc_rank, '.dat'
+            end if
+            file_loc = trim(case_dir) // '/restart_data/lustre_' // trim(t_step_start_string) // trim(mpiiofs) // trim(file_loc)
+            inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+            if (file_exist) then
+                call MPI_FILE_OPEN(MPI_COMM_SELF, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+
+                if (down_sample) then
+                    call s_initialize_mpi_data_ds(q_cons_vf)
+                else
+                    call s_initialize_mpi_data(q_cons_vf)
+                end if
+
+                if (down_sample) then
+                    data_size = (m_ds + 3)*(n_ds + 3)*(p_ds + 3)
+                    m_glb_read = m_glb_ds + 1
+                    n_glb_read = n_glb_ds + 1
+                    p_glb_read = p_glb_ds + 1
+                else
+                    data_size = (m + 1)*(n + 1)*(p + 1)
+                    m_glb_read = m_glb + 1
+                    n_glb_read = n_glb + 1
+                    p_glb_read = p_glb + 1
+                end if
+
+                m_MOK = int(m_glb_read + 1, MPI_OFFSET_KIND)
+                n_MOK = int(m_glb_read + 1, MPI_OFFSET_KIND)
+                p_MOK = int(m_glb_read + 1, MPI_OFFSET_KIND)
+                WP_MOK = int(storage_size(0._stp)/8, MPI_OFFSET_KIND)
+                MOK = int(1._wp, MPI_OFFSET_KIND)
+                str_MOK = int(name_len, MPI_OFFSET_KIND)
+                NVARS_MOK = int(sys_size, MPI_OFFSET_KIND)
+
+                if (down_sample) then
+                    do i = 1, sys_size
+                        var_MOK = int(i, MPI_OFFSET_KIND)
+
+                        call MPI_FILE_READ(ifile, q_cons_temp(i)%sf, data_size*mpi_io_type, mpi_io_p, status, ierr)
+                    end do
+                else
+                    do i = 1, sys_size
+                        var_MOK = int(i, MPI_OFFSET_KIND)
+
+                        call MPI_FILE_READ(ifile, MPI_IO_DATA%var(i)%sf, data_size*mpi_io_type, mpi_io_p, status, ierr)
+                    end do
+                end if
+
+                call s_mpi_barrier()
+
+                call MPI_FILE_CLOSE(ifile, ierr)
+            else
+                call s_mpi_abort('File ' // trim(file_loc) // ' is missing. Exiting.')
+            end if
+        else
+            if (cfl_dt) then
+                write (file_loc, '(I0,A)') n_start, '.dat'
+            else
+                write (file_loc, '(I0,A)') t_step_start, '.dat'
+            end if
+            file_loc = trim(case_dir) // '/restart_data' // trim(mpiiofs) // trim(file_loc)
+            inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+            if (file_exist) then
+                call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+
+                call s_initialize_mpi_data(q_cons_vf)
+
+                data_size = (m + 1)*(n + 1)*(p + 1)
+
+                m_MOK = int(m_glb + 1, MPI_OFFSET_KIND)
+                n_MOK = int(n_glb + 1, MPI_OFFSET_KIND)
+                p_MOK = int(p_glb + 1, MPI_OFFSET_KIND)
+                WP_MOK = int(storage_size(0._stp)/8, MPI_OFFSET_KIND)
+                MOK = int(1._wp, MPI_OFFSET_KIND)
+                str_MOK = int(name_len, MPI_OFFSET_KIND)
+                NVARS_MOK = int(sys_size, MPI_OFFSET_KIND)
+
+                do i = 1, sys_size
+                    var_MOK = int(i, MPI_OFFSET_KIND)
+
+                    disp = m_MOK*max(MOK, n_MOK)*max(MOK, p_MOK)*WP_MOK*(var_MOK - 1)
+
+                    call MPI_FILE_SET_VIEW(ifile, disp, mpi_io_p, MPI_IO_DATA%view(i), 'native', mpi_info_int, ierr)
+                    call MPI_FILE_READ_ALL(ifile, MPI_IO_DATA%var(i)%sf, data_size*mpi_io_type, mpi_io_p, status, ierr)
+                end do
+
+                call s_mpi_barrier()
+
+                call MPI_FILE_CLOSE(ifile, ierr)
+            else
+                call s_mpi_abort('File ' // trim(file_loc) // ' is missing. Exiting.')
+            end if
+        end if
+
+        deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
+
+        if (bc_io) then
+            call s_read_parallel_boundary_condition_files(bc_type)
+        else
+            call s_assign_default_bc_type(bc_type)
+        end if
+
+    end subroutine s_read_parallel_data_files
+
+    !> Advance the simulation by one time step, handling CFL-based dt and time-stepper dispatch
+    impure subroutine s_perform_time_step(t_step, time_avg)
+
+        integer, intent(inout)  :: t_step
+        real(wp), intent(inout) :: time_avg
+        integer                 :: i
+
+        if (cfl_dt) then
+            if (cfl_const_dt .and. t_step == 0) call s_compute_dt()
+
+            if (cfl_adap_dt) call s_compute_dt()
+
+            if (t_step == 0) dt_init = dt
+
+            if (dt < 1.e-3_wp*dt_init .and. cfl_adap_dt .and. proc_rank == 0) then
+                print *, "Delta t = ", dt
+                call s_mpi_abort("Delta t has become too small")
+            end if
+        end if
+
+        if (cfl_dt) then
+            if ((mytime + dt) >= t_stop) then
+                dt = t_stop - mytime
+                $:GPU_UPDATE(device='[dt]')
+            end if
+        else
+            if ((mytime + dt) >= finaltime) then
+                dt = finaltime - mytime
+                $:GPU_UPDATE(device='[dt]')
+            end if
+        end if
+
+        if (cfl_dt) then
+            if (proc_rank == 0 .and. mod(t_step - t_step_start, t_step_print) == 0) then
+                print '(" [", I3, "%] Time ", ES16.6, " dt = ", ES16.6, " @ Time Step = ", I8,  " Time Avg = ", ES16.6,  " Time/step = ", ES12.6, "")', &
+                    & int(ceiling(100._wp*(mytime/t_stop))), mytime, dt, t_step, wall_time_avg, wall_time
+            end if
+        else
+            if (proc_rank == 0 .and. mod(t_step - t_step_start, t_step_print) == 0) then
+                print '(" [", I3, "%]  Time step ", I8, " of ", I0, " @ t_step = ", I8,  " Time Avg = ", ES12.6,  " Time/step= ", ES12.6, "")', &
+                    & int(ceiling(100._wp*(real(t_step - t_step_start)/(t_step_stop - t_step_start + 1)))), &
+                    & t_step - t_step_start + 1, t_step_stop - t_step_start + 1, t_step, wall_time_avg, wall_time
+            end if
+        end if
+
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm) + Mach*mytime/sin(theta_dm)
+            $:GPU_UPDATE(device='[xshock]')
+        end if
+
+        ! Total-variation-diminishing (TVD) Runge-Kutta (RK) time-steppers
+        if (any(time_stepper == (/1, 2, 3/))) then
+            call s_tvd_rk(t_step, time_avg, time_stepper)
+        end if
+
+        ! Advance time after RK so source terms see current-step time
+        mytime = mytime + dt
+
+        ! Time-stepping loop controls
+        t_step = t_step + 1
+
+    end subroutine s_perform_time_step
+
+    !> Collect per-process wall-clock times and write aggregate performance metrics to file
+    impure subroutine s_save_performance_metrics(time_avg, time_final, io_time_avg, io_time_final, proc_time, io_proc_time, &
+
+        & file_exists)
+
+        real(wp), intent(inout)               :: time_avg, time_final
+        real(wp), intent(inout)               :: io_time_avg, io_time_final
+        real(wp), dimension(:), intent(inout) :: proc_time
+        real(wp), dimension(:), intent(inout) :: io_proc_time
+        logical, intent(inout)                :: file_exists
+        real(wp)                              :: grind_time
+
+        call s_mpi_barrier()
+
+        if (num_procs > 1) then
+            call mpi_bcast_time_step_values(proc_time, time_avg)
+
+            call mpi_bcast_time_step_values(io_proc_time, io_time_avg)
+        end if
+
+        if (proc_rank == 0) then
+            time_final = 0._wp
+            io_time_final = 0._wp
+            if (num_procs == 1) then
+                time_final = time_avg
+                io_time_final = io_time_avg
+            else
+                time_final = maxval(proc_time)
+                io_time_final = maxval(io_proc_time)
+            end if
+
+            grind_time = time_final*1.0e9_wp/(real(sys_size, wp)*real(maxval((/1, m_glb/)), wp)*real(maxval((/1, n_glb/)), &
+                                              & wp)*real(maxval((/1, p_glb/)), wp))
+
+            print *, "Performance:", grind_time, "ns/gp/eq/rhs"
+            inquire (FILE='time_data.dat', EXIST=file_exists)
+            if (file_exists) then
+                open (1, file='time_data.dat', position='append', status='old')
+            else
+                open (1, file='time_data.dat', status='new')
+                write (1, '(A10, A15, A15)') "Ranks", "s/step", "ns/gp/eq/rhs"
+            end if
+
+            write (1, '(I10, 2(F15.8))') num_procs, time_final, grind_time
+
+            close (1)
+
+            inquire (FILE='io_time_data.dat', EXIST=file_exists)
+            if (file_exists) then
+                open (1, file='io_time_data.dat', position='append', status='old')
+            else
+                open (1, file='io_time_data.dat', status='new')
+                write (1, '(A10, A15)') "Ranks", "s/step"
+            end if
+
+            write (1, '(I10, F15.8)') num_procs, io_time_final
+            close (1)
+        end if
+
+    end subroutine s_save_performance_metrics
+
+    !> Save conservative variable data to disk at the current time step
+    impure subroutine s_save_data(t_step, start, finish, io_time_avg, nt)
+
+        integer, intent(inout)  :: t_step
+        real(wp), intent(inout) :: start, finish, io_time_avg
+        integer, intent(inout)  :: nt
+        integer(kind=8)         :: i, j, k, l
+        integer                 :: stor
+        integer                 :: save_count
+
+        if (down_sample) then
+            call s_populate_variables_buffers(bc_type, q_cons_ts(1)%vf)
+        end if
+
+        stor = 1
+
+        if (time_stepper /= 1) then
+            $:GPU_PARALLEL_LOOP(collapse=4, copyin='[idwbuff]')
+            do i = 1, sys_size
+                do l = idwbuff(3)%beg, idwbuff(3)%end
+                    do k = idwbuff(2)%beg, idwbuff(2)%end
+                        do j = idwbuff(1)%beg, idwbuff(1)%end
+                            q_cons_ts(2)%vf(i)%sf(j, k, l) = q_cons_ts(1)%vf(i)%sf(j, k, l)
+                        end do
+                    end do
+                end do
+            end do
+            $:END_GPU_PARALLEL_LOOP()
+            stor = 2
+        end if
+
+        call cpu_time(start)
+        call nvtxStartRange("SAVE-DATA")
+        do i = 1, sys_size
+            $:GPU_UPDATE(host='[q_cons_ts(stor)%vf(i)%sf]')
+            do l = 0, p
+                do k = 0, n
+                    do j = 0, m
+                        if (ieee_is_nan(real(q_cons_ts(stor)%vf(i)%sf(j, k, l), kind=wp))) then
+                            print *, "NaN(s) in timestep output.", j, k, l, i, proc_rank, t_step, m, n, p
+                            call s_mpi_abort("NaN(s) in timestep output.")
+                        end if
+                    end do
+                end do
+            end do
+        end do
+
+        if (cfl_dt) then
+            save_count = int(mytime/t_save)
+        else
+            save_count = t_step
+        end if
+
+        call s_write_data_files(q_cons_ts(stor)%vf, q_prim_vf, save_count, bc_type)
+
+        call nvtxEndRange
+        call cpu_time(finish)
+        if (cfl_dt) then
+            nt = mytime/t_save
+        else
+            nt = int((t_step - t_step_start)/(t_step_save))
+        end if
+
+        if (nt == 1) then
+            io_time_avg = abs(finish - start)
+        else
+            io_time_avg = (abs(finish - start) + io_time_avg*(nt - 1))/nt
+        end if
+
+    end subroutine s_save_data
+
+    !> Initialize all simulation sub-modules in the required dependency order
+    impure subroutine s_initialize_modules
+
+        integer  :: m_ds, n_ds, p_ds
+        integer  :: i, j, k, l, x_id, y_id, z_id, ix, iy, iz
+        real(wp) :: temp1, temp2, temp3, temp4
+
+        call s_initialize_global_parameters_module()
+        call s_initialize_mpi_common_module()
+        call s_initialize_mpi_proxy_module()
+        call s_initialize_variables_conversion_module()
+
+        call s_initialize_rhs_module()
+
+        call s_initialize_data_output_module()
+        call s_initialize_time_steppers_module()
+
+        call s_initialize_boundary_common_module()
+
+        if (down_sample) then
+            m_ds = int((m + 1)/3) - 1
+            n_ds = int((n + 1)/3) - 1
+            p_ds = int((p + 1)/3) - 1
+
+            allocate (q_cons_temp(1:sys_size))
+            do i = 1, sys_size
+                allocate (q_cons_temp(i)%sf(-1:m_ds + 1,-1:n_ds + 1,-1:p_ds + 1))
+            end do
+        end if
+
+        if (down_sample) then
+            call s_read_data_files(q_cons_temp)
+            call s_upsample_data(q_cons_ts(1)%vf, q_cons_temp)
+            do i = 1, sys_size
+                $:GPU_UPDATE(device='[q_cons_ts(1)%vf(i)%sf]')
+            end do
+            do i = 1, sys_size
+                deallocate (q_cons_temp(i)%sf)
+            end do
+            deallocate (q_cons_temp)
+        else
+            call s_read_data_files(q_cons_ts(1)%vf)
+        end if
+
+        call s_populate_grid_variables_buffers()
+
+        ! Computation of parameters, allocation of memory, association of pointers, and/or execution of any other tasks that are
+        ! needed to properly configure the modules. The preparations below DO DEPEND on the grid being complete.
+        call s_initialize_igr_module()
+
+    end subroutine s_initialize_modules
+
+    !> Set up the MPI execution environment, bind GPUs, and decompose the computational domain
+    impure subroutine s_initialize_mpi_domain
+
+        integer :: ierr
+
+#ifdef FIGR_GPU
+        real(wp) :: starttime, endtime
+        integer  :: num_devices, local_size, num_nodes, ppn, my_device_num
+        integer  :: dev, devNum, local_rank
+        integer :: local_comm
+#if defined(FIGR_OpenACC)
+        integer(acc_device_kind) :: devtype
+#endif
+#endif
+
+        call s_mpi_initialize()
+
+#ifdef FIGR_GPU
+        call MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, local_comm, ierr)
+        call MPI_Comm_size(local_comm, local_size, ierr)
+        call MPI_Comm_rank(local_comm, local_rank, ierr)
+#if defined(FIGR_OpenACC)
+        devtype = acc_get_device_type()
+        devNum = acc_get_num_devices(devtype)
+        dev = mod(local_rank, devNum)
+
+        call acc_set_device_num(dev, devtype)
+#elif defined(FIGR_OpenMP)
+        devNum = omp_get_num_devices()
+        dev = mod(local_rank, devNum)
+        call omp_set_default_device(dev)
+#endif
+#endif
+
+        if (proc_rank == 0) then
+            call s_assign_default_values_to_user_inputs()
+            call s_read_input_file()
+            call s_check_input_file()
+
+            print '(" Simulating a ", A, " ", I0, "x", I0, "x", I0, " case on ", I0, " rank(s) ", A, ".")', &
+                "regular", &
+#if defined(FIGR_OpenACC)
+            "with OpenACC offloading"
+#elif defined(FIGR_OpenMP)
+            "with OpenMP offloading"
+#else
+            "on CPUs"
+#endif
+        end if
+
+        call s_mpi_bcast_user_inputs()
+
+        call s_initialize_parallel_io()
+
+        call s_mpi_decompose_computational_domain()
+
+    end subroutine s_initialize_mpi_domain
+
+    !> Transfer initial conservative variable and model parameter data to the GPU device
+    subroutine s_initialize_gpu_vars
+
+        integer :: i
+
+        if (.not. down_sample) then
+            do i = 1, sys_size
+                $:GPU_UPDATE(device='[q_cons_ts(1)%vf(i)%sf]')
+            end do
+        end if
+
+        $:GPU_UPDATE(device='[dx, dy, dz, x_cb, x_cc, y_cb, y_cc, z_cb, z_cc]')
+        $:GPU_UPDATE(device='[bc_x%vb1, bc_x%vb2, bc_x%vb3, bc_x%ve1, bc_x%ve2, bc_x%ve3]')
+        $:GPU_UPDATE(device='[bc_y%vb1, bc_y%vb2, bc_y%vb3, bc_y%ve1, bc_y%ve2, bc_y%ve3]')
+        $:GPU_UPDATE(device='[bc_z%vb1, bc_z%vb2, bc_z%vb3, bc_z%ve1, bc_z%ve2, bc_z%ve3]')
+
+            $:GPU_UPDATE(device='[igr_order]')
+
+    end subroutine s_initialize_gpu_vars
+
+    !> Finalize and deallocate all simulation sub-modules in reverse initialization order
+    impure subroutine s_finalize_modules
+
+        call s_finalize_time_steppers_module()
+        call s_finalize_data_output_module()
+        call s_finalize_rhs_module()
+        call s_finalize_igr_module()
+        call s_finalize_variables_conversion_module()
+        call s_finalize_mpi_common_module()
+        call s_finalize_global_parameters_module()
+        call s_finalize_boundary_common_module()
+        call s_finalize_mpi_proxy_module()
+
+        call s_mpi_finalize()
+
+    end subroutine s_finalize_modules
+
+end module m_start_up

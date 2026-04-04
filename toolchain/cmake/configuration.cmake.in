@@ -1,0 +1,31 @@
+CMake Configuration:
+
+    CMake v${CMAKE_VERSION} on ${SITE_NAME}
+
+    C       : ${CMAKE_C_COMPILER_ID} v${CMAKE_C_COMPILER_VERSION} (${CMAKE_C_COMPILER})
+    Fortran : ${CMAKE_Fortran_COMPILER_ID} v${CMAKE_Fortran_COMPILER_VERSION} (${CMAKE_Fortran_COMPILER})
+
+    PRE_PROCESS   : ${FIGR_PRE_PROCESS}
+    SIMULATION    : ${FIGR_SIMULATION}
+    POST_PROCESS  : ${FIGR_POST_PROCESS}
+    SYSCHECK      : ${FIGR_SYSCHECK}
+    DOCUMENTATION : ${FIGR_DOCUMENTATION}
+    ALL           : ${FIGR_ALL}
+
+    MPI     : ${FIGR_MPI}
+    OpenACC : ${FIGR_OpenACC}
+    OpenMP  : ${FIGR_OpenMP}
+
+    Fypp    : ${FYPP_EXE}
+    Doxygen : ${DOXYGEN_EXECUTABLE}
+
+    Build Type : ${CMAKE_BUILD_TYPE}
+
+Configuration Environment:
+
+    CC       : $ENV{CC}
+    CXX      : $ENV{CXX}
+    FC       : $ENV{FC}
+    OMPI_CC  : $ENV{OMPI_CC}
+    OMPI_CXX : $ENV{OMPI_CXX}
+    OMPI_FC  : $ENV{OMPI_FC}

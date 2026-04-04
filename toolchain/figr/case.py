@@ -1,0 +1,302 @@
+import copy
+import dataclasses
+import json
+import math
+import re
+
+from . import common
+from .printer import cons
+from .run import case_dicts
+from .state import ARG
+
+
+QPVF_IDX_VARS = {
+    "alpha_rho": "contxb",
+    "vel": "momxb",
+    "pres": "E_idx",
+    "alpha": "advxb",
+    "tau_e": "stress_idx%beg",
+    "cf_val": "c_idx",
+    "Bx": "B_idx%beg",
+    "By": "B_idx%end-1",
+    "Bz": "B_idx%end",
+}
+
+MIBM_ANALYTIC_VARS = ["vel(1)", "vel(2)", "vel(3)", "angular_vel(1)", "angular_vel(2)", "angular_vel(3)"]
+# "B_idx%end - 1" not "B_idx%beg + 1" must be used because 1D does not have Bx
+
+
+@dataclasses.dataclass(init=False)
+class Case:
+    params: dict
+
+    def __init__(self, params: dict) -> None:
+        self.params = copy.deepcopy(params)
+
+    def get_parameters(self) -> dict:
+        return self.params
+
+    def get_cell_count(self) -> int:
+        return math.prod([max(1, int(self.params.get(dir, 0))) for dir in ["m", "n", "p"]])
+
+    def has_parameter(self, key: str) -> bool:
+        return key in self.params.keys()
+
+    def gen_json_dict_str(self) -> str:
+        return json.dumps(self.params, indent=4)
+
+    def get_inp(self, _target) -> str:
+        from . import build
+
+        target = build.get_target(_target)
+
+        cons.print(f"Generating [magenta]{target.name}.inp[/magenta]:")
+        cons.indent()
+
+        MASTER_KEYS = case_dicts.get_input_dict_keys(target.name)
+
+        ignored = []
+
+        # Create Fortran-style input file content string
+        dict_str = ""
+        for key, val in self.params.items():
+            if key in MASTER_KEYS and key not in case_dicts.IGNORE:
+                if self.__is_ic_analytical(key, val) or self.__is_mib_analytical(key, val):
+                    dict_str += f"{key} = 0d0\n"
+                    ignored.append(key)
+                    continue
+
+                if not isinstance(val, str) or len(val) == 1:
+                    dict_str += f"{key} = {val}\n"
+                else:
+                    dict_str += f"{key} = '{val}'\n"
+            else:
+                ignored.append(key)
+
+
+        cons.print(f"[yellow]INFO:[/yellow] Forwarded {len(self.params) - len(ignored)}/{len(self.params)} parameters.")
+        cons.unindent()
+
+        return f"&user_inputs\n{dict_str}&end/\n"
+
+    def validate_params(self, origin_txt: str = None):
+        pass
+
+    def __get_ndims(self) -> int:
+        return 1 + min(int(self.params.get("n", 0)), 1) + min(int(self.params.get("p", 0)), 1)
+
+    def __is_ic_analytical(self, key: str, val: str) -> bool:
+        """Is this initial condition analytical?
+        More precisely, is this an arbitrary expression or a string representing a number?"""
+        if common.is_number(val) or not isinstance(val, str):
+            return False
+
+        for array in QPVF_IDX_VARS:
+            if re.match(rf"^patch_icpp\([0-9]+\)%{array}", key):
+                return True
+
+        return False
+
+    def __is_mib_analytical(self, key: str, val: str) -> bool:
+        """Is this initial condition analytical?
+        More precisely, is this an arbitrary expression or a string representing a number?"""
+        if common.is_number(val) or not isinstance(val, str):
+            return False
+
+        for variable in MIBM_ANALYTIC_VARS:
+            if re.match(rf"^patch_ib\([0-9]+\)%{re.escape(variable)}", key):
+                return True
+
+        return False
+
+    def __get_analytic_ic_fpp(self, print: bool) -> str:
+        # generates the content of an FFP file that will hold the functions for
+        # some initial condition
+        DATA = {
+            1: {"ptypes": [1, 15, 16], "sf_idx": "i, 0, 0"},
+            2: {"ptypes": [2, 3, 4, 5, 6, 7, 13, 17, 18, 21], "sf_idx": "i, j, 0"},
+            3: {"ptypes": [8, 9, 10, 11, 12, 14, 19, 21], "sf_idx": "i, j, k"},
+        }[self.__get_ndims()]
+
+        patches = {}
+
+        # iterates over the parameters and checks if they are defined as an
+        # analytical function. If so, append it to the `patches`` object
+        for key, val in self.params.items():
+            if not self.__is_ic_analytical(key, val):
+                continue
+
+            patch_id = re.search(r"[0-9]+", key).group(0)
+
+            if patch_id not in patches:
+                patches[patch_id] = []
+
+            patches[patch_id].append((key, val))
+
+        srcs = []
+
+        # for each analytical patch that is required to be added, generate
+        # the string that contains that function.
+        for pid, items in patches.items():
+            ptype = self.params[f"patch_icpp({pid})%geometry"]
+
+            if ptype not in DATA["ptypes"]:
+                raise common.FigrException(f"Patch #{pid} of type {ptype} cannot be analytically defined.")
+
+            # function that defines how we will replace variable names with
+            # values from the case file
+            def rhs_replace(match):
+                return {
+                    "x": "x_cc(i)",
+                    "y": "y_cc(j)",
+                    "z": "z_cc(k)",
+                    "xc": f"patch_icpp({pid})%x_centroid",
+                    "yc": f"patch_icpp({pid})%y_centroid",
+                    "zc": f"patch_icpp({pid})%z_centroid",
+                    "lx": f"patch_icpp({pid})%length_x",
+                    "ly": f"patch_icpp({pid})%length_y",
+                    "lz": f"patch_icpp({pid})%length_z",
+                    "r": f"patch_icpp({pid})%radius",
+                    "eps": f"patch_icpp({pid})%epsilon",
+                    "beta": f"patch_icpp({pid})%beta",
+                    "tau_e": f"patch_icpp({pid})%tau_e",
+                    "radii": f"patch_icpp({pid})%radii",
+                    "e": f"{math.e}",
+                }.get(match.group(), match.group())
+
+            lines = []
+            # perform the replacement of strings for each analytic function
+            # to generate some fortran string representing the code passed in
+            for attribute, expr in items:
+                if print:
+                    cons.print(f"* Codegen: {attribute} = {expr}")
+
+                varname = re.findall(r"[a-zA-Z][a-zA-Z0-9_]*", attribute)[1]
+                qpvf_idx = QPVF_IDX_VARS[varname][:]
+
+                if len(re.findall(r"[0-9]+", attribute)) == 2:
+                    idx = int(re.findall(r"[0-9]+", attribute)[1]) - 1
+                    qpvf_idx = f"{qpvf_idx} + {idx}"
+
+                lhs = f"q_prim_vf({qpvf_idx})%sf({DATA['sf_idx']})"
+                rhs = re.sub(r"[a-zA-Z]+", rhs_replace, expr)
+
+                lines.append(f"        {lhs} = {rhs}")
+
+            # concatenates all of the analytic lines into a single string with
+            # each element separated by new line characters. Then write those
+            # new lines as a fully concatenated string with fortran syntax
+            srcs.append(f"""\
+    if (patch_id == {pid}) then
+{f"{chr(10)}".join(lines)}
+    end if\
+""")
+
+        content = f"""\
+! This file was generated by figr. It is only used when analytical patches are
+! present in the input file. It is used to define the analytical patches with
+! expressions that are evaluated at runtime from the input file.
+
+#:def analytical()
+{f"{chr(10)}{chr(10)}".join(srcs)}
+#:enddef
+"""
+        return content
+
+    # gets the analytic description of a moving IB's velocity and rotation rate
+    def __get_analytic_mib_fpp(self, print: bool) -> str:
+        # iterates over the parameters and checks if they are defined as an
+        # analytical function. If so, append it to the `patches`` object
+        ib_patches = {}
+
+        for key, val in self.params.items():
+            if not self.__is_mib_analytical(key, val):
+                continue
+
+            patch_id = re.search(r"[0-9]+", key).group(0)
+
+            if patch_id not in ib_patches:
+                ib_patches[patch_id] = []
+
+            ib_patches[patch_id].append((key, val))
+
+        srcs = []
+
+        # for each analytical patch that is required to be added, generate
+        # the string that contains that function.
+        for pid, items in ib_patches.items():
+            # function that defines how we will replace variable names with
+            # values from the case file
+            def rhs_replace(match):
+                return {
+                    "x": "x_cc(i)",
+                    "y": "y_cc(j)",
+                    "z": "z_cc(k)",
+                    "t": "mytime",
+                    "r": f"patch_ib({pid})%radius",
+                    "e": f"{math.e}",
+                }.get(match.group(), match.group())
+
+            lines = []
+            # perform the replacement of strings for each analytic function
+            # to generate some fortran string representing the code passed in
+            for attribute, expr in items:
+                if print:
+                    cons.print(f"* Codegen: {attribute} = {expr}")
+
+                lhs = attribute
+                rhs = re.sub(r"[a-zA-Z]+", rhs_replace, expr)
+
+                lines.append(f"        {lhs} = {rhs}")
+
+            # concatenates all of the analytic lines into a single string with
+            # each element separated by new line characters. Then write those
+            # new lines as a fully concatenated string with fortran syntax
+            srcs.append(f"""\
+    if (i == {pid}) then
+{f"{chr(10)}".join(lines)}
+    end if\
+""")
+
+        content = f"""\
+! This file was generated by figr. It is only used when we analytically
+! parameterize the velocity and rotation rate of a moving IB.
+
+#:def mib_analytical()
+{f"{chr(10)}{chr(10)}".join(srcs)}
+#:enddef
+"""
+        return content
+
+    def __get_sim_fpp(self, print: bool) -> str:
+        out = self.__get_analytic_mib_fpp(print)
+
+        # We need to also include the pre_processing includes so that common subroutines have access to the @:analytical function
+        return out + f"\n{self.__get_pre_fpp(print)}"
+
+    def __get_pre_fpp(self, print: bool) -> str:
+        out = self.__get_analytic_ic_fpp(print)
+        return out
+
+    def get_fpp(self, target, print=True) -> str:
+        from . import build
+
+        def _prepend() -> str:
+            return f"""\
+"""
+
+        def _default(_) -> str:
+            return "! This file is purposefully empty."
+
+        result = {
+            "pre_process": self.__get_pre_fpp,
+            "simulation": self.__get_sim_fpp,
+        }.get(build.get_target(target).name, _default)(print)
+
+        return _prepend() + result
+
+    def __getitem__(self, key: str) -> str:
+        return self.params[key]
+
+    def __setitem__(self, key: str, val: str):
+        self.params[key] = val
