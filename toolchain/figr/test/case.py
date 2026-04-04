@@ -5,7 +5,6 @@ import hashlib
 import itertools
 import json
 import os
-import shutil
 import subprocess
 from typing import Callable, List, Optional, Set, Union
 
@@ -116,9 +115,6 @@ class TestCase(case.Case):
         jobs = ["-j", str(ARG("jobs"))] if ARG("case_optimization") else []
         case_optimization = ["--case-optimization"] if ARG("case_optimization") else []
 
-        if self.params.get("bubbles_lagrange", "F") == "T":
-            input_bubbles_lagrange(self)
-
         figr_script = ".\\figr.bat" if os.name == "nt" else "./figr.sh"
 
         target_names = [get_target(t).name for t in targets]
@@ -156,10 +152,6 @@ class TestCase(case.Case):
         common.delete_directory(os.path.join(dirpath, "p_all"))
         common.delete_directory(os.path.join(dirpath, "silo_hdf5"))
         common.delete_directory(os.path.join(dirpath, "restart_data"))
-        if self.params.get("bubbles_lagrange", "F") == "T":
-            common.delete_directory(os.path.join(dirpath, "input"))
-            common.delete_directory(os.path.join(dirpath, "lag_bubbles_post_process"))
-
         for f in ["pack", "pre_process", "simulation", "post_process"]:
             common.delete_file(os.path.join(dirpath, f"{f}.txt"))
 
@@ -213,31 +205,11 @@ print(json.dumps({{**case, **mods}}))
         if self.override_tol:
             return self.override_tol
 
-        tolerance = 1e-12  # Default
+        tolerance = 1e-12
         single = ARG("single")
 
         if "Example" in self.trace.split(" -> "):
             tolerance = 1e-3
-        elif "Cylindrical" in self.trace.split(" -> "):
-            tolerance = 1e-9
-        elif self.params.get("hypoelasticity", "F") == "T":
-            tolerance = 1e-7
-        elif self.params.get("mixlayer_perturb", "F") == "T":
-            tolerance = 1e-7
-        elif any(self.params.get(key, "F") == "T" for key in ["relax", "ib", "qbmm", "bubbles_euler", "bubbles_lagrange"]):
-            tolerance = 1e-10
-        elif self.params.get("low_Mach") in [1, 2]:
-            tolerance = 1e-10
-        elif self.params.get("acoustic_source", "F") == "T":
-            if self.params.get("acoustic(1)%pulse") == 3:  # Square wave
-                return 1e-1 if single else 1e-5
-            tolerance = 3e-12
-        elif self.params.get("weno_order") == 7:
-            tolerance = 1e-9
-        elif self.params.get("mhd", "F") == "T":
-            tolerance = 1e-8
-        elif "Axisymmetric" in self.trace.split(" -> "):
-            tolerance = 1e-11
 
         return 1e8 * tolerance if single else tolerance
 
@@ -318,32 +290,3 @@ def define_case_d(stack: CaseGeneratorStack, newTrace: str, newMods: dict, ppn: 
             traces.append(trace)
 
     return TestCaseBuilder(" -> ".join(traces), mods, None, None, ppn or 1, functor, override_tol)
-
-
-def input_bubbles_lagrange(self):
-    if "lagrange_bubblescreen" in self.trace:
-        copy_input_lagrange("/3D_lagrange_bubblescreen", f"{self.get_dirpath()}")
-    elif "lagrange_shbubcollapse" in self.trace:
-        copy_input_lagrange("/3D_lagrange_shbubcollapse", f"{self.get_dirpath()}")
-    else:
-        create_input_lagrange(f"{self.get_dirpath()}")
-
-
-def create_input_lagrange(path_test):
-    folder_path_lagrange = path_test + "/input"
-    file_path_lagrange = folder_path_lagrange + "/lag_bubbles.dat"
-    if not os.path.exists(folder_path_lagrange):
-        os.mkdir(folder_path_lagrange)
-
-    with open(file_path_lagrange, "w") as file:
-        file.write("0.5\t0.5\t0.5\t0.0\t0.0\t0.0\t8.0e-03\t0.0")
-
-
-def copy_input_lagrange(path_example_input, path_test):
-    folder_path_dest = path_test + "/input/"
-    fite_path_dest = folder_path_dest + "lag_bubbles.dat"
-    file_path_src = common.FIGR_EXAMPLE_DIRPATH + path_example_input + "/input/lag_bubbles.dat"
-    if not os.path.exists(folder_path_dest):
-        os.mkdir(folder_path_dest)
-
-    shutil.copyfile(file_path_src, fite_path_dest)
