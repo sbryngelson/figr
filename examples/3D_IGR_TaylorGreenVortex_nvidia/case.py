@@ -94,10 +94,6 @@ print(
             "fluid_pp(1)%gamma": 1.0e00 / (1.4 - 1),
             "fluid_pp(1)%pi_inf": 0,
             "fluid_pp(1)%Re(1)": 1 / mu,
-            # NVIDIA UVM Options
-            "nv_uvm_out_of_core": "T",
-            "nv_uvm_igr_temps_on_gpu": 3,
-            "nv_uvm_pref_gpu": "T",
         }
     )
 )

@@ -88,11 +88,6 @@ module m_global_parameters
         logical  :: viscous            !< Viscous effects
     #:endif
 
-    logical :: nv_uvm_out_of_core       !< Enable out-of-core storage of q_cons_ts(2) in timestepping (default FALSE)
-    integer :: nv_uvm_igr_temps_on_gpu  !< 0 => jac, jac_rhs, and jac_old on CPU
-    ! 1 => jac on GPU, jac_rhs and jac_old on CPU 2 => jac and jac_rhs on GPU, jac_old on CPU 3 => jac, jac_rhs, and jac_old on GPU
-    ! (default)
-    logical :: nv_uvm_pref_gpu  !< Enable explicit gpu memory hints (default FALSE)
     integer  :: num_igr_iters             !< number of iterations for elliptic solve
     integer  :: num_igr_warm_start_iters  !< number of warm start iterations for elliptic solve
     real(wp) :: alf_factor                !< alpha factor for IGR
@@ -231,11 +226,6 @@ contains
         n_start = dflt_int
         t_stop = dflt_real
         t_save = dflt_real
-
-        ! NVIDIA UVM options
-        nv_uvm_out_of_core = .false.
-        nv_uvm_igr_temps_on_gpu = 3  ! => jac, jac_rhs, and jac_old on GPU (default)
-        nv_uvm_pref_gpu = .false.
 
         ! Simulation algorithm parameters
         model_eqns = dflt_int

@@ -12,47 +12,8 @@
 #endif
 #:enddef
 
-! Caution: This macro requires the use of a binding script to set CUDA_VISIBLE_DEVICES, such that we have one GPU device per MPI
-! rank. That's because for both cudaMemAdvise (preferred location) and cudaMemPrefetchAsync we use location = device_id = 0. For an
-! example see misc/nvidia_uvm/bind.sh. NVIDIA unified memory page placement hint
+! No-op macro (UVM infrastructure removed)
 #:def PREFER_GPU(*args)
-#ifdef FIGR_SIMULATION
-#ifdef __NVCOMPILER_GPU_UNIFIED_MEM
-    block
-        ! NVIDIA CUDA Fortran 25.3+: uses submodules (cuda_runtime_api, gpu_reductions, sort) See
-        ! https://docs.nvidia.com/hpc-sdk/compilers/cuda-fortran-prog-guide/index.html#fortran-host-modules
-#if __NVCOMPILER_MAJOR__ < 25 || (__NVCOMPILER_MAJOR__ == 25 && __NVCOMPILER_MINOR__ < 3)
-        use cudafor, gpu_sum => sum, gpu_maxval => maxval, gpu_minval => minval
-#else
-        use cuda_runtime_api
-#endif
-        integer :: istat
-
-        if (nv_uvm_pref_gpu) then
-            #:for arg in args
-                ! print*, "Moving ${arg}$ to GPU => ", SHAPE(${arg}$) set preferred location GPU
-                istat = cudaMemAdvise(c_devloc(${arg}$), SIZEOF(${arg}$), cudaMemAdviseSetPreferredLocation, 0)
-                if (istat /= cudaSuccess) then
-                    write (*, "('Error code: ',I0, ': ')") istat
-                    ! write(*,*) cudaGetErrorString(istat)
-                end if
-                ! set accessed by CPU
-                istat = cudaMemAdvise(c_devloc(${arg}$), SIZEOF(${arg}$), cudaMemAdviseSetAccessedBy, cudaCpuDeviceId)
-                if (istat /= cudaSuccess) then
-                    write (*, "('Error code: ',I0, ': ')") istat
-                    ! write(*,*) cudaGetErrorString(istat)
-                end if
-                ! prefetch to GPU - physically populate memory pages
-                istat = cudaMemPrefetchAsync(c_devloc(${arg}$), SIZEOF(${arg}$), 0, 0)
-                if (istat /= cudaSuccess) then
-                    write (*, "('Error code: ',I0, ': ')") istat
-                    ! write(*,*) cudaGetErrorString(istat)
-                end if
-            #:endfor
-        end if
-    end block
-#endif
-#endif
 #:enddef
 
 ! Allocate and create GPU device memory

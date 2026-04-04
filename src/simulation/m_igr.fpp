@@ -16,17 +16,9 @@ module m_igr
     private; public :: s_initialize_igr_module, s_igr_iterative_solve, s_igr_riemann_solver, s_igr_sigma_x, s_igr_flux_add, &
         & s_finalize_igr_module
 
-#ifdef __NVCOMPILER_GPU_UNIFIED_MEM
-    integer, dimension(3)                                   :: nv_uvm_temp_on_gpu
-    real(wp), pointer, contiguous, dimension(:,:,:)         :: jac, jac_rhs, jac_old
-    real(wp), allocatable, dimension(:,:,:), pinned, target :: jac_host
-    real(wp), allocatable, dimension(:,:,:), pinned, target :: jac_rhs_host
-    real(wp), allocatable, dimension(:,:,:), pinned, target :: jac_old_host
-#else
     real(wp), allocatable, target, dimension(:,:,:) :: jac
     real(wp), allocatable, dimension(:,:,:)         :: jac_rhs, jac_old
     $:GPU_DECLARE(create='[jac, jac_rhs, jac_old]')
-#endif
     type(scalar_field), dimension(1) :: jac_sf
     $:GPU_DECLARE(create='[jac_sf]')
 
@@ -91,47 +83,12 @@ contains
             @:PREFER_GPU(Re_idx)
         end if
 
-#ifndef __NVCOMPILER_GPU_UNIFIED_MEM
         @:ALLOCATE(jac(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end))
         @:ALLOCATE(jac_rhs(-1:m,-1:n,-1:p))
 
         if (igr_iter_solver == 1) then  ! Jacobi iteration
             @:ALLOCATE(jac_old(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end))
         end if
-#else
-        ! create map
-        nv_uvm_temp_on_gpu(1:3) = 0
-        nv_uvm_temp_on_gpu(1:nv_uvm_igr_temps_on_gpu) = 1
-
-        if (nv_uvm_temp_on_gpu(1) == 1) then
-            @:ALLOCATE(jac(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end))
-            @:PREFER_GPU(jac)
-        else
-            allocate (jac_host(idwbuff(1)%beg:idwbuff(1)%end,idwbuff(2)%beg:idwbuff(2)%end,idwbuff(3)%beg:idwbuff(3)%end))
-
-            jac(idwbuff(1)%beg:idwbuff(1)%end,idwbuff(2)%beg:idwbuff(2)%end,idwbuff(3)%beg:idwbuff(3)%end) => jac_host(:,:,:)
-        end if
-
-        if (nv_uvm_temp_on_gpu(2) == 1) then
-            @:ALLOCATE(jac_rhs(-1:m,-1:n,-1:p))
-            @:PREFER_GPU(jac_rhs)
-        else
-            allocate (jac_rhs_host(-1:m,-1:n,-1:p))
-            jac_rhs(-1:m,-1:n,-1:p) => jac_rhs_host(:,:,:)
-        end if
-
-        if (igr_iter_solver == 1) then  ! Jacobi iteration
-            if (nv_uvm_temp_on_gpu(3) == 1) then
-                @:ALLOCATE(jac_old(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end))
-                @:PREFER_GPU(jac_old)
-            else
-                allocate (jac_old_host(idwbuff(1)%beg:idwbuff(1)%end,idwbuff(2)%beg:idwbuff(2)%end,idwbuff(3)%beg:idwbuff(3)%end))
-
-                jac_old(idwbuff(1)%beg:idwbuff(1)%end,idwbuff(2)%beg:idwbuff(2)%end, &
-                        & idwbuff(3)%beg:idwbuff(3)%end) => jac_old_host(:,:,:)
-            end if
-        end if
-#endif
 
         $:GPU_PARALLEL_LOOP(private='[j, k, l]', collapse=3)
         do l = idwbuff(3)%beg, idwbuff(3)%end
@@ -2704,36 +2661,11 @@ contains
             @:DEALLOCATE(Res_igr)
         end if
 
-#ifndef __NVCOMPILER_GPU_UNIFIED_MEM
         @:DEALLOCATE(jac, jac_rhs)
 
         if (igr_iter_solver == 1) then  ! Jacobi iteration
             @:DEALLOCATE(jac_old)
         end if
-#else
-        if (nv_uvm_temp_on_gpu(1) == 1) then
-            @:DEALLOCATE(jac)
-        else
-            nullify (jac)
-            deallocate (jac_host)
-        end if
-
-        if (nv_uvm_temp_on_gpu(2) == 1) then
-            @:DEALLOCATE(jac_rhs)
-        else
-            nullify (jac_rhs)
-            deallocate (jac_rhs_host)
-        end if
-
-        if (igr_iter_solver == 1) then  ! Jacobi iteration
-            if (nv_uvm_temp_on_gpu(3) == 1) then
-                @:DEALLOCATE(jac_old)
-            else
-                nullify (jac_old)
-                deallocate (jac_old_host)
-            end if
-        end if
-#endif
 
         #:if not FIGR_CASE_OPTIMIZATION
             @:DEALLOCATE(coeff_L, coeff_R)

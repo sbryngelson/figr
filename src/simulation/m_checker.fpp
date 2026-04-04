@@ -21,7 +21,6 @@ contains
     impure subroutine s_check_inputs
 
         call s_check_inputs_compilers
-        call s_check_inputs_nvidia_uvm
         call s_check_inputs_time_stepping
 
     end subroutine s_check_inputs
@@ -39,17 +38,5 @@ contains
         end if
 
     end subroutine s_check_inputs_time_stepping
-
-    !> Validate NVIDIA unified virtual memory configuration parameters
-    impure subroutine s_check_inputs_nvidia_uvm
-
-#ifdef __NVCOMPILER_GPU_UNIFIED_MEM
-        @:PROHIBIT(nv_uvm_igr_temps_on_gpu > 3 .or. nv_uvm_igr_temps_on_gpu < 0, &
-                   & "nv_uvm_igr_temps_on_gpu must be in the range [0, 3]")
-        @:PROHIBIT(nv_uvm_igr_temps_on_gpu == 3 .and. igr_iter_solver == 2, &
-                   & "nv_uvm_igr_temps_on_gpu must be in the range [0, 2] for igr_iter_solver == 2")
-#endif
-
-    end subroutine s_check_inputs_nvidia_uvm
 
 end module m_checker
