@@ -31,7 +31,7 @@ contains
         #:for VAR in [ 'old_grid','old_ic','stretch_x','stretch_y','stretch_z',&
             & 'parallel_io', 'file_per_process', 'cfl_adap_dt',               &
             & 'cfl_const_dt', 'cfl_dt', 'viscous',                            &
-            & 'bc_io', 'down_sample' ]
+            & 'bc_io', 'down_sample', 'double_mach' ]
             call MPI_BCAST(${VAR}$, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         #:endfor
         #:for VAR in [ 'x_domain%beg', 'x_domain%end', 'y_domain%beg',         &

@@ -50,7 +50,7 @@ contains
 
         #:for VAR in [ 'run_time_info', 'rdma_mpi', 'bc_io', &
             & 'parallel_io', 'prim_vars_wrt', 'file_per_process', &
-            & 'cfl_adap_dt', 'cfl_const_dt', 'cfl_dt', 'down_sample']
+            & 'cfl_adap_dt', 'cfl_const_dt', 'cfl_dt', 'down_sample', 'double_mach']
             call MPI_BCAST(${VAR}$, 1, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
         #:endfor
 

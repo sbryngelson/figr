@@ -42,7 +42,7 @@ contains
             & mom_wrt, vel_wrt, E_wrt, pres_wrt, alpha_wrt, gamma_wrt, heat_ratio_wrt, pi_inf_wrt, pres_inf_wrt, cons_vars_wrt, &
             & prim_vars_wrt, c_wrt, omega_wrt, qm_wrt, schlieren_wrt, schlieren_alpha, fd_order, flux_lim, flux_wrt, parallel_io, &
             & rhoref, pref, file_per_process, cfl_adap_dt, cfl_const_dt, t_save, t_stop, n_start, cfl_target, sim_data, &
-            & num_bc_patches, igr_order, down_sample, alpha_rho_e_wrt
+            & num_bc_patches, igr_order, down_sample, alpha_rho_e_wrt, double_mach, dt
 
         file_loc = 'post_process.inp'
         inquire (FILE=trim(file_loc), EXIST=file_check)
@@ -125,6 +125,10 @@ contains
         end if
 
         call s_read_data_files(t_step)
+
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm) + Mach*t_step*dt/sin(theta_dm)
+        end if
 
         if (buff_size > 0) then
             call s_populate_grid_variables_buffers()

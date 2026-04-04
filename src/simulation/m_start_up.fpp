@@ -76,7 +76,8 @@ contains
             igr_iter_solver, igr_pres_lim, &
         #:endif
         file_per_process, n_start, t_save, t_stop, cfl_adap_dt, cfl_const_dt, cfl_target, num_bc_patches, alf_factor, &
-            & num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, nv_uvm_pref_gpu, down_sample
+            & num_igr_iters, num_igr_warm_start_iters, nv_uvm_out_of_core, nv_uvm_igr_temps_on_gpu, nv_uvm_pref_gpu, down_sample, &
+            & double_mach
 
         inquire (FILE=trim(file_path), EXIST=file_exist)
 
@@ -459,6 +460,11 @@ contains
                     & int(ceiling(100._wp*(real(t_step - t_step_start)/(t_step_stop - t_step_start + 1)))), &
                     & t_step - t_step_start + 1, t_step_stop - t_step_start + 1, t_step, wall_time_avg, wall_time
             end if
+        end if
+
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm) + Mach*mytime/sin(theta_dm)
+            $:GPU_UPDATE(device='[xshock]')
         end if
 
         ! Total-variation-diminishing (TVD) Runge-Kutta (RK) time-steppers

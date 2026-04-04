@@ -59,6 +59,34 @@ contains
             end do
         end if
 
+        if (double_mach) then
+            ! Smoothing parameter
+            cf = 20._wp
+            ! Mach number
+            Mach = 10._wp
+
+            ! Pre shock
+            rho0_dm = 1.4_wp
+            p0_dm = 1._wp
+            u0_dm = 0._wp
+            v0_dm = 0._wp
+
+            gam_dm = 1._wp + 1._wp/fluid_pp(1)%gamma
+
+            ! Post shock
+            pshock = (2._wp*gam_dm*Mach**2 - (gam_dm - 1._wp))/(1._wp + gam_dm)
+            rhoshock = ((1._wp + gam_dm)*Mach**2)*rho0_dm/((gam_dm - 1._wp)*Mach**2 + 2._wp)
+            velshock = (Mach - (Mach*rho0_dm/rhoshock))/2._wp
+
+            ! Reflecting wall location
+            xr_dm = 1._wp/6._wp
+            ! Shock Angle in radian
+            theta_dm = (pi/180._wp)*60._wp
+
+            $:GPU_UPDATE(device='[cf, double_mach, Mach, pshock, rhoshock, velshock, rho0_dm, p0_dm, u0_dm, v0_dm, xr_dm, &
+                         & theta_dm, gam_dm]')
+        end if
+
     end subroutine s_initialize_boundary_common_module
 
     !> Populate the buffers of the primitive variables based on the selected boundary conditions.
@@ -270,6 +298,31 @@ contains
                         q_prim_vf(i)%sf(k, n + j, l) = q_prim_vf(i)%sf(k, n, l)
                     end do
                 end do
+
+                if (double_mach) then
+                    !! DOUBLE MACH
+                    do j = 1, buff_size
+                        q_prim_vf(contxb)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*rhoshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*rho0_dm
+                        q_prim_vf(E_idx)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*pshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*p0_dm
+                        q_prim_vf(momxb)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*(velshock*tan(theta_dm)) &
+                                  & + 0.5_wp*(1._wp - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*u0_dm
+                        q_prim_vf(momxb + 1)%sf(k, n + j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*(-velshock) + 0.5_wp*(1._wp &
+                                  & - tanh(cf*(tan(theta_dm))*(xshock - x_cc(k))))*v0_dm
+                        ! IGR is always on in figr
+                        q_prim_vf(momxb)%sf(k, n + j, l) = q_prim_vf(contxb)%sf(k, n + j, l)*q_prim_vf(momxb)%sf(k, n + j, l)
+                        q_prim_vf(momxb + 1)%sf(k, n + j, l) = q_prim_vf(contxb)%sf(k, n + j, l)*q_prim_vf(momxb + 1)%sf(k, &
+                                  & n + j, l)
+                        q_prim_vf(E_idx)%sf(k, n + j, l) = (1._wp/(gam_dm - 1._wp))*q_prim_vf(E_idx)%sf(k, n + j, &
+                                  & l) + 0.5_wp*(q_prim_vf(momxb)%sf(k, n + j, l)**2 + q_prim_vf(momxb + 1)%sf(k, n + j, &
+                                  & l)**2)/q_prim_vf(contxb)%sf(k, n + j, l)
+                    end do
+                end if
             end if
         else if (bc_dir == 3) then  !< z-direction
             if (bc_loc == -1) then  !< bc_z%beg
@@ -326,17 +379,42 @@ contains
             end if
         else if (bc_dir == 2) then  !< y-direction
             if (bc_loc == -1) then  !< bc_y%beg
-                do j = 1, buff_size
-                    do i = 1, momxb
-                        q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                if (double_mach .and. x_cc(k) < xr_dm) then
+                    do j = 1, buff_size
+                        q_prim_vf(contxb)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*rhoshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*rho0_dm
+                        q_prim_vf(E_idx)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*pshock + 0.5_wp*(1._wp &
+                                  & - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*p0_dm
+                        q_prim_vf(momxb)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*(velshock*tan(theta_dm)) &
+                                  & + 0.5_wp*(1._wp - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*u0_dm
+                        q_prim_vf(momxb + 1)%sf(k, -j, &
+                                  & l) = 0.5_wp*(1._wp + tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*(-velshock) + 0.5_wp*(1._wp &
+                                  & - tanh(cf*-(tan(theta_dm))*(x_cc(k) - xr_dm)))*v0_dm
+#ifdef FIGR_SIMULATION
+                        ! IGR is always on in figr
+                        q_prim_vf(momxb)%sf(k, -j, l) = q_prim_vf(contxb)%sf(k, -j, l)*q_prim_vf(momxb)%sf(k, -j, l)
+                        q_prim_vf(momxb + 1)%sf(k, -j, l) = q_prim_vf(contxb)%sf(k, -j, l)*q_prim_vf(momxb + 1)%sf(k, -j, l)
+                        q_prim_vf(E_idx)%sf(k, -j, l) = (1._wp/(gam_dm - 1._wp))*q_prim_vf(E_idx)%sf(k, -j, &
+                                  & l) + 0.5_wp*(q_prim_vf(momxb)%sf(k, -j, l)**2 + q_prim_vf(momxb + 1)%sf(k, -j, &
+                                  & l)**2)/q_prim_vf(contxb)%sf(k, -j, l)
+#endif
                     end do
+                else
+                    do j = 1, buff_size
+                        do i = 1, momxb
+                            q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                        end do
 
-                    q_prim_vf(momxb + 1)%sf(k, -j, l) = -q_prim_vf(momxb + 1)%sf(k, j - 1, l)
+                        q_prim_vf(momxb + 1)%sf(k, -j, l) = -q_prim_vf(momxb + 1)%sf(k, j - 1, l)
 
-                    do i = momxb + 2, sys_size
-                        q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                        do i = momxb + 2, sys_size
+                            q_prim_vf(i)%sf(k, -j, l) = q_prim_vf(i)%sf(k, j - 1, l)
+                        end do
                     end do
-                end do
+                end if
             else  !< bc_y%end
                 do j = 1, buff_size
                     do i = 1, momxb
@@ -753,9 +831,15 @@ contains
                                 jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, n - j + 1, l)
                             end do
                         case (BC_REFLECTIVE)
-                            do j = 1, buff_size
-                                jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, j - 1, l)
-                            end do
+                            if (double_mach .and. x_cc(k) < xr_dm) then
+                                do j = 1, buff_size
+                                    jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, 0, l)
+                                end do
+                            else
+                                do j = 1, buff_size
+                                    jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, j - 1, l)
+                                end do
+                            end if
                         case default
                             do j = 1, buff_size
                                 jac_sf(1)%sf(k, -j, l) = jac_sf(1)%sf(k, 0, l)

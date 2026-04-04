@@ -92,6 +92,10 @@ module m_global_parameters
     integer :: advxb, advxe
     integer :: contxb, contxe
 
+    ! Double Mach parameters
+    logical  :: double_mach
+    real(wp) :: xshock, cf, Mach, pshock, rhoshock, velshock, rho0_dm, p0_dm, u0_dm, v0_dm, xr_dm, theta_dm, gam_dm
+
     integer, allocatable, dimension(:,:,:) :: logic_grid
     integer                                :: buff_size  !< Number of ghost cells for boundary condition storage
     integer, dimension(2)                  :: Re_size
@@ -246,6 +250,21 @@ contains
             fluid_pp(i)%qvp = 0._wp
         end do
 
+        double_mach = .false.
+        xshock = dflt_real
+        cf = dflt_real
+        rhoshock = dflt_real
+        pshock = dflt_real
+        velshock = dflt_real
+        u0_dm = dflt_real
+        v0_dm = dflt_real
+        p0_dm = dflt_real
+        rho0_dm = dflt_real
+        theta_dm = dflt_real
+        gam_dm = dflt_real
+        xr_dm = dflt_real
+        Mach = dflt_real
+
     end subroutine s_assign_default_values_to_user_inputs
 
     !> Computation of parameters, allocation procedures, and/or any other tasks needed to properly setup the module
@@ -322,6 +341,10 @@ contains
         end if
 
         grid_geometry = 1  ! Always Cartesian in IGR-only build
+
+        if (double_mach) then
+            xshock = xr_dm + 1._wp/tan(theta_dm)
+        end if
 
     end subroutine s_initialize_global_parameters_module
 

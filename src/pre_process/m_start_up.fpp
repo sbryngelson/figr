@@ -70,7 +70,7 @@ contains
             & stretch_x, stretch_y, stretch_z, a_x, a_y, a_z, x_a, y_a, z_a, x_b, y_b, z_b, model_eqns, num_fluids, bc_x, bc_y, &
             & bc_z, num_patches, patch_icpp, fluid_pp, precision, parallel_io, loops_x, loops_y, loops_z, rhoref, pref, &
             & file_per_process, cfl_adap_dt, cfl_const_dt, n_start, n_start_old, viscous, num_bc_patches, patch_bc, igr_order, &
-            & down_sample
+            & down_sample, double_mach
 
         file_loc = 'pre_process.inp'
         inquire (FILE=trim(file_loc), EXIST=file_check)
